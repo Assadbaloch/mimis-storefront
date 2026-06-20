@@ -6,6 +6,7 @@ import { useCart } from '@/lib/cart';
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/menu', label: 'Menu' },
+  { href: '/rewards', label: 'Rewards' },
   { href: '/#locations', label: 'Locations' },
 ];
 

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { formatPrice } from '@/lib/format';
+import NotificationOptIn from '@/components/NotificationOptIn';
 
 const STATUS_LABEL = {
   pending_payment: 'Awaiting Payment',
@@ -17,6 +18,7 @@ const STATUS_STEPS = ['new', 'in_progress', 'ready', 'completed'];
 
 export default function OrderStatusView({ heading }) {
   const [order, setOrder] = useState(null);
+  const [orderId, setOrderId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -32,6 +34,7 @@ export default function OrderStatusView({ heading }) {
       setNotFound(true);
       return;
     }
+    setOrderId(stored.order_id);
 
     const supabase = getSupabasePublicClient();
     let cancelled = false;
@@ -106,6 +109,10 @@ export default function OrderStatusView({ heading }) {
         <p className="text-cream/55 text-sm mt-5 text-center">
           Estimated ready: {new Date(order.estimated_ready_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
         </p>
+      )}
+
+      {['new', 'in_progress'].includes(order.status) && (
+        <NotificationOptIn orderId={orderId} />
       )}
     </div>
   );

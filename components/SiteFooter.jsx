@@ -34,8 +34,8 @@ export default function SiteFooter() {
           <ul className="space-y-2 text-sm text-cream/70">
             <li><Link href="/" className="hover:text-gold">Home</Link></li>
             <li><Link href="/menu" className="hover:text-gold">Menu</Link></li>
+            <li><Link href="/rewards" className="hover:text-gold">Rewards</Link></li>
             <li><Link href="/order-status" className="hover:text-gold">Track an Order</Link></li>
-            <li><Link href="/admin" className="hover:text-gold">Staff Login</Link></li>
           </ul>
         </div>
       </div>

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/lib/cart';
@@ -13,6 +13,23 @@ export default function CheckoutPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [rewardCode, setRewardCode] = useState('');
+  const [redirectNotice, setRedirectNotice] = useState('');
+
+  // Picked up from RewardsLookup.jsx, which sets this key right after a
+  // customer redeems points for a code on /rewards. Applied automatically so
+  // the customer doesn't have to copy/paste -- removable if they'd rather
+  // check out without it. The code is only actually validated server-side
+  // (against the phone number entered below) when the order is submitted.
+  useEffect(() => {
+    const saved = window.localStorage.getItem('mimis-active-redemption-code');
+    if (saved) setRewardCode(saved);
+  }, []);
+
+  function removeRewardCode() {
+    window.localStorage.removeItem('mimis-active-redemption-code');
+    setRewardCode('');
+  }
 
   if (items.length === 0) {
     return (
@@ -30,6 +47,7 @@ export default function CheckoutPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    setRedirectNotice('');
 
     if (!form.phone_number.trim()) {
       setError('Phone number is required.');
@@ -45,6 +63,7 @@ export default function CheckoutPage() {
           ...form,
           order_type: 'pickup',
           location: 'Madison Heights',
+          redemption_code: rewardCode || undefined,
           items: items.map((i) => ({
             name: i.name,
             price_cents: i.price_cents,
@@ -68,7 +87,24 @@ export default function CheckoutPage() {
         created_at: new Date().toISOString(),
       }));
       clear();
-      window.location.href = data.checkout_url;
+
+      const discount = data.discount_cents || 0;
+      if (rewardCode && discount > 0) {
+        // Code was valid for this phone number and got burned server-side --
+        // clear it locally too so it can't show up as "still active" again.
+        window.localStorage.removeItem('mimis-active-redemption-code');
+        setRedirectNotice(`Reward applied — ${formatPrice(discount)} off! Redirecting to payment…`);
+      } else if (rewardCode && discount === 0) {
+        // Code didn't match this phone number (or is expired/already used)
+        // -- left in storage so they can retry after fixing the phone, but
+        // the order still goes through at full price rather than blocking.
+        setRedirectNotice('That reward code didn’t apply (check the phone number matches your rewards account) — continuing at full price…');
+      }
+
+      const delay = rewardCode ? 1400 : 0;
+      window.setTimeout(() => {
+        window.location.href = data.checkout_url;
+      }, delay);
     } catch (err) {
       setError('Could not reach the order system. Please try again.');
       setSubmitting(false);
@@ -93,6 +129,20 @@ export default function CheckoutPage() {
         </div>
       </div>
 
+      {rewardCode && (
+        <div className="flex items-center justify-between rounded-xl border border-gold/30 bg-gold/[0.06] px-4 py-3 mb-6 gap-3">
+          <div className="min-w-0">
+            <p className="text-cream text-sm font-semibold">
+              Reward code <span className="text-gold font-serif tracking-wide">{rewardCode}</span> applied
+            </p>
+            <p className="text-cream/45 text-xs mt-0.5">Discount is calculated at payment if valid for this phone number.</p>
+          </div>
+          <button type="button" onClick={removeRewardCode} className="text-cream/40 hover:text-cream/70 text-xs shrink-0">
+            Remove
+          </button>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <input required placeholder="First name" value={form.first_name} onChange={update('first_name')} className="input" />
@@ -101,8 +151,14 @@ export default function CheckoutPage() {
         <input required type="tel" placeholder="Phone number*" value={form.phone_number} onChange={update('phone_number')} className="input w-full" />
         <input type="email" placeholder="Email (optional)" value={form.email} onChange={update('email')} className="input w-full" />
         <textarea placeholder="Order notes (optional)" value={form.notes} onChange={update('notes')} className="input w-full" rows={3} />
+        {rewardCode && (
+          <p className="text-cream/40 text-xs">
+            Tip: use the same phone number you used to redeem <span className="text-gold">{rewardCode}</span> on the Rewards page.
+          </p>
+        )}
 
         {error && <p className="text-brick text-sm">{error}</p>}
+        {redirectNotice && <p className="text-gold text-sm">{redirectNotice}</p>}
 
         <button type="submit" disabled={submitting} className="btn-primary w-full justify-center !flex disabled:opacity-50">
           {submitting ? 'Starting checkout…' : `Pay ${formatPrice(totalCents)} with Clover`}

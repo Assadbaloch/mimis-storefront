@@ -2,15 +2,24 @@
 import Image from 'next/image';
 import { formatPrice, displayName } from '@/lib/format';
 import { useCart } from '@/lib/cart';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ProductModal from '@/components/ProductModal';
 
-export default function MenuItemCard({ item, large = false }) {
+// autoOpen: true when this card is the deep-link target of a `/menu?item=<clover_item_id>`
+// URL (e.g. from the rewards-page trending banner) -- opens the product modal
+// itself on arrival, satisfying the "direct the customer to the product" goal
+// rather than just scrolling them to the right category.
+export default function MenuItemCard({ item, large = false, autoOpen = false }) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const name = displayName(item.name);
   const description = item.description_override || null;
+
+  useEffect(() => {
+    if (autoOpen) setShowModal(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleAdd(e) {
     e.stopPropagation();
@@ -34,7 +43,9 @@ export default function MenuItemCard({ item, large = false }) {
         tabIndex={0}
         onClick={() => setShowModal(true)}
         onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setShowModal(true)}
-        className="menu-card group rounded-2xl overflow-hidden bg-cream/[0.04] border border-cream/10 hover:border-gold/40 flex flex-col cursor-pointer"
+        className={`menu-card group rounded-2xl overflow-hidden bg-cream/[0.04] border flex flex-col cursor-pointer ${
+          autoOpen ? 'border-gold/60 ring-2 ring-gold/40 animate-pulse-once' : 'border-cream/10 hover:border-gold/40'
+        }`}
       >
         <div className={`relative overflow-hidden ${large ? 'aspect-[4/3]' : 'aspect-square'} bg-gradient-to-br from-cream/10 to-black/40`}>
           {item.video_url ? (

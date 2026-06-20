@@ -7,8 +7,13 @@ import { NextResponse } from 'next/server';
 // workflow (KxHdYKLCXeyrxgHS):
 //   POST /webhook/online-order-intake, header X-Mimis-Webhook-Secret,
 //   body { first_name, last_name, phone_number (required), email, order_type,
-//          location, notes, items: [{ name, price_cents, quantity, modifiers, special_instructions }] }
-//   -> { success, checkout_url, checkout_session_id, order_id, order_number, order_total_cents }
+//          location, notes, redemption_code (optional),
+//          items: [{ name, price_cents, quantity, modifiers, special_instructions }] }
+//   -> { success, checkout_url, checkout_session_id, order_id, order_number,
+//        order_total_cents, discount_cents, total_due_cents }
+// redemption_code is validated server-side (mimis.redemptions) against the
+// customer matched by phone_number -- invalid/expired/mismatched codes just
+// fall back to discount_cents: 0 rather than failing the order.
 const N8N_BASE_URL = process.env.MIMIS_N8N_BASE_URL || 'https://automation.teamastrixdev.com';
 
 export async function POST(request) {
@@ -50,6 +55,7 @@ export async function POST(request) {
         order_type: body.order_type || 'pickup',
         location: body.location || 'Madison Heights',
         notes: body.notes || '',
+        redemption_code: body.redemption_code || '',
         items: body.items,
       }),
     });
