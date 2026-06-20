@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
+import { displayName } from '@/lib/format';
 import MenuItemCard from '@/components/MenuItemCard';
 
 export const revalidate = 60;
@@ -20,25 +22,72 @@ async function getFeaturedItems() {
   return data || [];
 }
 
+// Real photos/videos uploaded via /admin/menu — used for the hero backdrop and
+// the "From Our Kitchen" gallery. No stock imagery: this grows automatically as
+// the owner uploads more product media, videos first.
+async function getGalleryMedia() {
+  const supabase = getSupabasePublicClient();
+  const { data, error } = await supabase
+    .from('menu_items')
+    .select('clover_item_id, name, image_url, video_url')
+    .eq('available', true)
+    .or('image_url.not.is.null,video_url.not.is.null')
+    .order('sort_order', { ascending: true })
+    .limit(8);
+  if (error) {
+    console.error('getGalleryMedia', error.message);
+    return [];
+  }
+  // videos first so the hero backdrop prefers motion when available
+  return (data || []).slice().sort((a, b) => (b.video_url ? 1 : 0) - (a.video_url ? 1 : 0));
+}
+
 export default async function HomePage() {
   const featured = await getFeaturedItems();
+  const gallery = await getGalleryMedia();
+  const heroMedia = gallery[0] || null;
 
   return (
     <>
       {/* HERO */}
       <section className="relative px-5 md:px-8 pt-20 pb-24 md:pt-28 md:pb-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-brick/15 via-transparent to-transparent pointer-events-none" />
+        {heroMedia ? (
+          <div className="absolute inset-0">
+            {heroMedia.video_url ? (
+              <video
+                src={heroMedia.video_url}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover opacity-30 blur-[1px] scale-105"
+              />
+            ) : (
+              <Image
+                src={heroMedia.image_url}
+                alt=""
+                fill
+                priority
+                className="object-cover opacity-25 blur-[1px] scale-105"
+                sizes="100vw"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-ink/60 via-ink/75 to-ink" />
+          </div>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-b from-brick/15 via-transparent to-transparent pointer-events-none" />
+        )}
         <div className="max-w-6xl mx-auto relative text-center">
-          <p className="section-label mb-5">Madison Heights &amp; Warren, Michigan</p>
-          <h1 className="font-serif font-bold text-5xl md:text-7xl leading-[1.05] text-cream">
+          <p className="section-label mb-5 animate-fade-in">Madison Heights &amp; Warren, Michigan</p>
+          <h1 className="font-serif font-bold text-5xl md:text-7xl leading-[1.05] text-cream animate-scale-in" style={{ animationDelay: '60ms' }}>
             Real ingredients.<br />
             Real <span className="italic text-gold">halal.</span> Real fresh.
           </h1>
-          <p className="text-cream/65 max-w-xl mx-auto mt-6 text-base md:text-lg leading-relaxed">
+          <p className="text-cream/65 max-w-xl mx-auto mt-6 text-base md:text-lg leading-relaxed animate-fade-in" style={{ animationDelay: '160ms' }}>
             Hand-stretched pizza, smash burgers, and made-to-order favorites — fired fresh
             for every order, every time.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 mt-10">
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-10 animate-fade-in" style={{ animationDelay: '240ms' }}>
             <Link href="/menu" className="btn-primary">Start an Order</Link>
             <Link href="#locations" className="btn-secondary">Our Locations</Link>
           </div>
@@ -92,7 +141,7 @@ export default async function HomePage() {
               { name: 'Madison Heights', address: '28931 John R Rd, Madison Heights, MI 48071', status: 'Now Taking Orders', live: true },
               { name: 'Warren', address: '8113 E 9 Mile Rd, Warren, MI 48089', status: 'Opening Soon', live: false },
             ].map((loc) => (
-              <div key={loc.name} className="rounded-2xl border border-cream/10 bg-cream/[0.03] p-7">
+              <div key={loc.name} className="menu-card rounded-2xl border border-cream/10 bg-cream/[0.03] p-7 hover:border-gold/30">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-serif font-semibold text-xl text-cream">{loc.name}</h3>
                   <span className={`text-[11px] font-bold uppercase tracking-wide rounded-full px-3 py-1 ${loc.live ? 'bg-gold/15 text-gold' : 'bg-cream/10 text-cream/60'}`}>
@@ -119,6 +168,34 @@ export default async function HomePage() {
           <p className="text-cream/55 mt-3">Join the neighbors who order from us every week.</p>
         </div>
       </section>
+
+      {/* FROM OUR KITCHEN — real product photos/videos uploaded via /admin/menu */}
+      {gallery.length > 0 && (
+        <section className="px-5 md:px-8 py-20 border-t border-cream/10">
+          <div className="max-w-6xl mx-auto">
+            <p className="section-label mb-2 text-center">From Our Kitchen</p>
+            <h2 className="font-serif font-bold text-3xl md:text-4xl text-cream text-center mb-12">A closer look</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
+              {gallery.map((g) => (
+                <Link
+                  key={g.clover_item_id}
+                  href="/menu"
+                  className="menu-card relative aspect-square rounded-2xl overflow-hidden bg-cream/[0.04] border border-cream/10 hover:border-gold/40 block"
+                >
+                  {g.video_url ? (
+                    <video src={g.video_url} autoPlay muted loop playsInline className="menu-media absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <Image src={g.image_url} alt={displayName(g.name)} fill className="menu-media object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/80 to-transparent p-3">
+                    <p className="text-cream text-xs font-semibold truncate">{displayName(g.name)}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* FEATURED IN THE NEWS (placeholder) */}
       <section className="px-5 md:px-8 py-16">
