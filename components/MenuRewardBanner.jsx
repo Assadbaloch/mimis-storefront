@@ -2,8 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useCart } from '@/lib/cart';
-
-const KEY = 'mimis-active-redemption-code';
+import { REDEMPTION_CODE_KEY } from '@/lib/loyalty';
 
 // Surfaces a customer's already-redeemed reward code while they browse the
 // menu -- same code shown on /rewards (RewardsLookup.jsx) and auto-applied at
@@ -16,11 +15,11 @@ export default function MenuRewardBanner() {
   const [code, setCode] = useState(null);
 
   useEffect(() => {
-    setCode(window.localStorage.getItem(KEY) || null);
+    setCode(window.localStorage.getItem(REDEMPTION_CODE_KEY) || null);
   }, []);
 
   function remove() {
-    window.localStorage.removeItem(KEY);
+    window.localStorage.removeItem(REDEMPTION_CODE_KEY);
     setCode(null);
   }
 
@@ -30,7 +29,7 @@ export default function MenuRewardBanner() {
     <div className="max-w-6xl mx-auto px-5 md:px-8 -mt-2 mb-6">
       <div className="flex items-center justify-between gap-3 rounded-xl border border-gold/30 bg-gold/[0.06] px-4 py-3">
         <p className="text-cream text-sm min-w-0">
-          🎁 Reward code <span className="text-gold font-serif tracking-wide">{code}</span> ready &mdash; applies automatically at checkout.
+          🎁 Reward code <span className="text-gold font-serif tracking-wide">{code}</span> pending &mdash; applies automatically at checkout.
         </p>
         <div className="flex items-center gap-3 shrink-0">
           {count > 0 && (

@@ -2,6 +2,14 @@
 import { useEffect, useState } from 'react';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import TrendingBanner from '@/components/TrendingBanner';
+import {
+  REDEMPTION_CODE_KEY,
+  MEMBER_PHONE_KEY,
+  TIER_LABEL,
+  TIER_CLASS,
+  normalizePhone,
+  formatPhoneInput,
+} from '@/lib/loyalty';
 
 // Phone-based, no-password member rewards lookup. Mirrors the same
 // phone-as-identity pattern already used by mimis.customers everywhere else
@@ -11,24 +19,9 @@ import TrendingBanner from '@/components/TrendingBanner';
 // existing owner dashboard portal already reads mimis.customers (RLS already
 // grants anon a blanket SELECT on this table -- "anon read customers portal").
 // Writes (new enrollment) go through the existing n8n loyalty-enroll webhook
-// via /api/enroll, never a direct anon write.
-const TIER_LABEL = { bronze: 'Bronze', silver: 'Silver', gold: 'Gold' };
-const TIER_CLASS = {
-  bronze: 'bg-cream/10 text-cream/80',
-  silver: 'bg-cream/20 text-cream',
-  gold: 'bg-gold/20 text-gold',
-};
-
-function normalizePhone(value) {
-  return (value || '').replace(/\D/g, '').slice(-10);
-}
-
-function formatPhoneInput(value) {
-  const digits = normalizePhone(value);
-  if (digits.length < 4) return digits;
-  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
+// via /api/enroll, never a direct anon write. Phone/tier helpers and the two
+// localStorage keys now live in lib/loyalty.js, shared with
+// MemberRewardsPanel.jsx (the cart/checkout inline version of this same flow).
 
 export default function RewardsLookup() {
   const [view, setView] = useState('checking'); // checking | phone_entry | loading | dashboard | enroll_offer | enrolling | error
@@ -48,7 +41,7 @@ export default function RewardsLookup() {
   const [copiedCode, setCopiedCode] = useState('');
 
   useEffect(() => {
-    const saved = window.localStorage.getItem('mimis-member-phone');
+    const saved = window.localStorage.getItem(MEMBER_PHONE_KEY);
     if (saved) {
       setPhoneInput(formatPhoneInput(saved));
       lookup(saved);
@@ -85,7 +78,7 @@ export default function RewardsLookup() {
       return;
     }
 
-    window.localStorage.setItem('mimis-member-phone', phone);
+    window.localStorage.setItem(MEMBER_PHONE_KEY, phone);
     await loadDashboard(customerRow);
   }
 
@@ -159,7 +152,7 @@ export default function RewardsLookup() {
         { code: data.code, reward_name: data.reward_name, reward_value: data.reward_value, status: 'issued', expires_at: data.expires_at },
         ...prev,
       ]);
-      window.localStorage.setItem('mimis-active-redemption-code', data.code);
+      window.localStorage.setItem(REDEMPTION_CODE_KEY, data.code);
     } catch (err) {
       console.error('redeem failed', err);
       setRedeemError('Could not reach the rewards system. Please try again shortly.');
@@ -200,7 +193,7 @@ export default function RewardsLookup() {
       }
       setWelcomeBonus(data.is_new ? data.points_balance : null);
       const phone = normalizePhone(phoneInput);
-      window.localStorage.setItem('mimis-member-phone', phone);
+      window.localStorage.setItem(MEMBER_PHONE_KEY, phone);
 
       const supabase = getSupabasePublicClient();
       const { data: customerRow } = await supabase
@@ -222,7 +215,7 @@ export default function RewardsLookup() {
   }
 
   function handleSignOut() {
-    window.localStorage.removeItem('mimis-member-phone');
+    window.localStorage.removeItem(MEMBER_PHONE_KEY);
     setCustomer(null);
     setPhoneInput('');
     setWelcomeBonus(null);
@@ -407,7 +400,7 @@ export default function RewardsLookup() {
 
         {activeRedemptions.length > 0 && (
           <div className="mt-8">
-            <p className="section-label mb-3">Your Active Codes</p>
+            <p className="section-label mb-3">Pending &mdash; Ready at Checkout</p>
             <div className="space-y-2">
               {activeRedemptions.map((red) => (
                 <div
@@ -430,7 +423,7 @@ export default function RewardsLookup() {
                 </div>
               ))}
             </div>
-            <p className="text-cream/35 text-xs mt-3">Enter a code at checkout to apply it to your order.</p>
+            <p className="text-cream/35 text-xs mt-3">Applies automatically at checkout &mdash; or pick it up on the cart/checkout page directly.</p>
           </div>
         )}
 

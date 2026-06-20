@@ -1,34 +1,35 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/lib/cart';
 import { formatPrice } from '@/lib/format';
+import { REDEMPTION_CODE_KEY } from '@/lib/loyalty';
+import MemberRewardsPanel from '@/components/MemberRewardsPanel';
 
 export default function CheckoutPage() {
   const { items, totalCents, clear } = useCart();
-  const router = useRouter();
   const [form, setForm] = useState({
     first_name: '', last_name: '', phone_number: '', email: '', notes: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [rewardCode, setRewardCode] = useState('');
+  const [rewardCode, setRewardCode] = useState(null);
   const [redirectNotice, setRedirectNotice] = useState('');
 
-  // Picked up from RewardsLookup.jsx, which sets this key right after a
-  // customer redeems points for a code on /rewards. Applied automatically so
-  // the customer doesn't have to copy/paste -- removable if they'd rather
-  // check out without it. The code is only actually validated server-side
-  // (against the phone number entered below) when the order is submitted.
-  useEffect(() => {
-    const saved = window.localStorage.getItem('mimis-active-redemption-code');
-    if (saved) setRewardCode(saved);
-  }, []);
+  // MemberRewardsPanel owns localStorage persistence for the active code --
+  // this just mirrors its current value so handleSubmit can send it, and so
+  // the success/failure copy below can reference it. Selecting, swapping, or
+  // removing a reward all flow through onCodeChange, applied automatically;
+  // no code to copy/paste.
+  function handleCodeChange(code) {
+    setRewardCode(code);
+  }
 
-  function removeRewardCode() {
-    window.localStorage.removeItem('mimis-active-redemption-code');
-    setRewardCode('');
+  // If the member identifies themselves to the rewards panel with a phone
+  // number and the order form's own phone field is still empty, save them
+  // re-typing it -- same person, same number, almost always.
+  function handlePhoneIdentified(phone) {
+    setForm((f) => (f.phone_number ? f : { ...f, phone_number: phone }));
   }
 
   if (items.length === 0) {
@@ -90,15 +91,15 @@ export default function CheckoutPage() {
 
       const discount = data.discount_cents || 0;
       if (rewardCode && discount > 0) {
-        // Code was valid for this phone number and got burned server-side --
-        // clear it locally too so it can't show up as "still active" again.
-        window.localStorage.removeItem('mimis-active-redemption-code');
+        // Valid for this phone number and applied server-side -- clear it so
+        // it can't show up as "still pending" on the next order.
+        window.localStorage.removeItem(REDEMPTION_CODE_KEY);
         setRedirectNotice(`Reward applied — ${formatPrice(discount)} off! Redirecting to payment…`);
       } else if (rewardCode && discount === 0) {
         // Code didn't match this phone number (or is expired/already used)
-        // -- left in storage so they can retry after fixing the phone, but
-        // the order still goes through at full price rather than blocking.
-        setRedirectNotice('That reward code didn’t apply (check the phone number matches your rewards account) — continuing at full price…');
+        // -- left pending so they can retry after fixing the phone, but the
+        // order still goes through at full price rather than blocking.
+        setRedirectNotice('That reward didn’t apply (check the phone number matches your rewards account) — continuing at full price…');
       }
 
       const delay = rewardCode ? 1400 : 0;
@@ -116,7 +117,7 @@ export default function CheckoutPage() {
       <h1 className="font-serif font-bold text-3xl md:text-4xl text-cream mb-2">Checkout</h1>
       <p className="text-cream/55 mb-8">Pickup from Madison Heights &mdash; 28931 John R Rd.</p>
 
-      <div className="rounded-2xl border border-cream/10 bg-cream/[0.03] p-5 mb-8">
+      <div className="rounded-2xl border border-cream/10 bg-cream/[0.03] p-5 mb-6">
         {items.map((i) => (
           <div key={i._key} className="flex justify-between text-sm py-1.5">
             <span className="text-cream/75">{i.quantity}&times; {i.name}</span>
@@ -129,19 +130,9 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {rewardCode && (
-        <div className="flex items-center justify-between rounded-xl border border-gold/30 bg-gold/[0.06] px-4 py-3 mb-6 gap-3">
-          <div className="min-w-0">
-            <p className="text-cream text-sm font-semibold">
-              Reward code <span className="text-gold font-serif tracking-wide">{rewardCode}</span> applied
-            </p>
-            <p className="text-cream/45 text-xs mt-0.5">Discount is calculated at payment if valid for this phone number.</p>
-          </div>
-          <button type="button" onClick={removeRewardCode} className="text-cream/40 hover:text-cream/70 text-xs shrink-0">
-            Remove
-          </button>
-        </div>
-      )}
+      <div className="mb-8">
+        <MemberRewardsPanel onCodeChange={handleCodeChange} onPhoneIdentified={handlePhoneIdentified} />
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
@@ -153,7 +144,7 @@ export default function CheckoutPage() {
         <textarea placeholder="Order notes (optional)" value={form.notes} onChange={update('notes')} className="input w-full" rows={3} />
         {rewardCode && (
           <p className="text-cream/40 text-xs">
-            Tip: use the same phone number you used to redeem <span className="text-gold">{rewardCode}</span> on the Rewards page.
+            Reward <span className="text-gold">{rewardCode}</span> will apply if this phone number matches your rewards account.
           </p>
         )}
 

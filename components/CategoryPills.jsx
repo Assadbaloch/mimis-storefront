@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 // more, scroll-snap + mouse-drag make it feel swipeable rather than just
 // "technically scrollable," and the active pill auto-centers into view both
 // on tap and as the page's own scroll-spy advances `active` while scrolling.
-export default function CategoryPills({ categories, active, onSelect }) {
+export default function CategoryPills({ categories, active, onSelect, searchSlot = null, hidePills = false }) {
   const scrollRef = useRef(null);
   const pillRefs = useRef({});
   const dragRef = useRef({ down: false, startX: 0, startScroll: 0, moved: false });
@@ -59,6 +59,8 @@ export default function CategoryPills({ categories, active, onSelect }) {
 
   return (
     <div className="sticky top-20 z-40 bg-ink/95 backdrop-blur-md border-b border-cream/10 -mx-5 px-5 md:-mx-8 md:px-8">
+      {searchSlot && <div className="max-w-6xl mx-auto pt-3">{searchSlot}</div>}
+      {hidePills ? <div className="h-2" /> : (
       <div className="relative max-w-6xl mx-auto">
         {showLeftFade && (
           <>
@@ -112,6 +114,7 @@ export default function CategoryPills({ categories, active, onSelect }) {
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 }
