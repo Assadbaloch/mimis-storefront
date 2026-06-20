@@ -1,14 +1,17 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
+import Link from 'next/link';
+import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { formatPrice, displayName } from '@/lib/format';
 import { useCart } from '@/lib/cart';
+import Gallery from '@/components/Gallery';
 
 export default function ProductModal({ item, onClose }) {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [added, setAdded] = useState(false);
+  const [media, setMedia] = useState(item.media || null);
   const name = displayName(item.name);
   const description = item.description_override || null;
 
@@ -23,6 +26,25 @@ export default function ProductModal({ item, onClose }) {
       window.removeEventListener('keydown', handleKey);
     };
   }, [onClose]);
+
+  // Gallery rows aren't part of the grid's lean menu_items query (kept fast
+  // on purpose), so fetch them lazily the moment a customer actually opens
+  // a product -- only paid for when someone looks.
+  useEffect(() => {
+    if (item.media || !item.id) return;
+    let cancelled = false;
+    getSupabasePublicClient()
+      .from('menu_item_media')
+      .select('media_type, url, sort_order')
+      .eq('item_id', item.id)
+      .order('sort_order', { ascending: true })
+      .then(({ data }) => {
+        if (!cancelled && data) setMedia(data);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [item.id, item.media]);
 
   function handleAdd() {
     addItem({
@@ -53,36 +75,20 @@ export default function ProductModal({ item, onClose }) {
         <button
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-ink/80 text-cream flex items-center justify-center hover:bg-ink transition-colors"
+          className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-ink/80 text-cream flex items-center justify-center hover:bg-ink transition-colors"
         >
           ✕
         </button>
 
-        <div className="relative aspect-[4/3] bg-gradient-to-br from-cream/10 to-black/40">
-          {item.video_url ? (
-            <video
-              src={item.video_url}
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : item.image_url ? (
-            <Image src={item.image_url} alt={name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 512px" priority />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="font-serif italic text-gold/30 text-4xl">Mimi&rsquo;s</span>
-            </div>
-          )}
-          {item.badge_text && (
-            <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wide text-gold border border-gold/60 rounded-full px-2.5 py-1 bg-ink/70">
-              {item.badge_text}
-            </span>
-          )}
-        </div>
+        <Gallery
+          media={media}
+          fallbackImage={item.image_url}
+          fallbackVideo={item.video_url}
+          name={name}
+          badgeText={item.badge_text}
+        />
 
-        <div className="p-5 md:p-6">
+        <div className="px-5 md:px-6 pb-5 md:pb-6 pt-1">
           <div className="flex items-start justify-between gap-3">
             <h2 className="font-serif font-bold text-2xl text-cream leading-snug">{name}</h2>
             <span className="text-gold font-serif font-semibold text-xl whitespace-nowrap">{formatPrice(item.price_cents)}</span>
@@ -93,6 +99,15 @@ export default function ProductModal({ item, onClose }) {
           ) : (
             <p className="text-cream/35 text-sm leading-relaxed mt-3 italic">Hand-prepared fresh to order.</p>
           )}
+
+          <Link
+            href={`/menu/${item.clover_item_id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1.5 text-gold/80 hover:text-gold text-xs font-bold uppercase tracking-wide mt-3 transition-colors"
+          >
+            View full details
+            <span aria-hidden="true">→</span>
+          </Link>
 
           <label className="block mt-5">
             <span className="text-cream/50 text-xs uppercase tracking-wide font-bold">Special instructions (optional)</span>

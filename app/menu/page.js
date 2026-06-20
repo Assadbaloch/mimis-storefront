@@ -10,7 +10,7 @@ async function getMenu() {
   const supabase = getSupabasePublicClient();
   const { data, error } = await supabase
     .from('menu_items')
-    .select('clover_item_id, name, category, price_cents, image_url, video_url, badge_text, description_override, sort_order')
+    .select('id, clover_item_id, name, category, price_cents, image_url, video_url, badge_text, description_override, sort_order')
     .eq('available', true)
     .gt('price_cents', 0)
     .order('sort_order', { ascending: true });

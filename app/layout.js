@@ -2,6 +2,7 @@ import { Fraunces } from 'next/font/google';
 import './globals.css';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
+import MobileTabBar from '@/components/MobileTabBar';
 import PwaRegister from '@/components/PwaRegister';
 import { CartProvider } from '@/lib/cart';
 
@@ -39,8 +40,9 @@ export default function RootLayout({ children }) {
         <PwaRegister />
         <CartProvider>
           <SiteHeader />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 pb-20 md:pb-0">{children}</main>
           <SiteFooter />
+          <MobileTabBar />
         </CartProvider>
       </body>
     </html>
