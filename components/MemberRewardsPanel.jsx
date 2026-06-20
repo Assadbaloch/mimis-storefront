@@ -334,8 +334,9 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
                         {redeeming ? 'Redeeming…' : `Redeem · ${r.points_required} pts`}
                       </button>
                     ) : (
-                      <span className="text-xs font-bold uppercase tracking-wide shrink-0 ml-3 text-cream/35">
-                        {r.points_required} pts
+                      <span className="text-xs font-semibold shrink-0 ml-3 text-cream/35 text-right">
+                        Earn {r.points_required - customer.points_balance} more pt
+                        {r.points_required - customer.points_balance === 1 ? '' : 's'}
                       </span>
                     )}
                   </div>
@@ -349,10 +350,4 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
           )}
 
           {justRedeemedCode && (
-            <p className="text-gold text-xs mt-3">Applied automatically — no code to copy. ✓</p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+            <p className="text-gold text-xs
