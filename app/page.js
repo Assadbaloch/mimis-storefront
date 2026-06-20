@@ -6,6 +6,18 @@ import MenuItemCard from '@/components/MenuItemCard';
 
 export const revalidate = 60;
 
+// Generic decorative stock photography (CC0 / public domain, no attribution required)
+// for ambiance/design only — never used for product cards, the product modal, or the
+// "From Our Kitchen" gallery, which are reserved for real owner-uploaded photos/videos.
+const STOCK = {
+  heroFallback: 'https://igchqqyassrfpsliyjec.supabase.co/storage/v1/object/public/restaurant-media/site-design/hero-pizza.jpg',
+  halalBackdrop: 'https://igchqqyassrfpsliyjec.supabase.co/storage/v1/object/public/restaurant-media/site-design/pizza-overhead.jpg',
+  doughPrep: 'https://igchqqyassrfpsliyjec.supabase.co/storage/v1/object/public/restaurant-media/site-design/dough-prep.jpg',
+  cheeseCloseup: 'https://igchqqyassrfpsliyjec.supabase.co/storage/v1/object/public/restaurant-media/site-design/cheese-closeup.jpg',
+  freshVeg: 'https://igchqqyassrfpsliyjec.supabase.co/storage/v1/object/public/restaurant-media/site-design/fresh-veg.jpg',
+  cheeseburger: 'https://igchqqyassrfpsliyjec.supabase.co/storage/v1/object/public/restaurant-media/site-design/cheeseburger.jpg',
+};
+
 async function getFeaturedItems() {
   const supabase = getSupabasePublicClient();
   const { data, error } = await supabase
@@ -75,7 +87,17 @@ export default async function HomePage() {
             <div className="absolute inset-0 bg-gradient-to-b from-ink/60 via-ink/75 to-ink" />
           </div>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-b from-brick/15 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute inset-0">
+            <Image
+              src={STOCK.heroFallback}
+              alt=""
+              fill
+              priority
+              className="object-cover opacity-25 blur-[1px] scale-105"
+              sizes="100vw"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-ink/60 via-ink/75 to-ink" />
+          </div>
         )}
         <div className="max-w-6xl mx-auto relative text-center">
           <p className="section-label mb-5 animate-fade-in">Madison Heights &amp; Warren, Michigan</p>
@@ -115,8 +137,12 @@ export default async function HomePage() {
       )}
 
       {/* HALAL TRUST SECTION */}
-      <section className="px-5 md:px-8 py-20 bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-950 border-y border-emerald-800/40">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-10 text-center md:text-left">
+      <section className="relative px-5 md:px-8 py-20 overflow-hidden border-y border-emerald-800/40">
+        <div className="absolute inset-0">
+          <Image src={STOCK.halalBackdrop} alt="" fill className="object-cover opacity-20" sizes="100vw" />
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-950 via-emerald-900/95 to-emerald-950" />
+        </div>
+        <div className="max-w-5xl mx-auto relative flex flex-col md:flex-row items-center gap-10 text-center md:text-left">
           <div className="w-24 h-24 shrink-0 rounded-full border-2 border-gold flex items-center justify-center bg-emerald-950">
             <span className="text-gold text-3xl">&#9670;</span>
           </div>
@@ -127,6 +153,32 @@ export default async function HomePage() {
               Every kitchen sources halal-certified meat and prepares it with dedicated equipment
               and procedures — no shortcuts, no substitutions.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* OUR CRAFT — decorative ambiance imagery (stock, CC0), not tied to specific menu items */}
+      <section className="px-5 md:px-8 py-20 border-t border-cream/10">
+        <div className="max-w-6xl mx-auto">
+          <p className="section-label mb-2 text-center">How We Do It</p>
+          <h2 className="font-serif font-bold text-3xl md:text-4xl text-cream text-center mb-12">Made fresh, the right way</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
+            {[
+              { src: STOCK.doughPrep, caption: 'Hand-stretched dough, daily' },
+              { src: STOCK.cheeseCloseup, caption: 'Melted to perfection' },
+              { src: STOCK.freshVeg, caption: 'Fresh-cut ingredients' },
+              { src: STOCK.cheeseburger, caption: 'Smash burgers, done right' },
+            ].map((tile) => (
+              <div
+                key={tile.caption}
+                className="menu-card relative aspect-square rounded-2xl overflow-hidden bg-cream/[0.04] border border-cream/10"
+              >
+                <Image src={tile.src} alt={tile.caption} fill className="menu-media object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/80 to-transparent p-3">
+                  <p className="text-cream text-xs font-semibold">{tile.caption}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
