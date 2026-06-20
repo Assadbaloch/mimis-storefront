@@ -7,12 +7,14 @@ import { formatPrice, displayName } from '@/lib/format';
 export default function AdminItemEditor({ item }) {
   const supabase = getSupabasePublicClient();
   const fileInputRef = useRef(null);
+  const videoInputRef = useRef(null);
   const [fields, setFields] = useState({
     description_override: item.description_override || '',
     featured: item.featured,
     badge_text: item.badge_text || '',
     sort_order: item.sort_order ?? 0,
     image_url: item.image_url || '',
+    video_url: item.video_url || '',
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -34,6 +36,7 @@ export default function AdminItemEditor({ item }) {
         badge_text: fields.badge_text || null,
         sort_order: Number(fields.sort_order) || 0,
         image_url: fields.image_url || null,
+        video_url: fields.video_url || null,
       })
       .eq('id', item.id);
 
@@ -70,21 +73,63 @@ export default function AdminItemEditor({ item }) {
     setUploading(false);
   }
 
+  async function handleVideoChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError('');
+
+    const ext = file.name.split('.').pop();
+    const path = `${item.clover_item_id}-video-${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('mimis-menu-images')
+      .upload(path, file, { upsert: true, cacheControl: '3600' });
+
+    if (uploadError) {
+      setError(uploadError.message);
+      setUploading(false);
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage.from('mimis-menu-images').getPublicUrl(path);
+    set('video_url', publicUrlData.publicUrl);
+    setUploading(false);
+  }
+
+  function handleRemoveVideo() {
+    set('video_url', '');
+  }
+
   return (
     <div className="rounded-2xl border border-cream/10 bg-cream/[0.03] p-4 flex gap-4">
       <div className="relative w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-black/30">
-        {fields.image_url ? (
+        {fields.video_url ? (
+          <video src={fields.video_url} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+        ) : fields.image_url ? (
           <Image src={fields.image_url} alt={item.name} fill className="object-cover" sizes="96px" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-cream/25 text-[10px] text-center px-1">No photo</div>
         )}
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="absolute bottom-0 inset-x-0 bg-ink/80 text-gold text-[10px] font-bold uppercase tracking-wide py-1"
-        >
-          {uploading ? '…' : 'Edit Photo'}
-        </button>
+        {fields.video_url && (
+          <span className="absolute top-1 right-1 text-[9px] bg-ink/80 text-gold rounded px-1">VIDEO</span>
+        )}
+        <div className="absolute bottom-0 inset-x-0 flex divide-x divide-cream/10">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1 bg-ink/80 text-gold text-[9px] font-bold uppercase tracking-wide py-1"
+          >
+            {uploading ? '…' : 'Photo'}
+          </button>
+          <button
+            onClick={() => (fields.video_url ? handleRemoveVideo() : videoInputRef.current?.click())}
+            className="flex-1 bg-ink/80 text-gold text-[9px] font-bold uppercase tracking-wide py-1"
+          >
+            {uploading ? '…' : fields.video_url ? 'Remove' : 'Video'}
+          </button>
+        </div>
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+        <input ref={videoInputRef} type="file" accept="video/mp4,video/webm" className="hidden" onChange={handleVideoChange} />
       </div>
 
       <div className="flex-1 min-w-0">

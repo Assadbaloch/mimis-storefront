@@ -8,7 +8,7 @@ async function getFeaturedItems() {
   const supabase = getSupabasePublicClient();
   const { data, error } = await supabase
     .from('menu_items')
-    .select('clover_item_id, name, price_cents, image_url, badge_text, description_override')
+    .select('clover_item_id, name, price_cents, image_url, video_url, badge_text, description_override')
     .eq('available', true)
     .eq('featured', true)
     .order('sort_order', { ascending: true })

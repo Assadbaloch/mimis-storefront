@@ -27,7 +27,16 @@ export default function MenuItemCard({ item, large = false }) {
   return (
     <div className="group rounded-2xl overflow-hidden bg-cream/[0.04] border border-cream/10 hover:border-gold/40 transition-colors flex flex-col">
       <div className={`relative ${large ? 'aspect-[4/3]' : 'aspect-square'} bg-gradient-to-br from-cream/10 to-black/40`}>
-        {item.image_url ? (
+        {item.video_url ? (
+          <video
+            src={item.video_url}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : item.image_url ? (
           <Image src={item.image_url} alt={name} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
