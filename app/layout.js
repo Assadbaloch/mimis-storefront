@@ -5,6 +5,7 @@ import SiteFooter from '@/components/SiteFooter';
 import MobileTabBar from '@/components/MobileTabBar';
 import PwaRegister from '@/components/PwaRegister';
 import JoinNotifyBanner from '@/components/JoinNotifyBanner';
+import InstallAppBanner from '@/components/InstallAppBanner';
 import { CartProvider } from '@/lib/cart';
 
 const fraunces = Fraunces({
@@ -45,6 +46,7 @@ export default function RootLayout({ children }) {
           <SiteFooter />
           <MobileTabBar />
           <JoinNotifyBanner />
+          <InstallAppBanner />
         </CartProvider>
       </body>
     </html>

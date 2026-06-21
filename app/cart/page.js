@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/lib/cart';
 import { formatPrice } from '@/lib/format';
@@ -6,6 +7,11 @@ import MemberRewardsPanel from '@/components/MemberRewardsPanel';
 
 export default function CartPage() {
   const { items, totalCents, updateQuantity, removeItem } = useCart();
+  // Mirrors MemberRewardsPanel's selected-reward value so the cart can show
+  // a real subtotal/discount/total-due breakdown right where the reward is
+  // chosen, instead of only revealing the math after checkout is submitted.
+  const [discountCents, setDiscountCents] = useState(0);
+  const dueCents = Math.max(totalCents - discountCents, 0);
 
   if (items.length === 0) {
     return (
@@ -50,12 +56,26 @@ export default function CartPage() {
 
       <div className="flex items-center justify-between mt-8 pt-4">
         <span className="text-cream/70 text-lg">Subtotal</span>
-        <span className="text-gold font-serif font-semibold text-2xl">{formatPrice(totalCents)}</span>
+        <span className={`font-serif font-semibold text-2xl ${discountCents > 0 ? 'text-cream/60 line-through' : 'text-gold'}`}>
+          {formatPrice(totalCents)}
+        </span>
       </div>
+      {discountCents > 0 && (
+        <>
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-gold text-sm">Reward discount</span>
+            <span className="text-gold text-sm">&minus;{formatPrice(discountCents)}</span>
+          </div>
+          <div className="flex items-center justify-between pt-2 mt-1 border-t border-cream/10">
+            <span className="text-cream/70 text-lg">Total due</span>
+            <span className="text-gold font-serif font-semibold text-2xl">{formatPrice(dueCents)}</span>
+          </div>
+        </>
+      )}
       <p className="text-cream/40 text-xs mt-1">Tax and any applicable fees are calculated at checkout.</p>
 
       <div className="mt-8">
-        <MemberRewardsPanel />
+        <MemberRewardsPanel onDiscountChange={setDiscountCents} />
       </div>
 
       {/* Sticky checkout bar -- previously the only CTA was a button below the
@@ -65,8 +85,13 @@ export default function CartPage() {
       <div className="fixed inset-x-0 bottom-16 md:bottom-0 z-30 bg-ink/95 backdrop-blur-md border-t border-cream/10">
         <div className="max-w-2xl mx-auto px-5 py-3 flex items-center justify-between gap-4">
           <div>
-            <p className="text-cream/45 text-[11px] uppercase tracking-wide font-bold">Subtotal</p>
-            <p className="text-gold font-serif font-semibold text-lg">{formatPrice(totalCents)}</p>
+            <p className="text-cream/45 text-[11px] uppercase tracking-wide font-bold">
+              {discountCents > 0 ? 'Total due' : 'Subtotal'}
+            </p>
+            <p className="text-gold font-serif font-semibold text-lg">{formatPrice(dueCents)}</p>
+            {discountCents > 0 && (
+              <p className="text-gold/70 text-[11px]">Reward applied &minus;{formatPrice(discountCents)}</p>
+            )}
           </div>
           <Link href="/checkout" className="btn-primary !flex shrink-0">
             Continue to Checkout

@@ -16,9 +16,16 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [rewardCode, setRewardCode] = useState(null);
+  const [discountCents, setDiscountCents] = useState(0);
   const [redirectNotice, setRedirectNotice] = useState('');
   const [checkoutResult, setCheckoutResult] = useState(null);
   const [redirecting, setRedirecting] = useState(false);
+  // Client-side preview only -- the server (Online Order Intake workflow)
+  // independently re-validates the redemption code against this same
+  // phone number and is the actual source of truth for discount_cents,
+  // shown on the checkoutResult screen below. This just keeps the
+  // pre-submit total from looking wrong while a reward is selected.
+  const dueCents = Math.max(totalCents - discountCents, 0);
 
   // MemberRewardsPanel owns localStorage persistence for the active code --
   // this just mirrors its current value so handleSubmit can send it, and so
@@ -223,12 +230,30 @@ export default function CheckoutPage() {
         ))}
         <div className="flex justify-between pt-3 mt-2 border-t border-cream/10">
           <span className="text-cream font-semibold">Subtotal</span>
-          <span className="text-gold font-serif font-semibold text-lg">{formatPrice(totalCents)}</span>
+          <span className={`font-serif font-semibold text-lg ${discountCents > 0 ? 'text-cream/60 line-through' : 'text-gold'}`}>
+            {formatPrice(totalCents)}
+          </span>
         </div>
+        {discountCents > 0 && (
+          <>
+            <div className="flex justify-between text-sm py-1">
+              <span className="text-gold">Reward discount</span>
+              <span className="text-gold">&minus;{formatPrice(discountCents)}</span>
+            </div>
+            <div className="flex justify-between pt-2 mt-1 border-t border-cream/10">
+              <span className="text-cream font-semibold">Total due</span>
+              <span className="text-gold font-serif font-semibold text-lg">{formatPrice(dueCents)}</span>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="mb-8">
-        <MemberRewardsPanel onCodeChange={handleCodeChange} onPhoneIdentified={handlePhoneIdentified} />
+        <MemberRewardsPanel
+          onCodeChange={handleCodeChange}
+          onPhoneIdentified={handlePhoneIdentified}
+          onDiscountChange={setDiscountCents}
+        />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -254,7 +279,10 @@ export default function CheckoutPage() {
         <textarea placeholder="Order notes (optional)" value={form.notes} onChange={update('notes')} className="input w-full" rows={3} />
         {rewardCode && (
           <p className="text-cream/40 text-xs">
-            Reward <span className="text-gold">{rewardCode}</span> will apply if this phone number matches your rewards account.
+            Reward <span className="text-gold">{rewardCode}</span>{' '}
+            {discountCents > 0
+              ? `applies a ${formatPrice(discountCents)} discount if this phone number matches your rewards account.`
+              : 'will apply if this phone number matches your rewards account.'}
           </p>
         )}
 
@@ -262,7 +290,7 @@ export default function CheckoutPage() {
         {redirectNotice && <p className="text-gold text-sm">{redirectNotice}</p>}
 
         <button type="submit" disabled={submitting} className="btn-primary w-full justify-center !flex disabled:opacity-50">
-          {submitting ? 'Starting checkout…' : `Pay ${formatPrice(totalCents)} with Clover`}
+          {submitting ? 'Starting checkout…' : `Pay ${formatPrice(dueCents)} with Clover`}
         </button>
         <p className="text-cream/35 text-xs text-center">You&rsquo;ll be redirected to Clover&rsquo;s secure checkout to complete payment.</p>
       </form>

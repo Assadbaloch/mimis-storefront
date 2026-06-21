@@ -25,7 +25,7 @@ import {
 // `redemption_code` form field in sync; this component owns localStorage
 // persistence either way, so a plain <MemberRewardsPanel /> with no prop
 // (as used on /cart) still works standalone.
-export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIdentified = () => {} }) {
+export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIdentified = () => {}, onDiscountChange = () => {} }) {
   const [phase, setPhase] = useState('init'); // init | phone_entry | checking | join | member | error
   const [phoneInput, setPhoneInput] = useState('');
   const [customer, setCustomer] = useState(null);
@@ -66,6 +66,24 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
     window.localStorage.removeItem(REDEMPTION_CODE_KEY);
     onCodeChange(null);
   }
+
+  // Reports the dollar value (in cents) of whichever reward is currently
+  // selected, so the host page (cart/checkout) can show a real "subtotal
+  // minus reward, equals total due" breakdown instead of just a flat
+  // subtotal -- this is what's wired up to selectedCode/pendingCodes rather
+  // than scattered onDiscountChange calls everywhere selectedCode changes,
+  // so it also recovers correctly once pendingCodes loads after a code was
+  // restored from localStorage on mount (selected before its reward_value
+  // was known).
+  useEffect(() => {
+    if (!selectedCode) {
+      onDiscountChange(0);
+      return;
+    }
+    const match = pendingCodes.find((pc) => pc.code === selectedCode);
+    onDiscountChange(match ? Math.round((match.reward_value || 0) * 100) : 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCode, pendingCodes]);
 
   async function lookup(rawPhone) {
     const phone = normalizePhone(rawPhone);
