@@ -4,6 +4,7 @@ import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import MobileTabBar from '@/components/MobileTabBar';
 import PwaRegister from '@/components/PwaRegister';
+import JoinNotifyBanner from '@/components/JoinNotifyBanner';
 import { CartProvider } from '@/lib/cart';
 
 const fraunces = Fraunces({
@@ -43,6 +44,7 @@ export default function RootLayout({ children }) {
           <main className="flex-1 pb-20 md:pb-0">{children}</main>
           <SiteFooter />
           <MobileTabBar />
+          <JoinNotifyBanner />
         </CartProvider>
       </body>
     </html>

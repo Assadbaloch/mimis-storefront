@@ -23,6 +23,18 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: 'A valid 10-digit phone number is required' }, { status: 400 });
   }
 
+  // Name is mandatory for every conscious sign-up surface (rewards lookup,
+  // join-and-notify banner) -- this is the real enforcement point: plain,
+  // testable, version-controlled code, not a constraint on mimis.customers
+  // itself. It can't live as a table CHECK constraint because it's a
+  // path-specific rule, not a universal one: the same table also gets rows
+  // from the n8n Loyalty Engine when a POS phone order comes in and Clover
+  // has no name on file for that number, and that path is legitimate.
+  const fullName = (body?.full_name || '').trim();
+  if (!fullName) {
+    return NextResponse.json({ success: false, error: 'Full name is required' }, { status: 400 });
+  }
+
   const secret = process.env.MIMIS_WEBHOOK_SECRET;
   if (!secret) {
     console.error('Missing MIMIS_WEBHOOK_SECRET env var');
@@ -40,7 +52,7 @@ export async function POST(request) {
         'X-Mimis-Webhook-Secret': secret,
       },
       body: JSON.stringify({
-        full_name: body.full_name || '',
+        full_name: fullName,
         email: body.email || '',
         phone,
         preferred_location: body.location || 'Madison Heights',

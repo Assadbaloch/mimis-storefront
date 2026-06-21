@@ -17,6 +17,8 @@ export default function CheckoutPage() {
   const [error, setError] = useState('');
   const [rewardCode, setRewardCode] = useState(null);
   const [redirectNotice, setRedirectNotice] = useState('');
+  const [checkoutResult, setCheckoutResult] = useState(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   // MemberRewardsPanel owns localStorage persistence for the active code --
   // this just mirrors its current value so handleSubmit can send it, and so
@@ -32,6 +34,48 @@ export default function CheckoutPage() {
   // re-typing it -- same person, same number, almost always.
   function handlePhoneIdentified(phone) {
     setForm((f) => (f.phone_number ? f : { ...f, phone_number: phone }));
+  }
+
+  // Order is already created server-side (pending_payment) and the cart is
+  // already cleared by this point -- show the real math before sending them
+  // to Clover instead of falling through to the empty-cart screen below.
+  if (checkoutResult) {
+    const { order_number, order_total_cents, discount_cents, total_due_cents } = checkoutResult;
+    return (
+      <div className="max-w-md mx-auto px-5 py-16">
+        <h1 className="font-serif font-bold text-2xl text-cream mb-1">Order #{order_number}</h1>
+        <p className="text-cream/55 mb-6 text-sm">Review your total, then continue to Clover&rsquo;s secure checkout to pay.</p>
+
+        <div className="rounded-2xl border border-cream/10 bg-cream/[0.03] p-5 mb-6">
+          <div className="flex justify-between text-sm py-1">
+            <span className="text-cream/75">Subtotal</span>
+            <span className="text-cream/75">{formatPrice(order_total_cents)}</span>
+          </div>
+          {discount_cents > 0 && (
+            <div className="flex justify-between text-sm py-1">
+              <span className="text-gold">Reward discount</span>
+              <span className="text-gold">&minus;{formatPrice(discount_cents)}</span>
+            </div>
+          )}
+          <div className="flex justify-between pt-3 mt-2 border-t border-cream/10">
+            <span className="text-cream font-semibold">Total due</span>
+            <span className="text-gold font-serif font-semibold text-lg">{formatPrice(total_due_cents)}</span>
+          </div>
+        </div>
+
+        {redirectNotice && <p className="text-cream/55 text-sm mb-4">{redirectNotice}</p>}
+
+        <button
+          type="button"
+          onClick={handleContinueToPayment}
+          disabled={redirecting}
+          className="btn-primary w-full justify-center !flex disabled:opacity-50"
+        >
+          {redirecting ? 'Redirecting…' : `Continue to Secure Payment — ${formatPrice(total_due_cents)}`}
+        </button>
+        <p className="text-cream/35 text-xs text-center mt-3">You&rsquo;ll be redirected to Clover&rsquo;s secure checkout to complete payment.</p>
+      </div>
+    );
   }
 
   if (items.length === 0) {
@@ -114,7 +158,6 @@ export default function CheckoutPage() {
         // Valid for this phone number and applied server-side -- clear it so
         // it can't show up as "still pending" on the next order.
         window.localStorage.removeItem(REDEMPTION_CODE_KEY);
-        setRedirectNotice(`Reward applied — ${formatPrice(discount)} off! Redirecting to payment…`);
       } else if (rewardCode && discount === 0) {
         // Code didn't match this phone number (or is expired/already used)
         // -- left pending so they can retry after fixing the phone, but the
@@ -122,14 +165,27 @@ export default function CheckoutPage() {
         setRedirectNotice('That reward didn’t apply (check the phone number matches your rewards account) — continuing at full price…');
       }
 
-      const delay = rewardCode ? 1400 : 0;
-      window.setTimeout(() => {
-        window.location.href = data.checkout_url;
-      }, delay);
+      // Show the real order math (subtotal, reward discount, total due) and
+      // let the customer hit "Continue" themselves, rather than silently
+      // redirecting to Clover on a timer -- that's what was hiding the
+      // discount math entirely on fast connections / short timers.
+      setCheckoutResult({
+        checkout_url: data.checkout_url,
+        order_number: data.order_number,
+        order_total_cents: data.order_total_cents ?? totalCents,
+        discount_cents: discount,
+        total_due_cents: data.total_due_cents ?? (data.order_total_cents ?? totalCents) - discount,
+      });
+      setSubmitting(false);
     } catch (err) {
       setError('Could not reach the order system. Please try again.');
       setSubmitting(false);
     }
+  }
+
+  function handleContinueToPayment() {
+    setRedirecting(true);
+    window.location.href = checkoutResult.checkout_url;
   }
 
   return (
