@@ -8,6 +8,8 @@ import { NextResponse } from 'next/server';
 //   POST /webhook/online-order-intake, header X-Mimis-Webhook-Secret,
 //   body { first_name, last_name, phone_number (required), email, order_type,
 //          location, notes, redemption_code (optional),
+//          delivery_address (optional, required when order_type is "delivery"):
+//            { address_line1, address_line2, city, state, postal_code, phone, contact_name },
 //          items: [{ name, price_cents, quantity, modifiers, special_instructions }] }
 //   -> { success, checkout_url, checkout_session_id, order_id, order_number,
 //        order_total_cents, discount_cents, total_due_cents }
@@ -29,6 +31,12 @@ export async function POST(request) {
   }
   if (!Array.isArray(body?.items) || body.items.length === 0) {
     return NextResponse.json({ success: false, error: 'items must be a non-empty array' }, { status: 400 });
+  }
+  if (body.order_type === 'delivery') {
+    const addr = body.delivery_address;
+    if (!addr?.address_line1 || !addr?.city || !addr?.state || !addr?.postal_code) {
+      return NextResponse.json({ success: false, error: 'delivery_address is required for delivery orders' }, { status: 400 });
+    }
   }
 
   const secret = process.env.MIMIS_WEBHOOK_SECRET;
@@ -56,6 +64,7 @@ export async function POST(request) {
         location: body.location || 'Madison Heights',
         notes: body.notes || '',
         redemption_code: body.redemption_code || '',
+        delivery_address: body.order_type === 'delivery' ? body.delivery_address : undefined,
         items: body.items,
       }),
     });

@@ -8,8 +8,10 @@ import MemberRewardsPanel from '@/components/MemberRewardsPanel';
 
 export default function CheckoutPage() {
   const { items, totalCents, clear } = useCart();
+  const [orderType, setOrderType] = useState('pickup');
   const [form, setForm] = useState({
     first_name: '', last_name: '', phone_number: '', email: '', notes: '',
+    address_line1: '', address_line2: '', city: '', state: '', postal_code: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -55,6 +57,23 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (orderType === 'delivery') {
+      if (!form.address_line1.trim() || !form.city.trim() || !form.state.trim() || !form.postal_code.trim()) {
+        setError('Please fill in your full delivery address.');
+        return;
+      }
+    }
+
+    const delivery_address = orderType === 'delivery' ? {
+      address_line1: form.address_line1.trim(),
+      ...(form.address_line2.trim() && { address_line2: form.address_line2.trim() }),
+      city: form.city.trim(),
+      state: form.state.trim(),
+      postal_code: form.postal_code.trim(),
+      phone: form.phone_number.trim(),
+      contact_name: `${form.first_name} ${form.last_name}`.trim(),
+    } : undefined;
+
     setSubmitting(true);
     try {
       const res = await fetch('/api/checkout', {
@@ -62,9 +81,10 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
-          order_type: 'pickup',
+          order_type: orderType,
           location: 'Madison Heights',
           redemption_code: rewardCode || undefined,
+          delivery_address,
           items: items.map((i) => ({
             name: i.name,
             price_cents: i.price_cents,
@@ -115,7 +135,28 @@ export default function CheckoutPage() {
   return (
     <div className="max-w-xl mx-auto px-5 py-16">
       <h1 className="font-serif font-bold text-3xl md:text-4xl text-cream mb-2">Checkout</h1>
-      <p className="text-cream/55 mb-8">Pickup from Madison Heights &mdash; 28931 John R Rd.</p>
+      <p className="text-cream/55 mb-6">
+        {orderType === 'delivery'
+          ? 'Delivered from our Madison Heights location.'
+          : 'Pickup from Madison Heights — 28931 John R Rd.'}
+      </p>
+
+      <div className="grid grid-cols-2 gap-2 mb-8">
+        <button
+          type="button"
+          onClick={() => setOrderType('pickup')}
+          className={`rounded-xl border py-3 text-sm font-semibold transition ${orderType === 'pickup' ? 'border-gold bg-gold/10 text-gold' : 'border-cream/10 text-cream/55'}`}
+        >
+          Pickup
+        </button>
+        <button
+          type="button"
+          onClick={() => setOrderType('delivery')}
+          className={`rounded-xl border py-3 text-sm font-semibold transition ${orderType === 'delivery' ? 'border-gold bg-gold/10 text-gold' : 'border-cream/10 text-cream/55'}`}
+        >
+          Delivery
+        </button>
+      </div>
 
       <div className="rounded-2xl border border-cream/10 bg-cream/[0.03] p-5 mb-6">
         {items.map((i) => (
@@ -141,6 +182,19 @@ export default function CheckoutPage() {
         </div>
         <input required type="tel" placeholder="Phone number*" value={form.phone_number} onChange={update('phone_number')} className="input w-full" />
         <input type="email" placeholder="Email (optional)" value={form.email} onChange={update('email')} className="input w-full" />
+
+        {orderType === 'delivery' && (
+          <div className="space-y-4">
+            <input required placeholder="Street address*" value={form.address_line1} onChange={update('address_line1')} className="input w-full" />
+            <input placeholder="Apt / suite (optional)" value={form.address_line2} onChange={update('address_line2')} className="input w-full" />
+            <div className="grid grid-cols-3 gap-4">
+              <input required placeholder="City*" value={form.city} onChange={update('city')} className="input col-span-1" />
+              <input required placeholder="State*" value={form.state} onChange={update('state')} className="input col-span-1" />
+              <input required placeholder="ZIP*" value={form.postal_code} onChange={update('postal_code')} className="input col-span-1" />
+            </div>
+          </div>
+        )}
+
         <textarea placeholder="Order notes (optional)" value={form.notes} onChange={update('notes')} className="input w-full" rows={3} />
         {rewardCode && (
           <p className="text-cream/40 text-xs">

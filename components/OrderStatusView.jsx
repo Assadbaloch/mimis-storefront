@@ -111,6 +111,39 @@ export default function OrderStatusView({ heading }) {
         </p>
       )}
 
+      {order.order_type === 'delivery' && order.delivery && (
+        <div className="rounded-2xl border border-cream/10 bg-cream/[0.03] p-5 mt-5">
+          <p className="section-label mb-3">Delivery</p>
+          <div className="flex justify-between text-sm py-1">
+            <span className="text-cream/55">Status</span>
+            <span className="text-cream/85 capitalize">{(order.delivery.status || '').replace(/_/g, ' ')}</span>
+          </div>
+          {order.delivery.courier_name && (
+            <div className="flex justify-between text-sm py-1">
+              <span className="text-cream/55">Courier</span>
+              <span className="text-cream/85">{order.delivery.courier_name}</span>
+            </div>
+          )}
+          {order.delivery.courier_phone && (
+            <div className="flex justify-between text-sm py-1">
+              <span className="text-cream/55">Courier phone</span>
+              <a href={`tel:${order.delivery.courier_phone}`} className="text-gold">{order.delivery.courier_phone}</a>
+            </div>
+          )}
+          {order.delivery.eta && (
+            <div className="flex justify-between text-sm py-1">
+              <span className="text-cream/55">ETA</span>
+              <span className="text-cream/85">{new Date(order.delivery.eta).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+            </div>
+          )}
+          {order.delivery.tracking_url && (
+            <a href={order.delivery.tracking_url} target="_blank" rel="noreferrer" className="btn-primary w-full justify-center !flex mt-3">
+              Track delivery
+            </a>
+          )}
+        </div>
+      )}
+
       {['new', 'in_progress'].includes(order.status) && (
         <NotificationOptIn orderId={orderId} />
       )}

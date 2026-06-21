@@ -350,4 +350,10 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
           )}
 
           {justRedeemedCode && (
-            <p className="text-gold text-xs
+            <p className="text-gold text-xs mt-3">Applied automatically — no code to copy. ✓</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
