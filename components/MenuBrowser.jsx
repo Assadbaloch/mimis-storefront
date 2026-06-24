@@ -11,10 +11,28 @@ export default function MenuBrowser({ groups }) {
   // trending banner ("direct the customer to the product itself"). Scrolls to
   // the right category and auto-opens that item's modal once on arrival.
   const targetItemId = searchParams.get('item');
+  // Deep-link target -- e.g. /menu?category=Burgers from the header's category
+  // dropdown/accordion. Scrolls straight to that category's section on arrival.
+  const targetCategory = searchParams.get('category');
   const [active, setActive] = useState(groups[0]?.key);
   const [query, setQuery] = useState('');
   const sectionRefs = useRef({});
-  const scrolledToTarget = useRef(false);
+  // Track the *last* item/category actually scrolled to (not just "have we
+  // ever scrolled") -- a one-shot boolean lock would only ever honor the
+  // first deep link of a visit and silently ignore every link clicked after
+  // it, which is exactly what looked like categories "doing nothing."
+  const lastScrolledItemId = useRef(null);
+  const lastScrolledCategory = useRef(null);
+
+  // requestAnimationFrame alone can fire before menu-item images finish
+  // loading and shift section heights, leaving the scroll short of the real
+  // target. Re-running once more shortly after corrects for that drift.
+  function scrollToGroup(key) {
+    setActive(key);
+    const run = () => sectionRefs.current[key]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    requestAnimationFrame(run);
+    setTimeout(run, 400);
+  }
 
   // Flat, cross-category filter -- search isn't scoped to whichever category
   // tab happens to be active, it searches the whole menu at once. Matches on
@@ -48,15 +66,20 @@ export default function MenuBrowser({ groups }) {
   }, [groups]);
 
   useEffect(() => {
-    if (!targetItemId || scrolledToTarget.current) return;
+    if (!targetItemId || lastScrolledItemId.current === targetItemId) return;
     const group = groups.find((g) => g.items.some((i) => i.clover_item_id === targetItemId));
     if (!group) return;
-    scrolledToTarget.current = true;
-    setActive(group.key);
-    requestAnimationFrame(() => {
-      sectionRefs.current[group.key]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    lastScrolledItemId.current = targetItemId;
+    scrollToGroup(group.key);
   }, [targetItemId, groups]);
+
+  useEffect(() => {
+    if (!targetCategory || lastScrolledCategory.current === targetCategory) return;
+    const group = groups.find((g) => g.key.toLowerCase() === targetCategory.toLowerCase());
+    if (!group) return;
+    lastScrolledCategory.current = targetCategory;
+    scrollToGroup(group.key);
+  }, [targetCategory, groups]);
 
   function handleSelect(key) {
     setActive(key);

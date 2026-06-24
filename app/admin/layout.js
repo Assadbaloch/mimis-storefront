@@ -1,7 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
+
+const ADMIN_NAV_LINKS = [
+  { href: '/admin/menu', label: 'Menu' },
+  { href: '/admin/settings', label: 'Storefront Settings' },
+];
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
@@ -58,13 +64,28 @@ export default function AdminLayout({ children }) {
 
   return (
     <div>
-      <div className="border-b border-cream/10 bg-black/30 px-5 md:px-8 py-3 flex items-center justify-between">
-        <p className="text-xs uppercase tracking-wide text-cream/60">
-          Signed in as <span className="text-gold font-bold">{state.profile?.full_name || 'Staff'}</span> ({state.profile?.role})
-        </p>
-        <button onClick={handleLogout} className="text-xs uppercase tracking-wide text-cream/50 hover:text-brick">
-          Log Out
-        </button>
+      <div className="border-b border-cream/10 bg-black/30 px-5 md:px-8 py-3 flex items-center justify-between gap-4">
+        <nav className="flex items-center gap-5">
+          {ADMIN_NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`text-xs font-bold uppercase tracking-wide transition-colors ${
+                pathname.startsWith(link.href) ? 'text-gold' : 'text-cream/55 hover:text-cream'
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="flex items-center gap-4 shrink-0">
+          <p className="text-xs uppercase tracking-wide text-cream/60">
+            Signed in as <span className="text-gold font-bold">{state.profile?.full_name || 'Staff'}</span> ({state.profile?.role})
+          </p>
+          <button onClick={handleLogout} className="text-xs uppercase tracking-wide text-cream/50 hover:text-brick">
+            Log Out
+          </button>
+        </div>
       </div>
       {children}
     </div>

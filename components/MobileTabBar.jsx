@@ -55,7 +55,7 @@ export default function MobileTabBar() {
   const { count } = useCart();
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-ink/95 backdrop-blur-md border-t border-cream/10 pb-[env(safe-area-inset-bottom)]">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-ink border-t border-cream/10 pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-stretch justify-between px-1">
         {TABS.map((tab) => {
           const active = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);

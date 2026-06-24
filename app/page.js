@@ -42,6 +42,22 @@ async function getGalleryMedia() {
   return (data || []).slice().sort((a, b) => (b.video_url ? 1 : 0) - (a.video_url ? 1 : 0));
 }
 
+// "Featured in the news" clips, managed from /admin/settings. Public/anon RLS
+// on mimis.news_media filters to active = true, so this never needs to filter
+// client-side.
+async function getNewsMedia() {
+  const supabase = getSupabasePublicClient();
+  const { data, error } = await supabase
+    .from('news_media')
+    .select('id, media_type, url, caption')
+    .order('sort_order', { ascending: true });
+  if (error) {
+    console.error('getNewsMedia', error.message);
+    return [];
+  }
+  return data || [];
+}
+
 // One real photo/video per category, for the "Made fresh, the right way" showcase —
 // no stock photography. Grows/changes automatically as real product media is uploaded.
 async function getCategoryShowcase() {
@@ -72,6 +88,7 @@ export default async function HomePage() {
   const featured = await getFeaturedItems();
   const gallery = await getGalleryMedia();
   const showcase = await getCategoryShowcase();
+  const newsMedia = await getNewsMedia();
   const heroMedia = gallery[0] || null;
 
   return (
@@ -253,14 +270,46 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* FEATURED IN THE NEWS (placeholder) */}
+      {/* FEATURED IN THE NEWS — managed from /admin/settings, falls back to the
+          "coming soon" placeholder when the owner hasn't added any clips yet. */}
       <section className="px-5 md:px-8 py-16">
-        <div className="max-w-3xl mx-auto text-center">
+        <div className="max-w-5xl mx-auto text-center">
           <p className="section-label mb-2">As Seen In</p>
           <h2 className="font-serif font-bold text-2xl md:text-3xl text-cream mb-8">Featured in the news</h2>
-          <div className="aspect-video rounded-2xl border border-cream/10 bg-cream/[0.03] flex items-center justify-center">
-            <p className="text-cream/40 text-sm">News coverage coming soon</p>
-          </div>
+
+          {newsMedia.length === 0 ? (
+            <div className="max-w-3xl mx-auto aspect-video rounded-2xl border border-cream/10 bg-cream/[0.03] flex items-center justify-center">
+              <p className="text-cream/40 text-sm">News coverage coming soon</p>
+            </div>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-2 -mx-5 px-5 md:-mx-8 md:px-8">
+              {newsMedia.map((n) => (
+                <div
+                  key={n.id}
+                  className="relative shrink-0 w-[280px] md:w-[340px] aspect-video rounded-2xl overflow-hidden border border-cream/10 bg-black/30 snap-start"
+                >
+                  {n.media_type === 'video' ? (
+                    <video
+                      src={n.url}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      controls
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Image src={n.url} alt={n.caption || 'Featured in the news'} fill className="object-cover" sizes="340px" />
+                  )}
+                  {n.caption && (
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/85 to-transparent p-3 text-left">
+                      <p className="text-cream text-xs font-semibold">{n.caption}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </>
