@@ -1,5 +1,10 @@
+import { Suspense } from 'react';
 import OrderStatusView from '@/components/OrderStatusView';
 
 export default function OrderConfirmedPage() {
-  return <OrderStatusView heading="Order Confirmed" />;
+  return (
+    <Suspense fallback={<p className="text-center text-cream/50 py-24">Loading&hellip;</p>}>
+      <OrderStatusView heading="Order Confirmed" />
+    </Suspense>
+  );
 }
