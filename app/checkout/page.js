@@ -47,7 +47,7 @@ export default function CheckoutPage() {
   // already cleared by this point -- show the real math before sending them
   // to Clover instead of falling through to the empty-cart screen below.
   if (checkoutResult) {
-    const { order_number, order_total_cents, discount_cents, total_due_cents } = checkoutResult;
+    const { order_number, order_total_cents, discount_cents, delivery_fee_cents, total_due_cents } = checkoutResult;
     return (
       <div className="max-w-md mx-auto px-5 py-16">
         <h1 className="font-serif font-bold text-2xl text-cream mb-1">Order #{order_number}</h1>
@@ -58,6 +58,12 @@ export default function CheckoutPage() {
             <span className="text-cream/75">Subtotal</span>
             <span className="text-cream/75">{formatPrice(order_total_cents)}</span>
           </div>
+          {delivery_fee_cents > 0 && (
+            <div className="flex justify-between text-sm py-1">
+              <span className="text-cream/75">Delivery fee</span>
+              <span className="text-cream/75">{formatPrice(delivery_fee_cents)}</span>
+            </div>
+          )}
           {discount_cents > 0 && (
             <div className="flex justify-between text-sm py-1">
               <span className="text-gold">Reward discount</span>
@@ -163,25 +169,29 @@ export default function CheckoutPage() {
       const discount = data.discount_cents || 0;
       if (rewardCode && discount > 0) {
         // Valid for this phone number and applied server-side -- clear it so
-        // it can't show up as "still pending" on the next order.
+        // it can’t show up as "still pending" on the next order.
         window.localStorage.removeItem(REDEMPTION_CODE_KEY);
       } else if (rewardCode && discount === 0) {
-        // Code didn't match this phone number (or is expired/already used)
+        // Code didn’t match this phone number (or is expired/already used)
         // -- left pending so they can retry after fixing the phone, but the
         // order still goes through at full price rather than blocking.
         setRedirectNotice('That reward didn’t apply (check the phone number matches your rewards account) — continuing at full price…');
       }
 
-      // Show the real order math (subtotal, reward discount, total due) and
+      const deliveryFee = data.delivery_fee_cents || 0;
+      const subtotal = data.order_total_cents ?? totalCents;
+
+      // Show the real order math (subtotal, delivery fee, reward discount, total due) and
       // let the customer hit "Continue" themselves, rather than silently
-      // redirecting to Clover on a timer -- that's what was hiding the
+      // redirecting to Clover on a timer -- that’s what was hiding the
       // discount math entirely on fast connections / short timers.
       setCheckoutResult({
         checkout_url: data.checkout_url,
         order_number: data.order_number,
-        order_total_cents: data.order_total_cents ?? totalCents,
+        order_total_cents: subtotal,
         discount_cents: discount,
-        total_due_cents: data.total_due_cents ?? (data.order_total_cents ?? totalCents) - discount,
+        delivery_fee_cents: deliveryFee,
+        total_due_cents: data.total_due_cents ?? (subtotal + deliveryFee - discount),
       });
       setSubmitting(false);
     } catch (err) {
@@ -234,6 +244,12 @@ export default function CheckoutPage() {
             {formatPrice(totalCents)}
           </span>
         </div>
+        {orderType === 'delivery' && (
+          <div className="flex justify-between text-sm py-1">
+            <span className="text-cream/45">Delivery fee</span>
+            <span className="text-cream/45">calculated at checkout</span>
+          </div>
+        )}
         {discountCents > 0 && (
           <>
             <div className="flex justify-between text-sm py-1">
@@ -290,7 +306,11 @@ export default function CheckoutPage() {
         {redirectNotice && <p className="text-gold text-sm">{redirectNotice}</p>}
 
         <button type="submit" disabled={submitting} className="btn-primary w-full justify-center !flex disabled:opacity-50">
-          {submitting ? 'Starting checkout…' : `Pay ${formatPrice(dueCents)} with Clover`}
+          {submitting
+            ? 'Starting checkout…'
+            : orderType === 'delivery'
+              ? `Continue — ${formatPrice(dueCents)} + delivery`
+              : `Pay ${formatPrice(dueCents)} with Clover`}
         </button>
         <p className="text-cream/35 text-xs text-center">You&rsquo;ll be redirected to Clover&rsquo;s secure checkout to complete payment.</p>
       </form>

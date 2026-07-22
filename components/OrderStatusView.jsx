@@ -41,9 +41,10 @@ export default function OrderStatusView({ heading }) {
   useEffect(() => {
     cancelledRef.current = false;
 
-    // Prefer ?order_id= URL param (used by SMS/email tracking links).
+    // ?order_id= used by SMS/email links.
+    // ?order= is what Clover sends in the post-payment redirect URL.
     // Fall back to localStorage for same-device post-checkout flow.
-    const urlOrderId = searchParams.get('order_id');
+    const urlOrderId = searchParams.get('order_id') || searchParams.get('order');
     let oid = urlOrderId || null;
 
     if (!oid) {
@@ -199,8 +200,9 @@ export default function OrderStatusView({ heading }) {
             ))}
           </div>
 
+          {/* Courier name + phone — only once assigned */}
           {dStepIndex >= 1 && (
-            <div className="space-y-2">
+            <div className="space-y-2 mb-3">
               {delivery.courier_name && (
                 <div className="flex justify-between text-sm">
                   <span className="text-cream/55">Courier</span>
@@ -215,32 +217,36 @@ export default function OrderStatusView({ heading }) {
                   </a>
                 </div>
               )}
-              {delivery.eta && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-cream/55">ETA</span>
-                  <span className="text-cream/85">
-                    {new Date(delivery.eta).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                </div>
-              )}
-              {delivery.tracking_url && (
-                <a
-                  href={delivery.tracking_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-primary w-full justify-center !flex mt-3"
-                >
-                  Track on map &rarr;
-                </a>
-              )}
             </div>
           )}
 
+          {/* ETA + tracking link shown as soon as delivery is created */}
+          <div className="space-y-2">
+            {delivery.eta && (
+              <div className="flex justify-between text-sm">
+                <span className="text-cream/55">ETA</span>
+                <span className="text-cream/85">
+                  {new Date(delivery.eta).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}
+                </span>
+              </div>
+            )}
+            {delivery.tracking_url && (
+              <a
+                href={delivery.tracking_url}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-primary w-full justify-center !flex mt-3"
+              >
+                Track on map &rarr;
+              </a>
+            )}
+          </div>
+
           {dStepIndex < 1 && (
-            <p className="text-cream/45 text-sm">
+            <p className="text-cream/45 text-sm mt-2">
               Looking for an available courier. This usually takes just a minute or two.
             </p>
           )}
