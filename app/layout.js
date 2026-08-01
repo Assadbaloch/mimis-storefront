@@ -13,6 +13,7 @@ import { getEmbedContext } from '@/lib/themeContext';
 import { renderEmbeds } from '@/lib/embeds';
 import CartBridge from '@/components/CartBridge';
 import ScrollToTop from '@/components/ScrollToTop';
+import CartBar from '@/components/CartBar';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -147,6 +148,10 @@ export default async function RootLayout({ children }) {
               <MobileTabBar />
             </>
           )}
+          {/* Rendered for BOTH shells: with a theme active there is no bottom
+              tab bar, so this is the only persistent route to checkout once a
+              customer has started adding items. */}
+          <CartBar />
           <JoinNotifyBanner />
           <InstallAppBanner />
         </CartProvider>

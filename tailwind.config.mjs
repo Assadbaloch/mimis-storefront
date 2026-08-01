@@ -22,6 +22,9 @@ export default {
         line: 'var(--mimis-line)',
         accent: 'var(--mimis-accent)',
         'on-accent': 'var(--mimis-accent-contrast)',
+        // Pre-mixed: the tokens above are plain CSS vars, not rgb channels, so
+        // Tailwind's `/20` alpha modifier cannot apply to them.
+        'on-accent-soft': 'color-mix(in srgb, var(--mimis-accent-contrast) 22%, transparent)',
         highlight: 'var(--mimis-highlight)',
         'on-highlight': 'var(--mimis-highlight-contrast)',
         'highlight-wash': 'color-mix(in srgb, var(--mimis-highlight) 8%, transparent)',
