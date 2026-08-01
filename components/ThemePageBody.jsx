@@ -32,22 +32,81 @@ export default async function ThemePageBody({ page }) {
   );
 }
 
-// Prefixes top-level selectors with the page scope. @media / @keyframes /
-// @font-face blocks pass through untouched -- naive prefixing of at-rules
-// produces invalid CSS that silently drops whole blocks.
+// Prefixes selectors with the page scope, walking the CSS by brace depth.
+//
+// This used to be a single regex, which silently broke every responsive theme:
+// rules nested inside @media were left UNSCOPED (`.tv-grid`, specificity 0,1,0)
+// while their desktop counterparts were scoped (`#tp-x .tv-grid`, 1,1,0). The
+// scoped desktop rule therefore beat the mobile rule on specificity no matter
+// what the viewport was, so theme media queries never took effect. Descending
+// into conditional at-rules and scoping their contents too is what fixes it.
+//
+// @keyframes / @font-face bodies are NOT selector lists, so they pass through
+// untouched -- prefixing `from`/`to` or descriptors produces invalid CSS.
+const CONDITIONAL_AT_RULES = new Set(['media', 'supports', 'container', 'layer', 'scope']);
+
 function scopeCss(css, scope) {
-  return css.replace(/(^|\})\s*([^{}@]+)\s*\{/g, (match, brace, selectors) => {
-    const scoped = selectors
-      .split(',')
-      .map((s) => {
-        const sel = s.trim();
-        if (!sel) return sel;
-        // html/body/:root rules from a pasted design apply to the page wrapper
-        // rather than fighting the real document.
-        if (/^(html|body)\b/i.test(sel) || /^:root\b/i.test(sel)) return scope;
-        return `${scope} ${sel}`;
-      })
-      .join(', ');
-    return `${brace} ${scoped} {`;
-  });
+  return scopeBlock(String(css || ''), scope);
+}
+
+function scopeBlock(css, scope) {
+  let out = '';
+  let i = 0;
+
+  while (i < css.length) {
+    const open = css.indexOf('{', i);
+    if (open === -1) {
+      out += css.slice(i);
+      break;
+    }
+
+    const close = matchBrace(css, open);
+    const prelude = css.slice(i, open);
+    const body = css.slice(open + 1, close);
+    const trimmed = prelude.trim();
+
+    if (trimmed.startsWith('@')) {
+      const name = trimmed.slice(1).split(/[\s({]/)[0].toLowerCase();
+      // Conditional groups wrap ordinary rules -- recurse so those get scoped.
+      // Everything else (keyframes, font-face, page, property) is left alone.
+      out += prelude + '{' + (CONDITIONAL_AT_RULES.has(name) ? scopeBlock(body, scope) : body) + '}';
+    } else {
+      const lead = prelude.slice(0, prelude.length - prelude.trimStart().length);
+      out += lead + scopeSelectors(trimmed, scope) + ' {' + body + '}';
+    }
+
+    i = close + 1;
+  }
+
+  return out;
+}
+
+function scopeSelectors(selectorList, scope) {
+  return selectorList
+    .split(',')
+    .map((s) => {
+      const sel = s.trim();
+      if (!sel) return sel;
+      // html/body/:root rules from a pasted design apply to the page wrapper
+      // rather than fighting the real document.
+      if (/^(html|body)\b/i.test(sel) || /^:root\b/i.test(sel)) return scope;
+      return `${scope} ${sel}`;
+    })
+    .filter(Boolean)
+    .join(', ');
+}
+
+// Index of the `}` matching the `{` at `open`. Falls back to end-of-string on
+// unbalanced CSS so a malformed paste degrades instead of throwing.
+function matchBrace(css, open) {
+  let depth = 0;
+  for (let i = open; i < css.length; i++) {
+    const c = css[i];
+    if (c === '{') depth++;
+    else if (c === '}') {
+      depth--;
+      if (depth === 0) return i;
+    }
+  }
+  return css.length;
 }

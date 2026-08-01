@@ -1,17 +1,19 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import CategoryPills from '@/components/CategoryPills';
 import MenuItemCard from '@/components/MenuItemCard';
 import { displayName } from '@/lib/format';
 
 // Navigation is responsive in structure, not just in size:
 //   * desktop (lg+): a sticky sidebar lists every category with live counts and
 //     scroll-spy highlighting — any section is one click away at all times.
-//   * mobile/tablet: the horizontal pill bar (thumb-swipeable) stays, since a
-//     sidebar would steal half a phone screen.
+//   * mobile/tablet: a slim sticky bar showing the CURRENT category plus a
+//     menu button that opens a full category sheet. The old horizontal pill
+//     strip was replaced because it took two rows of vertical space on every
+//     phone screen and still hid most categories off the right edge.
 // Both share the same `active` scroll-spy state and the same select handler.
 export default function MenuBrowser({ groups }) {
+  const [sheetOpen, setSheetOpen] = useState(false);
   const searchParams = useSearchParams();
   // Deep-link target -- e.g. /menu?item=<clover_item_id> from the rewards-page
   // trending banner ("direct the customer to the product itself"). Scrolls to
@@ -93,8 +95,24 @@ export default function MenuBrowser({ groups }) {
   // section handles that without any extra state.
   function handleSelect(key) {
     if (searchResults) setQuery('');
+    setSheetOpen(false);
     scrollToGroup(key);
   }
+
+  // Body scroll lock + Escape to dismiss, matching the product modal's behaviour.
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e) => e.key === 'Escape' && setSheetOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [sheetOpen]);
+
+  const activeLabel = groups.find((g) => g.key === active)?.label || 'Menu';
 
   const searchBox = (
     <div className="relative">
@@ -174,16 +192,80 @@ export default function MenuBrowser({ groups }) {
 
   return (
     <>
-      {/* Mobile / tablet: swipeable sticky pill bar with search. */}
-      <div className="lg:hidden">
-        <CategoryPills
-          categories={groups.map((g) => ({ key: g.key, label: g.label }))}
-          active={active}
-          onSelect={handleSelect}
-          searchSlot={searchBox}
-          hidePills={!!searchResults}
-        />
+      {/* Mobile / tablet: one slim sticky row — search + current category +
+          menu button. Everything else lives in the sheet below. */}
+      <div className="lg:hidden sticky top-20 z-40 bg-surface-strong backdrop-blur-md border-b border-line px-5 md:px-8 py-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex-1 min-w-0">{searchBox}</div>
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            aria-label="Browse categories"
+            aria-expanded={sheetOpen}
+            className="shrink-0 flex items-center gap-2 rounded-app-sm border border-line px-3.5 h-[46px] text-app-soft hover:text-highlight hover:border-highlight-line transition-colors"
+          >
+            <span className="flex flex-col gap-[3px]" aria-hidden="true">
+              <span className="block w-4 h-[2px] rounded bg-current" />
+              <span className="block w-4 h-[2px] rounded bg-current" />
+              <span className="block w-4 h-[2px] rounded bg-current" />
+            </span>
+            <span className="text-[11px] font-bold uppercase tracking-wide">Menu</span>
+          </button>
+        </div>
+        {!searchResults && (
+          <p className="mt-2 text-[11px] font-bold uppercase tracking-wide text-app-faint truncate">
+            Viewing · <span className="text-highlight">{activeLabel}</span>
+          </p>
+        )}
       </div>
+
+      {/* Category sheet — slides up from the bottom, thumb-reachable. */}
+      {sheetOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-[90] flex items-end bg-black/70 backdrop-blur-sm animate-fade-in"
+          onClick={() => setSheetOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu categories"
+            className="w-full max-h-[78vh] flex flex-col rounded-t-app-lg bg-surface-strong border-t border-line animate-sheet-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
+              <p className="section-label !mb-0">Jump to a category</p>
+              <button
+                type="button"
+                onClick={() => setSheetOpen(false)}
+                aria-label="Close categories"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-app-soft hover:bg-app-wash transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <nav className="overflow-y-auto px-3 py-3">
+              {groups.map((g) => {
+                const isActive = !searchResults && active === g.key;
+                return (
+                  <button
+                    key={g.key}
+                    type="button"
+                    onClick={() => handleSelect(g.key)}
+                    className={`flex w-full items-center justify-between gap-3 text-left px-4 py-3.5 rounded-app-sm font-semibold transition-colors ${
+                      isActive ? 'bg-highlight-wash text-highlight' : 'text-app hover:bg-app-wash'
+                    }`}
+                  >
+                    <span className="truncate">{g.label}</span>
+                    <span className={`text-xs font-bold tabular-nums shrink-0 ${isActive ? 'text-highlight' : 'text-app-faint'}`}>
+                      {g.items.length}
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-5 md:px-8 lg:grid lg:grid-cols-[240px,1fr] lg:gap-10 lg:items-start">
         {/* Desktop: sticky category sidebar — search on top, every section one
