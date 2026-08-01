@@ -8,6 +8,10 @@ import Image from 'next/image';
 // Falls back to the single image_url/video_url cover fields when an item has
 // no gallery rows (shouldn't happen after the backfill migration, but kept
 // as a safety net so older/partial data never renders blank).
+//
+// Controls that sit ON TOP of photos/videos use the neutral scrim + white,
+// not theme tokens -- they need to be legible over arbitrary imagery, which
+// no theme palette can guarantee.
 export default function Gallery({ media, fallbackImage, fallbackVideo, name, badgeText, aspect = 'aspect-[4/3]', lightboxEnabled = false }) {
   const slides = media?.length
     ? media
@@ -47,8 +51,8 @@ export default function Gallery({ media, fallbackImage, fallbackVideo, name, bad
 
   if (!slides.length) {
     return (
-      <div className={`relative ${aspect} bg-gradient-to-br from-cream/10 to-black/40 flex items-center justify-center`}>
-        <span className="font-serif italic text-gold/30 text-4xl">Mimi&rsquo;s</span>
+      <div className={`relative ${aspect} bg-gradient-to-br from-app-wash to-black/40 flex items-center justify-center`}>
+        <span className="font-serif italic text-highlight opacity-30 text-4xl">Mimi&rsquo;s</span>
       </div>
     );
   }
@@ -56,7 +60,7 @@ export default function Gallery({ media, fallbackImage, fallbackVideo, name, bad
   return (
     <div>
       <div
-        className={`relative ${aspect} bg-gradient-to-br from-cream/10 to-black/40 overflow-hidden select-none touch-pan-y ${lightboxEnabled ? 'cursor-zoom-in' : ''}`}
+        className={`relative ${aspect} bg-gradient-to-br from-app-wash to-black/40 overflow-hidden select-none touch-pan-y ${lightboxEnabled ? 'cursor-zoom-in' : ''}`}
         onPointerDown={handleDown}
         onPointerUp={handleUp}
         onTouchStart={handleDown}
@@ -86,7 +90,7 @@ export default function Gallery({ media, fallbackImage, fallbackVideo, name, bad
         )}
 
         {badgeText && (
-          <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wide text-gold border border-gold/60 rounded-full px-2.5 py-1 bg-ink/70 z-10">
+          <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wide text-highlight border border-highlight-line rounded-full px-2.5 py-1 bg-scrim z-10">
             {badgeText}
           </span>
         )}
@@ -97,7 +101,7 @@ export default function Gallery({ media, fallbackImage, fallbackVideo, name, bad
               type="button"
               onClick={(e) => { e.stopPropagation(); go(-1); }}
               aria-label="Previous photo"
-              className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-ink/70 text-cream items-center justify-center hover:bg-ink z-10 transition-colors"
+              className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-scrim text-white items-center justify-center hover:bg-black/80 z-10 transition-colors"
             >
               ‹
             </button>
@@ -105,7 +109,7 @@ export default function Gallery({ media, fallbackImage, fallbackVideo, name, bad
               type="button"
               onClick={(e) => { e.stopPropagation(); go(1); }}
               aria-label="Next photo"
-              className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-ink/70 text-cream items-center justify-center hover:bg-ink z-10 transition-colors"
+              className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-scrim text-white items-center justify-center hover:bg-black/80 z-10 transition-colors"
             >
               ›
             </button>
@@ -113,7 +117,7 @@ export default function Gallery({ media, fallbackImage, fallbackVideo, name, bad
               {slides.map((_, i) => (
                 <span
                   key={i}
-                  className={`h-1.5 rounded-full transition-all ${i === safeIndex ? 'w-5 bg-gold' : 'w-1.5 bg-cream/40'}`}
+                  className={`h-1.5 rounded-full transition-all ${i === safeIndex ? 'w-5 bg-highlight' : 'w-1.5 bg-white/50'}`}
                 />
               ))}
             </div>
@@ -129,14 +133,14 @@ export default function Gallery({ media, fallbackImage, fallbackVideo, name, bad
               type="button"
               onClick={() => setIndex(i)}
               aria-label={`View photo ${i + 1}`}
-              className={`relative shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors ${
-                i === safeIndex ? 'border-gold' : 'border-cream/15 hover:border-cream/35'
+              className={`relative shrink-0 w-14 h-14 rounded-app-sm overflow-hidden border-2 transition-colors ${
+                i === safeIndex ? 'border-highlight' : 'border-line hover:border-app-faint'
               }`}
             >
               {s.media_type === 'video' ? (
                 <>
                   <video src={s.url} muted className="absolute inset-0 w-full h-full object-cover" />
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-cream text-[10px]">▶</span>
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-white text-[10px]">▶</span>
                 </>
               ) : (
                 <Image src={s.url} alt="" fill className="object-cover" sizes="56px" />
@@ -148,13 +152,13 @@ export default function Gallery({ media, fallbackImage, fallbackVideo, name, bad
 
       {lightbox && (
         <div
-          className="fixed inset-0 z-[200] bg-black/92 flex items-center justify-center animate-fade-in"
+          className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center animate-fade-in"
           onClick={() => setLightbox(false)}
         >
           <button
             type="button"
             aria-label="Close"
-            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-ink/80 text-cream flex items-center justify-center z-10"
+            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-scrim text-white flex items-center justify-center z-10"
           >
             ✕
           </button>
@@ -177,7 +181,7 @@ export default function Gallery({ media, fallbackImage, fallbackVideo, name, bad
                   type="button"
                   onClick={(e) => { e.stopPropagation(); go(-1); }}
                   aria-label="Previous photo"
-                  className="absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-ink/70 text-cream flex items-center justify-center"
+                  className="absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-scrim text-white flex items-center justify-center"
                 >
                   ‹
                 </button>
@@ -185,7 +189,7 @@ export default function Gallery({ media, fallbackImage, fallbackVideo, name, bad
                   type="button"
                   onClick={(e) => { e.stopPropagation(); go(1); }}
                   aria-label="Next photo"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-ink/70 text-cream flex items-center justify-center"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-scrim text-white flex items-center justify-center"
                 >
                   ›
                 </button>

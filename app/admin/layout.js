@@ -6,6 +6,8 @@ import { getSupabasePublicClient } from '@/lib/supabaseClient';
 
 const ADMIN_NAV_LINKS = [
   { href: '/admin/menu', label: 'Menu' },
+  { href: '/admin/themes', label: 'Themes' },
+  { href: '/admin/media', label: 'Media' },
   { href: '/admin/settings', label: 'Storefront Settings' },
 ];
 

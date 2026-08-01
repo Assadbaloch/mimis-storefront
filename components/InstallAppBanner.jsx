@@ -106,16 +106,17 @@ export default function InstallAppBanner() {
 
   return (
     <div className="fixed top-[5.5rem] inset-x-3 md:inset-x-auto md:right-5 md:max-w-xs z-40 animate-fade-in pointer-events-none">
-      <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-cream/10 bg-ink/95 backdrop-blur-md shadow-xl shadow-black/30 px-3.5 py-2.5">
-        <div className="w-8 h-8 rounded-lg bg-gold/15 flex items-center justify-center shrink-0">
-          <span className="text-gold font-serif italic text-base">M</span>
+      {/* Floats over themed pages too — semantic tokens, opaque surface. */}
+      <div className="pointer-events-auto flex items-center gap-3 rounded-app-sm border border-line bg-surface-strong backdrop-blur-md shadow-xl shadow-black/30 px-3.5 py-2.5">
+        <div className="w-8 h-8 rounded-app-sm bg-highlight-tint flex items-center justify-center shrink-0">
+          <span className="text-highlight font-serif italic text-base">M</span>
         </div>
-        <p className="flex-1 text-cream/80 text-xs leading-snug">Get the app for faster ordering.</p>
+        <p className="flex-1 text-app text-xs leading-snug">Get the app for faster ordering.</p>
         <button
           type="button"
           onClick={handleInstallClick}
           disabled={installing}
-          className="text-gold text-xs font-bold shrink-0 disabled:opacity-50"
+          className="text-highlight text-xs font-bold shrink-0 disabled:opacity-50"
         >
           {installing ? '…' : 'Install'}
         </button>
@@ -123,7 +124,7 @@ export default function InstallAppBanner() {
           type="button"
           onClick={handleDismiss}
           aria-label="Dismiss"
-          className="text-cream/30 hover:text-cream/60 text-xs shrink-0"
+          className="text-app-faint hover:text-app-soft text-xs shrink-0"
         >
           ✕
         </button>

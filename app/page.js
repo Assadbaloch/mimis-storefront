@@ -3,6 +3,8 @@ import Image from 'next/image';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { displayName, displayCategory } from '@/lib/format';
 import MenuItemCard from '@/components/MenuItemCard';
+import { getThemePage } from '@/lib/theme';
+import ThemePageBody from '@/components/ThemePageBody';
 
 export const revalidate = 60;
 
@@ -85,6 +87,12 @@ async function getCategoryShowcase() {
 }
 
 export default async function HomePage() {
+  // A theme's home page (slug '') takes over "/" when a theme is active.
+  // Without this, an activated theme would style every route except the one
+  // customers land on first, which is the most visible page of all.
+  const themeHome = await getThemePage('');
+  if (themeHome) return <ThemePageBody page={themeHome} />;
+
   const featured = await getFeaturedItems();
   const gallery = await getGalleryMedia();
   const showcase = await getCategoryShowcase();

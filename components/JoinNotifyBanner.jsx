@@ -118,14 +118,16 @@ export default function JoinNotifyBanner() {
     }
   }
 
+  // Floats over BOTH the default design and themed pages, so it uses the
+  // semantic tokens (opaque surface so page content never bleeds through).
   const shellClass =
     'fixed inset-x-3 bottom-[4.75rem] md:inset-x-auto md:right-5 md:bottom-5 md:max-w-sm z-30 ' +
-    'rounded-2xl border border-cream/10 bg-ink shadow-2xl shadow-black/40 p-5';
+    'rounded-app border border-line bg-surface-strong shadow-2xl shadow-black/40 p-5';
 
   if (state === 'subscribed') {
     return (
       <div className={shellClass}>
-        <p className="text-gold text-sm font-semibold">You&rsquo;re in! We&rsquo;ll notify you about deals, new items, and order updates.</p>
+        <p className="text-highlight text-sm font-semibold">You&rsquo;re in! We&rsquo;ll notify you about deals, new items, and order updates.</p>
       </div>
     );
   }
@@ -134,10 +136,10 @@ export default function JoinNotifyBanner() {
     return (
       <div className={shellClass}>
         <div className="flex items-start justify-between gap-3">
-          <p className="text-cream/60 text-xs">
+          <p className="text-app-soft text-xs">
             You&rsquo;re enrolled in Rewards, but notifications are blocked for this site in your browser settings.
           </p>
-          <button onClick={handleDismiss} className="text-cream/30 hover:text-cream/60 text-xs shrink-0">✕</button>
+          <button onClick={handleDismiss} className="text-app-faint hover:text-app-soft text-xs shrink-0">✕</button>
         </div>
       </div>
     );
@@ -147,10 +149,10 @@ export default function JoinNotifyBanner() {
     return (
       <div className={shellClass}>
         <div className="flex items-start justify-between gap-3 mb-3">
-          <p className="text-cream/70 text-sm">Welcome back. Want deal &amp; order alerts on this device too?</p>
-          <button onClick={handleDismiss} className="text-cream/30 hover:text-cream/60 text-xs shrink-0">✕</button>
+          <p className="text-app-soft text-sm">Welcome back. Want deal &amp; order alerts on this device too?</p>
+          <button onClick={handleDismiss} className="text-app-faint hover:text-app-soft text-xs shrink-0">✕</button>
         </div>
-        {errorMsg && <p className="text-brick text-xs mb-2">{errorMsg}</p>}
+        {errorMsg && <p className="text-danger text-xs mb-2">{errorMsg}</p>}
         <button onClick={() => enableForPhone(savedPhone)} className="btn-primary w-full !py-2 text-sm">
           Enable Notifications
         </button>
@@ -163,10 +165,10 @@ export default function JoinNotifyBanner() {
     <div className={shellClass}>
       <div className="flex items-start justify-between gap-3 mb-1">
         <p className="section-label">Mimi&rsquo;s Rewards</p>
-        <button onClick={handleDismiss} className="text-cream/30 hover:text-cream/60 text-xs shrink-0">✕</button>
+        <button onClick={handleDismiss} className="text-app-faint hover:text-app-soft text-xs shrink-0">✕</button>
       </div>
-      <p className="text-cream text-sm font-semibold mb-1">Join free &amp; get notified</p>
-      <p className="text-cream/55 text-xs mb-3">Earn points on every order, plus alerts on deals and order status. No password needed.</p>
+      <p className="text-app text-sm font-semibold mb-1">Join free &amp; get notified</p>
+      <p className="text-app-soft text-xs mb-3">Earn points on every order, plus alerts on deals and order status. No password needed.</p>
       <form onSubmit={handleJoin} className="flex flex-col gap-2">
         <input
           type="tel"
@@ -185,7 +187,7 @@ export default function JoinNotifyBanner() {
           className="input !py-2 text-sm"
           required
         />
-        {errorMsg && <p className="text-brick text-xs">{errorMsg}</p>}
+        {errorMsg && <p className="text-danger text-xs">{errorMsg}</p>}
         <button type="submit" disabled={state === 'joining'} className="btn-primary w-full !py-2 text-sm disabled:opacity-60">
           {state === 'joining' ? 'Joining…' : 'Join & Notify Me'}
         </button>

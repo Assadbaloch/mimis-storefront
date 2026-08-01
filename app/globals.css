@@ -2,9 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   Semantic design tokens — the single styling contract for the shop pages.
+
+   The shop pages (menu, cart, checkout, rewards, tracking) are a skeleton:
+   every colour, font and radius they use resolves to a --mimis-* variable.
+   Nothing is hardcoded. An active theme declares these same variables in its
+   own CSS (the design-prompt spec already instructs generated themes to do
+   so), and because the theme's stylesheet loads after this one, the theme's
+   values win — the theme is the source of truth.
+
+   The values below are only the fallback for when NO theme is active
+   ("Mimi's Original Design"): the original dark look. Admin screens are never
+   themed (layout.js strips the theme shell for /admin), so admin always
+   renders with these defaults via the legacy ink/cream/gold/brick utilities,
+   which are now fixed and no longer participate in theming.
+
+   Token roles:
+     --mimis-bg                 page background
+     --mimis-surface            card / panel background (may be translucent)
+     --mimis-surface-strong     opaque surface: modals, sheets, sticky bars
+     --mimis-text               primary text on bg/surface
+     --mimis-text-soft          secondary text
+     --mimis-accent             primary action (solid buttons)
+     --mimis-accent-contrast    text on the accent
+     --mimis-highlight          highlights: prices, links, active states
+     --mimis-highlight-contrast text on the highlight
+     --mimis-line               borders / dividers
+     --mimis-danger             errors, cancelled/failed states
+     --mimis-radius             card corner radius
+     --mimis-font-display / --mimis-font-body
+
+   Themes must define the core set (bg, surface, text, text-soft, accent,
+   accent-contrast, line, radius, fonts). The extended tokens (surface-strong,
+   highlight, highlight-contrast, danger) are derived from the core set by a
+   style block layout.js injects BEFORE the theme CSS whenever a theme is
+   active — so a theme that doesn't mention them still gets sane values from
+   its own palette, and a theme that does define them wins.
+--------------------------------------------------------------------------- */
+:root {
+  --mimis-bg: #0e0906;
+  --mimis-surface: rgba(245, 235, 215, 0.03);
+  --mimis-surface-strong: #16100b;
+  --mimis-text: #f5ebd7;
+  --mimis-text-soft: rgba(245, 235, 215, 0.55);
+  --mimis-accent: #b41d24;
+  --mimis-accent-contrast: #ffffff;
+  --mimis-highlight: #e6b95c;
+  --mimis-highlight-contrast: #0e0906;
+  --mimis-line: rgba(245, 235, 215, 0.14);
+  --mimis-danger: #b41d24;
+  --mimis-radius: 16px;
+  --mimis-font-display: var(--font-fraunces), Georgia, serif;
+  --mimis-font-body: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Legacy fixed palette — admin + default (non-themed) chrome only.
+     These never change with a theme. RGB channels so Tailwind opacity
+     modifiers (bg-cream/10) keep working in admin screens. */
+  --c-ink:   14 9 6;
+  --c-cream: 245 235 215;
+  --c-gold:  230 185 92;
+  --c-brick: 180 29 36;
+
+  --font-display: var(--mimis-font-display);
+  --font-body: var(--mimis-font-body);
+}
+
 html, body {
-  background-color: #0e0906;
-  color: #f5ebd7;
+  background-color: var(--mimis-bg);
+  color: var(--mimis-text);
+  font-family: var(--mimis-font-body);
 }
 
 * {
@@ -15,17 +82,23 @@ html, body {
   font-style: italic;
 }
 
+/* ---------------------------------------------------------------------------
+   Shared component classes. All token-driven — zero hardcoded colours.
+   Wash/tint effects derive from the tokens via color-mix so they track any
+   theme palette automatically.
+--------------------------------------------------------------------------- */
+
 .nav-link {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(245, 235, 215, 0.9);
+  color: color-mix(in srgb, var(--mimis-text) 90%, transparent);
   transition: color 150ms ease;
 }
 .nav-link:hover,
 .nav-link.active {
-  color: #e6b95c;
+  color: var(--mimis-highlight);
 }
 
 .btn-primary {
@@ -34,8 +107,8 @@ html, body {
   justify-content: center;
   gap: 0.5rem;
   border-radius: 9999px;
-  background-color: #b41d24;
-  color: #fff;
+  background-color: var(--mimis-accent);
+  color: var(--mimis-accent-contrast);
   font-weight: 700;
   font-size: 0.75rem;
   letter-spacing: 0.08em;
@@ -53,9 +126,9 @@ html, body {
   justify-content: center;
   gap: 0.5rem;
   border-radius: 9999px;
-  background-color: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(245, 235, 215, 0.4);
-  color: #f5ebd7;
+  background-color: color-mix(in srgb, var(--mimis-bg) 40%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mimis-text) 40%, transparent);
+  color: var(--mimis-text);
   font-weight: 700;
   font-size: 0.75rem;
   letter-spacing: 0.08em;
@@ -65,8 +138,8 @@ html, body {
   transition: border-color 150ms ease, color 150ms ease, transform 150ms ease;
 }
 .btn-secondary:hover {
-  border-color: #e6b95c;
-  color: #e6b95c;
+  border-color: var(--mimis-highlight);
+  color: var(--mimis-highlight);
   transform: translateY(-1px);
 }
 .btn-secondary:active { transform: translateY(0) scale(0.97); }
@@ -76,7 +149,7 @@ html, body {
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #e6b95c;
+  color: var(--mimis-highlight);
 }
 
 .cat-pill {
@@ -87,38 +160,38 @@ html, body {
   padding: 0.6rem 1.1rem;
   border-radius: 9999px;
   white-space: nowrap;
-  color: rgba(245, 235, 215, 0.85);
-  border: 1px solid rgba(245, 235, 215, 0.18);
+  color: color-mix(in srgb, var(--mimis-text) 85%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mimis-text) 18%, transparent);
   transition: all 150ms ease;
 }
 .cat-pill.active {
-  background-color: #e6b95c;
-  color: #0e0906;
-  border-color: #e6b95c;
+  background-color: var(--mimis-highlight);
+  color: var(--mimis-highlight-contrast);
+  border-color: var(--mimis-highlight);
 }
 .cat-pill:hover:not(.active) {
-  border-color: #e6b95c;
-  color: #e6b95c;
+  border-color: var(--mimis-highlight);
+  color: var(--mimis-highlight);
 }
 
 ::-webkit-scrollbar { height: 6px; width: 6px; }
-::-webkit-scrollbar-thumb { background: rgba(245,235,215,0.25); border-radius: 9999px; }
+::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--mimis-text) 25%, transparent); border-radius: 9999px; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 
 .input {
-  background-color: rgba(245, 235, 215, 0.05);
-  border: 1px solid rgba(245, 235, 215, 0.18);
+  background-color: color-mix(in srgb, var(--mimis-text) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mimis-text) 18%, transparent);
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
-  color: #f5ebd7;
+  color: var(--mimis-text);
   font-size: 0.9rem;
   outline: none;
   transition: border-color 150ms ease;
 }
-.input::placeholder { color: rgba(245, 235, 215, 0.4); }
-.input:focus { border-color: #e6b95c; }
+.input::placeholder { color: color-mix(in srgb, var(--mimis-text) 40%, transparent); }
+.input:focus { border-color: var(--mimis-highlight); }
 
 .badge {
   font-size: 11px;

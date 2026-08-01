@@ -223,15 +223,15 @@ export default function RewardsLookup() {
   }
 
   if (view === 'checking') {
-    return <p className="text-center text-cream/50 py-24">Loading…</p>;
+    return <p className="text-center text-app-soft py-24">Loading…</p>;
   }
 
   if (view === 'phone_entry' || view === 'loading') {
     return (
       <div className="max-w-md mx-auto px-5 py-20 text-center">
         <p className="section-label mb-2">Mimi&rsquo;s Rewards</p>
-        <h1 className="font-serif font-bold text-3xl text-cream mb-3">Check Your Points</h1>
-        <p className="text-cream/55 mb-8">Enter your phone number to see your balance and rewards. No password needed.</p>
+        <h1 className="font-serif font-bold text-3xl text-app mb-3">Check Your Points</h1>
+        <p className="text-app-soft mb-8">Enter your phone number to see your balance and rewards. No password needed.</p>
         <form
           onSubmit={(e) => { e.preventDefault(); lookup(phoneInput); }}
           className="flex flex-col gap-3"
@@ -245,7 +245,7 @@ export default function RewardsLookup() {
             className="input text-center text-lg"
             autoFocus
           />
-          {errorMsg && <p className="text-brick text-sm">{errorMsg}</p>}
+          {errorMsg && <p className="text-danger text-sm">{errorMsg}</p>}
           <button type="submit" disabled={view === 'loading'} className="btn-primary w-full">
             {view === 'loading' ? 'Looking up…' : 'View My Rewards'}
           </button>
@@ -258,8 +258,8 @@ export default function RewardsLookup() {
     return (
       <div className="max-w-md mx-auto px-5 py-20">
         <p className="section-label mb-2 text-center">Mimi&rsquo;s Rewards</p>
-        <h1 className="font-serif font-bold text-3xl text-cream mb-3 text-center">You&rsquo;re Not Enrolled Yet</h1>
-        <p className="text-cream/55 mb-8 text-center">Join free and get 50 bonus points right away.</p>
+        <h1 className="font-serif font-bold text-3xl text-app mb-3 text-center">You&rsquo;re Not Enrolled Yet</h1>
+        <p className="text-app-soft mb-8 text-center">Join free and get 50 bonus points right away.</p>
         <form onSubmit={handleEnroll} className="flex flex-col gap-3">
           <input
             type="tel"
@@ -282,11 +282,11 @@ export default function RewardsLookup() {
             onChange={(e) => setEnrollEmail(e.target.value)}
             className="input"
           />
-          {errorMsg && <p className="text-brick text-sm">{errorMsg}</p>}
+          {errorMsg && <p className="text-danger text-sm">{errorMsg}</p>}
           <button type="submit" disabled={view === 'enrolling'} className="btn-primary w-full">
             {view === 'enrolling' ? 'Joining…' : 'Join Mimi’s Rewards'}
           </button>
-          <button type="button" onClick={() => setView('phone_entry')} className="text-cream/40 hover:text-cream/70 text-xs">
+          <button type="button" onClick={() => setView('phone_entry')} className="text-app-faint hover:text-app-soft text-xs">
             Use a different number
           </button>
         </form>
@@ -315,23 +315,23 @@ export default function RewardsLookup() {
       <div className="max-w-xl mx-auto px-5 py-16">
         <div className="flex items-center justify-between mb-1">
           <p className="section-label">Mimi&rsquo;s Rewards</p>
-          <button onClick={handleSignOut} className="text-cream/35 hover:text-cream/65 text-xs">Not you?</button>
+          <button onClick={handleSignOut} className="text-app-faint hover:text-app-soft text-xs">Not you?</button>
         </div>
-        <h1 className="font-serif font-bold text-3xl text-cream mb-4">
+        <h1 className="font-serif font-bold text-3xl text-app mb-4">
           Welcome back{customer.first_name ? `, ${customer.first_name}` : ''}
         </h1>
 
         <TrendingBanner />
 
         {welcomeBonus != null && (
-          <p className="text-gold text-sm mb-4">You just earned {welcomeBonus} bonus points for joining!</p>
+          <p className="text-highlight text-sm mb-4">You just earned {welcomeBonus} bonus points for joining!</p>
         )}
 
-        <div className="rounded-2xl border border-cream/10 bg-cream/[0.03] p-6 mt-6">
+        <div className="rounded-app border border-line bg-surface p-6 mt-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-cream/55 text-xs uppercase tracking-wide font-bold mb-1">Points Balance</p>
-              <p className="font-serif font-bold text-4xl text-gold">{customer.points_balance}</p>
+              <p className="text-app-soft text-xs uppercase tracking-wide font-bold mb-1">Points Balance</p>
+              <p className="font-serif font-bold text-4xl text-highlight">{customer.points_balance}</p>
             </div>
             <span className={`badge ${TIER_CLASS[customer.current_tier] || TIER_CLASS.bronze}`}>
               {TIER_LABEL[customer.current_tier] || 'Bronze'} Tier
@@ -340,19 +340,19 @@ export default function RewardsLookup() {
 
           {nextTierLabel && (
             <div>
-              <div className="h-1.5 rounded-full bg-cream/10 overflow-hidden mb-1.5">
-                <div className="h-full bg-gold rounded-full" style={{ width: `${progressPct}%` }} />
+              <div className="h-1.5 rounded-full bg-app-wash overflow-hidden mb-1.5">
+                <div className="h-full bg-highlight rounded-full" style={{ width: `${progressPct}%` }} />
               </div>
-              <p className="text-cream/45 text-xs">{ptsToNext} lifetime points to {nextTierLabel}</p>
+              <p className="text-app-faint text-xs">{ptsToNext} lifetime points to {nextTierLabel}</p>
             </div>
           )}
         </div>
 
         {justRedeemed && (
-          <div className="mt-6 rounded-2xl border border-gold/40 bg-gold/[0.08] p-5 text-center">
-            <p className="text-cream/60 text-xs uppercase tracking-wide font-bold mb-1">Reward Redeemed!</p>
-            <p className="font-serif font-bold text-2xl text-gold mb-1 tracking-wide">{justRedeemed.code}</p>
-            <p className="text-cream/60 text-xs mb-3">{justRedeemed.reward_name} &middot; use this code at checkout</p>
+          <div className="mt-6 rounded-app border border-highlight-line bg-highlight-wash p-5 text-center">
+            <p className="text-app-soft text-xs uppercase tracking-wide font-bold mb-1">Reward Redeemed!</p>
+            <p className="font-serif font-bold text-2xl text-highlight mb-1 tracking-wide">{justRedeemed.code}</p>
+            <p className="text-app-soft text-xs mb-3">{justRedeemed.reward_name} &middot; use this code at checkout</p>
             <button onClick={() => handleCopyCode(justRedeemed.code)} className="btn-secondary !px-4 !py-2 text-xs">
               {copiedCode === justRedeemed.code ? 'Copied!' : 'Copy Code'}
             </button>
@@ -362,7 +362,7 @@ export default function RewardsLookup() {
         {rewards.length > 0 && (
           <div className="mt-8">
             <p className="section-label mb-3">Available Rewards</p>
-            {redeemError && <p className="text-brick text-sm mb-3">{redeemError}</p>}
+            {redeemError && <p className="text-danger text-sm mb-3">{redeemError}</p>}
             <div className="space-y-2">
               {rewards.map((r) => {
                 const unlocked = customer.points_balance >= r.points_required;
@@ -370,13 +370,13 @@ export default function RewardsLookup() {
                 return (
                   <div
                     key={r.id}
-                    className={`flex items-center justify-between rounded-xl border px-4 py-3 gap-3 ${
-                      unlocked ? 'border-gold/30 bg-gold/[0.06]' : 'border-cream/10 bg-cream/[0.02]'
+                    className={`flex items-center justify-between rounded-app-sm border px-4 py-3 gap-3 ${
+                      unlocked ? 'border-highlight-line bg-highlight-wash' : 'border-line bg-surface'
                     }`}
                   >
                     <div className="min-w-0">
-                      <p className={`text-sm font-semibold ${unlocked ? 'text-cream' : 'text-cream/50'}`}>{r.name}</p>
-                      {r.description && <p className="text-cream/40 text-xs mt-0.5">{r.description}</p>}
+                      <p className={`text-sm font-semibold ${unlocked ? 'text-app' : 'text-app-soft'}`}>{r.name}</p>
+                      {r.description && <p className="text-app-faint text-xs mt-0.5">{r.description}</p>}
                     </div>
                     {unlocked ? (
                       <button
@@ -387,7 +387,7 @@ export default function RewardsLookup() {
                         {redeeming ? 'Redeeming…' : `Redeem · ${r.points_required} pts`}
                       </button>
                     ) : (
-                      <span className="text-xs font-bold uppercase tracking-wide shrink-0 ml-3 text-cream/35">
+                      <span className="text-xs font-bold uppercase tracking-wide shrink-0 ml-3 text-app-faint">
                         {r.points_required} pts
                       </span>
                     )}
@@ -405,25 +405,25 @@ export default function RewardsLookup() {
               {activeRedemptions.map((red) => (
                 <div
                   key={red.code}
-                  className="flex items-center justify-between rounded-xl border border-cream/10 bg-cream/[0.02] px-4 py-3 gap-3"
+                  className="flex items-center justify-between rounded-app-sm border border-line bg-surface px-4 py-3 gap-3"
                 >
                   <div className="min-w-0">
-                    <p className="font-serif font-bold text-gold tracking-wide">{red.code}</p>
-                    <p className="text-cream/40 text-xs mt-0.5">
+                    <p className="font-serif font-bold text-highlight tracking-wide">{red.code}</p>
+                    <p className="text-app-faint text-xs mt-0.5">
                       {red.reward_name} &middot; expires{' '}
                       {new Date(red.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </p>
                   </div>
                   <button
                     onClick={() => handleCopyCode(red.code)}
-                    className="text-cream/40 hover:text-cream/70 text-xs shrink-0"
+                    className="text-app-faint hover:text-app-soft text-xs shrink-0"
                   >
                     {copiedCode === red.code ? 'Copied!' : 'Copy'}
                   </button>
                 </div>
               ))}
             </div>
-            <p className="text-cream/35 text-xs mt-3">Applies automatically at checkout &mdash; or pick it up on the cart/checkout page directly.</p>
+            <p className="text-app-faint text-xs mt-3">Applies automatically at checkout &mdash; or pick it up on the cart/checkout page directly.</p>
           </div>
         )}
 
@@ -433,12 +433,12 @@ export default function RewardsLookup() {
             <div className="space-y-1.5">
               {transactions.map((tx) => (
                 <div key={tx.id} className="flex items-center justify-between text-sm py-1">
-                  <span className="text-cream/65">
+                  <span className="text-app-soft">
                     {new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     {' · '}
                     {tx.notes || tx.event_type.replace(/_/g, ' ')}
                   </span>
-                  <span className={tx.points >= 0 ? 'text-gold' : 'text-cream/50'}>
+                  <span className={tx.points >= 0 ? 'text-highlight' : 'text-app-soft'}>
                     {tx.points >= 0 ? '+' : ''}{tx.points}
                   </span>
                 </div>
@@ -452,7 +452,7 @@ export default function RewardsLookup() {
 
   return (
     <div className="max-w-md mx-auto px-5 py-20 text-center">
-      <p className="text-cream/55 mb-6">Something went wrong loading your rewards.</p>
+      <p className="text-app-soft mb-6">Something went wrong loading your rewards.</p>
       <button onClick={() => setView('phone_entry')} className="btn-primary">Try Again</button>
     </div>
   );

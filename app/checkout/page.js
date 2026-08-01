@@ -96,33 +96,33 @@ export default function CheckoutPage() {
     const { order_number, order_total_cents, discount_cents, delivery_fee_cents, total_due_cents } = checkoutResult;
     return (
       <div className="max-w-md mx-auto px-5 py-16">
-        <h1 className="font-serif font-bold text-2xl text-cream mb-1">Order #{order_number}</h1>
-        <p className="text-cream/55 mb-6 text-sm">Review your total, then continue to Clover&rsquo;s secure checkout to pay.</p>
+        <h1 className="font-serif font-bold text-2xl text-app mb-1">Order #{order_number}</h1>
+        <p className="text-app-soft mb-6 text-sm">Review your total, then continue to Clover&rsquo;s secure checkout to pay.</p>
 
-        <div className="rounded-2xl border border-cream/10 bg-cream/[0.03] p-5 mb-6">
+        <div className="rounded-app border border-line bg-surface p-5 mb-6">
           <div className="flex justify-between text-sm py-1">
-            <span className="text-cream/75">Subtotal</span>
-            <span className="text-cream/75">{formatPrice(order_total_cents)}</span>
+            <span className="text-app-soft">Subtotal</span>
+            <span className="text-app-soft">{formatPrice(order_total_cents)}</span>
           </div>
           {delivery_fee_cents > 0 && (
             <div className="flex justify-between text-sm py-1">
-              <span className="text-cream/75">Delivery fee</span>
-              <span className="text-cream/75">{formatPrice(delivery_fee_cents)}</span>
+              <span className="text-app-soft">Delivery fee</span>
+              <span className="text-app-soft">{formatPrice(delivery_fee_cents)}</span>
             </div>
           )}
           {discount_cents > 0 && (
             <div className="flex justify-between text-sm py-1">
-              <span className="text-gold">Reward discount</span>
-              <span className="text-gold">&minus;{formatPrice(discount_cents)}</span>
+              <span className="text-highlight">Reward discount</span>
+              <span className="text-highlight">&minus;{formatPrice(discount_cents)}</span>
             </div>
           )}
-          <div className="flex justify-between pt-3 mt-2 border-t border-cream/10">
-            <span className="text-cream font-semibold">Total due</span>
-            <span className="text-gold font-serif font-semibold text-lg">{formatPrice(total_due_cents)}</span>
+          <div className="flex justify-between pt-3 mt-2 border-t border-line">
+            <span className="text-app font-semibold">Total due</span>
+            <span className="text-highlight font-serif font-semibold text-lg">{formatPrice(total_due_cents)}</span>
           </div>
         </div>
 
-        {redirectNotice && <p className="text-cream/55 text-sm mb-4">{redirectNotice}</p>}
+        {redirectNotice && <p className="text-app-soft text-sm mb-4">{redirectNotice}</p>}
 
         <button
           type="button"
@@ -132,7 +132,7 @@ export default function CheckoutPage() {
         >
           {redirecting ? 'Redirecting…' : `Continue to Secure Payment — ${formatPrice(total_due_cents)}`}
         </button>
-        <p className="text-cream/35 text-xs text-center mt-3">You&rsquo;ll be redirected to Clover&rsquo;s secure checkout to complete payment.</p>
+        <p className="text-app-faint text-xs text-center mt-3">You&rsquo;ll be redirected to Clover&rsquo;s secure checkout to complete payment.</p>
       </div>
     );
   }
@@ -140,7 +140,7 @@ export default function CheckoutPage() {
   if (items.length === 0) {
     return (
       <div className="max-w-md mx-auto px-5 py-24 text-center">
-        <h1 className="font-serif font-bold text-2xl text-cream mb-3">Nothing to check out</h1>
+        <h1 className="font-serif font-bold text-2xl text-app mb-3">Nothing to check out</h1>
         <Link href="/menu" className="btn-primary">Browse the Menu</Link>
       </div>
     );
@@ -265,8 +265,8 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-xl mx-auto px-5 py-16">
-      <h1 className="font-serif font-bold text-3xl md:text-4xl text-cream mb-2">Checkout</h1>
-      <p className="text-cream/55 mb-6">
+      <h1 className="font-serif font-bold text-3xl md:text-4xl text-app mb-2">Checkout</h1>
+      <p className="text-app-soft mb-6">
         {orderType === 'delivery'
           ? 'Delivered from our Madison Heights location.'
           : 'Pickup from Madison Heights — 28931 John R Rd.'}
@@ -276,47 +276,47 @@ export default function CheckoutPage() {
         <button
           type="button"
           onClick={() => setOrderType('pickup')}
-          className={`rounded-xl border py-3 text-sm font-semibold transition ${orderType === 'pickup' ? 'border-gold bg-gold/10 text-gold' : 'border-cream/10 text-cream/55'}`}
+          className={`rounded-app-sm border py-3 text-sm font-semibold transition ${orderType === 'pickup' ? 'border-highlight bg-highlight-wash text-highlight' : 'border-line text-app-soft'}`}
         >
           Pickup
         </button>
         <button
           type="button"
           onClick={() => setOrderType('delivery')}
-          className={`rounded-xl border py-3 text-sm font-semibold transition ${orderType === 'delivery' ? 'border-gold bg-gold/10 text-gold' : 'border-cream/10 text-cream/55'}`}
+          className={`rounded-app-sm border py-3 text-sm font-semibold transition ${orderType === 'delivery' ? 'border-highlight bg-highlight-wash text-highlight' : 'border-line text-app-soft'}`}
         >
           Delivery
         </button>
       </div>
 
-      <div className="rounded-2xl border border-cream/10 bg-cream/[0.03] p-5 mb-6">
+      <div className="rounded-app border border-line bg-surface p-5 mb-6">
         {items.map((i) => (
           <div key={i._key} className="flex justify-between text-sm py-1.5">
-            <span className="text-cream/75">{i.quantity}&times; {i.name}</span>
-            <span className="text-cream/55">{formatPrice(i.price_cents * i.quantity)}</span>
+            <span className="text-app-soft">{i.quantity}&times; {i.name}</span>
+            <span className="text-app-soft">{formatPrice(i.price_cents * i.quantity)}</span>
           </div>
         ))}
-        <div className="flex justify-between pt-3 mt-2 border-t border-cream/10">
-          <span className="text-cream font-semibold">Subtotal</span>
-          <span className={`font-serif font-semibold text-lg ${discountCents > 0 ? 'text-cream/60 line-through' : 'text-gold'}`}>
+        <div className="flex justify-between pt-3 mt-2 border-t border-line">
+          <span className="text-app font-semibold">Subtotal</span>
+          <span className={`font-serif font-semibold text-lg ${discountCents > 0 ? 'text-app-soft line-through' : 'text-highlight'}`}>
             {formatPrice(totalCents)}
           </span>
         </div>
         {orderType === 'delivery' && (
           <div className="flex justify-between text-sm py-1">
-            <span className="text-cream/45">Delivery fee</span>
-            <span className="text-cream/45">calculated at checkout</span>
+            <span className="text-app-faint">Delivery fee</span>
+            <span className="text-app-faint">calculated at checkout</span>
           </div>
         )}
         {discountCents > 0 && (
           <>
             <div className="flex justify-between text-sm py-1">
-              <span className="text-gold">Reward discount</span>
-              <span className="text-gold">&minus;{formatPrice(discountCents)}</span>
+              <span className="text-highlight">Reward discount</span>
+              <span className="text-highlight">&minus;{formatPrice(discountCents)}</span>
             </div>
-            <div className="flex justify-between pt-2 mt-1 border-t border-cream/10">
-              <span className="text-cream font-semibold">Total due</span>
-              <span className="text-gold font-serif font-semibold text-lg">{formatPrice(dueCents)}</span>
+            <div className="flex justify-between pt-2 mt-1 border-t border-line">
+              <span className="text-app font-semibold">Total due</span>
+              <span className="text-highlight font-serif font-semibold text-lg">{formatPrice(dueCents)}</span>
             </div>
           </>
         )}
@@ -352,16 +352,16 @@ export default function CheckoutPage() {
 
         <textarea placeholder="Order notes (optional)" value={form.notes} onChange={update('notes')} className="input w-full" rows={3} />
         {rewardCode && (
-          <p className="text-cream/40 text-xs">
-            Reward <span className="text-gold">{rewardCode}</span>{' '}
+          <p className="text-app-faint text-xs">
+            Reward <span className="text-highlight">{rewardCode}</span>{' '}
             {discountCents > 0
               ? `applies a ${formatPrice(discountCents)} discount if this phone number matches your rewards account.`
               : 'will apply if this phone number matches your rewards account.'}
           </p>
         )}
 
-        {error && <p className="text-brick text-sm">{error}</p>}
-        {redirectNotice && <p className="text-gold text-sm">{redirectNotice}</p>}
+        {error && <p className="text-danger text-sm">{error}</p>}
+        {redirectNotice && <p className="text-highlight text-sm">{redirectNotice}</p>}
 
         <button type="submit" disabled={submitting} className="btn-primary w-full justify-center !flex disabled:opacity-50">
           {submitting
@@ -370,7 +370,7 @@ export default function CheckoutPage() {
               ? `Continue — ${formatPrice(dueCents)} + delivery`
               : `Pay ${formatPrice(dueCents)} with Clover`}
         </button>
-        <p className="text-cream/35 text-xs text-center">You&rsquo;ll be redirected to Clover&rsquo;s secure checkout to complete payment.</p>
+        <p className="text-app-faint text-xs text-center">You&rsquo;ll be redirected to Clover&rsquo;s secure checkout to complete payment.</p>
       </form>
     </div>
   );

@@ -27,17 +27,17 @@ export default function MenuRewardBanner() {
 
   return (
     <div className="max-w-6xl mx-auto px-5 md:px-8 -mt-2 mb-6">
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-gold/30 bg-gold/[0.06] px-4 py-3">
-        <p className="text-cream text-sm min-w-0">
-          🎁 Reward code <span className="text-gold font-serif tracking-wide">{code}</span> pending &mdash; applies automatically at checkout.
+      <div className="flex items-center justify-between gap-3 rounded-app-sm border border-highlight-line bg-highlight-wash px-4 py-3">
+        <p className="text-app text-sm min-w-0">
+          🎁 Reward code <span className="text-highlight font-serif tracking-wide">{code}</span> pending &mdash; applies automatically at checkout.
         </p>
         <div className="flex items-center gap-3 shrink-0">
           {count > 0 && (
-            <Link href="/checkout" className="text-gold text-xs font-semibold hover:text-gold/80">
+            <Link href="/checkout" className="text-highlight text-xs font-semibold hover:opacity-80">
               Checkout &rarr;
             </Link>
           )}
-          <button type="button" onClick={remove} className="text-cream/40 hover:text-cream/70 text-xs">
+          <button type="button" onClick={remove} className="text-app-faint hover:text-app-soft text-xs">
             Remove
           </button>
         </div>

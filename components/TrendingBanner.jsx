@@ -91,32 +91,32 @@ export default function TrendingBanner() {
   return (
     <Link
       href={`/menu?item=${item.clover_item_id}`}
-      className="group relative flex items-center gap-3.5 rounded-2xl border border-gold/25 bg-gold/[0.05] hover:border-gold/50 px-4 py-3.5 mb-6 transition-colors"
+      className="group relative flex items-center gap-3.5 rounded-app border border-highlight-line bg-highlight-wash hover:border-highlight px-4 py-3.5 mb-6 transition-colors"
     >
       <div key={item.clover_item_id} className="flex items-center gap-3.5 w-full min-w-0 animate-fade-in">
-        <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-cream/10 shrink-0">
+        <div className="relative w-14 h-14 rounded-app-sm overflow-hidden bg-app-wash shrink-0">
           {item.video_url ? (
             <video src={item.video_url} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
           ) : item.image_url ? (
             <Image src={item.image_url} alt={displayName(item.name)} fill className="object-cover" sizes="56px" />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="font-serif italic text-gold/40 text-base">M</span>
+              <span className="font-serif italic text-highlight opacity-40 text-base">M</span>
             </div>
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-gold text-[10px] font-bold uppercase tracking-wide mb-0.5">{label}</p>
-          <p className="text-cream text-sm font-semibold truncate">{displayName(item.name)}</p>
-          <p className="text-cream/45 text-xs">{formatPrice(item.price_cents)} &middot; tap to view &amp; order</p>
+          <p className="text-highlight text-[10px] font-bold uppercase tracking-wide mb-0.5">{label}</p>
+          <p className="text-app text-sm font-semibold truncate">{displayName(item.name)}</p>
+          <p className="text-app-faint text-xs">{formatPrice(item.price_cents)} &middot; tap to view &amp; order</p>
         </div>
-        <span className="text-gold/70 text-sm font-bold shrink-0 group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+        <span className="text-highlight text-sm font-bold shrink-0 group-hover:translate-x-0.5 transition-transform">&rarr;</span>
       </div>
       <button
         type="button"
         onClick={dismiss}
         aria-label="Dismiss"
-        className="absolute top-1.5 right-1.5 text-cream/30 hover:text-cream/60 text-xs w-5 h-5 flex items-center justify-center"
+        className="absolute top-1.5 right-1.5 text-app-faint hover:text-app-soft text-xs w-5 h-5 flex items-center justify-center"
       >
         &#10005;
       </button>

@@ -210,18 +210,18 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
   }
 
   return (
-    <div className="rounded-2xl border border-cream/10 bg-cream/[0.03] p-5">
+    <div className="rounded-app border border-line bg-surface p-5">
       <div className="flex items-center justify-between mb-1">
         <p className="section-label !mb-0">Use Your Points</p>
         {phase === 'member' && (
-          <button type="button" onClick={switchAccount} className="text-cream/35 hover:text-cream/65 text-xs">
+          <button type="button" onClick={switchAccount} className="text-app-faint hover:text-app-soft text-xs">
             Not you?
           </button>
         )}
       </div>
 
       {(phase === 'init' || phase === 'checking') && (
-        <p className="text-cream/45 text-sm py-2">Checking your rewards…</p>
+        <p className="text-app-faint text-sm py-2">Checking your rewards…</p>
       )}
 
       {phase === 'phone_entry' && (
@@ -243,7 +243,7 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
 
       {phase === 'join' && (
         <form onSubmit={handleJoin} className="mt-3 space-y-2.5">
-          <p className="text-cream/55 text-xs">
+          <p className="text-app-soft text-xs">
             {formatPhoneInput(phoneInput)} isn&rsquo;t enrolled yet — join free and get bonus points right away.
           </p>
           <input
@@ -265,7 +265,7 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
             <button type="submit" disabled={joining} className="btn-primary text-sm disabled:opacity-50">
               {joining ? 'Joining…' : 'Join & Check Points'}
             </button>
-            <button type="button" onClick={switchAccount} className="text-cream/40 hover:text-cream/70 text-xs">
+            <button type="button" onClick={switchAccount} className="text-app-faint hover:text-app-soft text-xs">
               Use a different number
             </button>
           </div>
@@ -274,24 +274,24 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
 
       {phase === 'error' && (
         <div className="mt-3">
-          <p className="text-brick text-sm mb-2">{errorMsg}</p>
-          <button type="button" onClick={switchAccount} className="text-cream/40 hover:text-cream/70 text-xs">Try again</button>
+          <p className="text-danger text-sm mb-2">{errorMsg}</p>
+          <button type="button" onClick={switchAccount} className="text-app-faint hover:text-app-soft text-xs">Try again</button>
         </div>
       )}
 
       {phase === 'member' && customer && (
         <div className="mt-3">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-cream/70 text-sm">
+            <p className="text-app-soft text-sm">
               Hi{customer.first_name ? ` ${customer.first_name}` : ''} — you have{' '}
-              <span className="text-gold font-serif font-semibold">{customer.points_balance} points</span>
+              <span className="text-highlight font-serif font-semibold">{customer.points_balance} points</span>
             </p>
             <span className={`badge ${TIER_CLASS[customer.current_tier] || TIER_CLASS.bronze}`}>
               {TIER_LABEL[customer.current_tier] || 'Bronze'}
             </span>
           </div>
 
-          {errorMsg && <p className="text-brick text-sm mb-3">{errorMsg}</p>}
+          {errorMsg && <p className="text-danger text-sm mb-3">{errorMsg}</p>}
 
           {pendingCodes.length > 0 && (
             <div className="space-y-2 mb-4">
@@ -300,20 +300,20 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
                 return (
                   <div
                     key={pc.code}
-                    className={`flex items-center justify-between rounded-xl border px-4 py-3 gap-3 ${
-                      isSelected ? 'border-gold/40 bg-gold/[0.08]' : 'border-cream/10 bg-cream/[0.02]'
+                    className={`flex items-center justify-between rounded-app-sm border px-4 py-3 gap-3 ${
+                      isSelected ? 'border-highlight-line bg-highlight-wash' : 'border-line bg-surface'
                     }`}
                   >
                     <div className="min-w-0">
-                      <p className="text-cream text-sm font-semibold">
-                        {pc.reward_name} <span className="text-gold font-serif tracking-wide">{pc.code}</span>
+                      <p className="text-app text-sm font-semibold">
+                        {pc.reward_name} <span className="text-highlight font-serif tracking-wide">{pc.code}</span>
                       </p>
-                      <p className="text-cream/40 text-xs mt-0.5">
+                      <p className="text-app-faint text-xs mt-0.5">
                         {isSelected ? 'Pending — applies automatically at checkout' : 'Redeemed, unused — pending'}
                       </p>
                     </div>
                     {isSelected ? (
-                      <button type="button" onClick={clearSelectedCode} className="text-cream/40 hover:text-cream/70 text-xs shrink-0">
+                      <button type="button" onClick={clearSelectedCode} className="text-app-faint hover:text-app-soft text-xs shrink-0">
                         Remove
                       </button>
                     ) : (
@@ -335,13 +335,13 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
                 return (
                   <div
                     key={r.id}
-                    className={`flex items-center justify-between rounded-xl border px-4 py-3 gap-3 ${
-                      unlocked ? 'border-gold/30 bg-gold/[0.06]' : 'border-cream/10 bg-cream/[0.02]'
+                    className={`flex items-center justify-between rounded-app-sm border px-4 py-3 gap-3 ${
+                      unlocked ? 'border-highlight-line bg-highlight-wash' : 'border-line bg-surface'
                     }`}
                   >
                     <div className="min-w-0">
-                      <p className={`text-sm font-semibold ${unlocked ? 'text-cream' : 'text-cream/50'}`}>{r.name}</p>
-                      {r.description && <p className="text-cream/40 text-xs mt-0.5">{r.description}</p>}
+                      <p className={`text-sm font-semibold ${unlocked ? 'text-app' : 'text-app-soft'}`}>{r.name}</p>
+                      {r.description && <p className="text-app-faint text-xs mt-0.5">{r.description}</p>}
                     </div>
                     {unlocked ? (
                       <button
@@ -352,7 +352,7 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
                         {redeeming ? 'Redeeming…' : `Redeem · ${r.points_required} pts`}
                       </button>
                     ) : (
-                      <span className="text-xs font-semibold shrink-0 ml-3 text-cream/35 text-right">
+                      <span className="text-xs font-semibold shrink-0 ml-3 text-app-faint text-right">
                         Earn {r.points_required - customer.points_balance} more pt
                         {r.points_required - customer.points_balance === 1 ? '' : 's'}
                       </span>
@@ -364,11 +364,11 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
           )}
 
           {rewards.length === 0 && pendingCodes.length === 0 && (
-            <p className="text-cream/40 text-sm">No rewards available right now — keep ordering to earn points!</p>
+            <p className="text-app-faint text-sm">No rewards available right now — keep ordering to earn points!</p>
           )}
 
           {justRedeemedCode && (
-            <p className="text-gold text-xs mt-3">Applied automatically — no code to copy. ✓</p>
+            <p className="text-highlight text-xs mt-3">Applied automatically — no code to copy. ✓</p>
           )}
         </div>
       )}

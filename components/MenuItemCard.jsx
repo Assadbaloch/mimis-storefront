@@ -43,11 +43,11 @@ export default function MenuItemCard({ item, large = false, autoOpen = false }) 
         tabIndex={0}
         onClick={() => setShowModal(true)}
         onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setShowModal(true)}
-        className={`menu-card group rounded-2xl overflow-hidden bg-cream/[0.04] border flex flex-col cursor-pointer ${
-          autoOpen ? 'border-gold/60 ring-2 ring-gold/40 animate-pulse-once' : 'border-cream/10 hover:border-gold/40'
+        className={`menu-card group rounded-app overflow-hidden bg-surface border flex flex-col cursor-pointer ${
+          autoOpen ? 'border-highlight-line ring-2 ring-highlight-line animate-pulse-once' : 'border-line hover:border-highlight-line'
         }`}
       >
-        <div className={`relative overflow-hidden ${large ? 'aspect-[4/3]' : 'aspect-square'} bg-gradient-to-br from-cream/10 to-black/40`}>
+        <div className={`relative overflow-hidden ${large ? 'aspect-[4/3]' : 'aspect-square'} bg-gradient-to-br from-app-wash to-black/40`}>
           {item.video_url ? (
             <video
               src={item.video_url}
@@ -61,21 +61,21 @@ export default function MenuItemCard({ item, large = false, autoOpen = false }) 
             <Image src={item.image_url} alt={name} fill className="menu-media object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="font-serif italic text-gold/30 text-3xl">Mimi&rsquo;s</span>
+              <span className="font-serif italic text-highlight opacity-30 text-3xl">Mimi&rsquo;s</span>
             </div>
           )}
           {item.badge_text && (
-            <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wide text-gold border border-gold/60 rounded-full px-2.5 py-1 bg-ink/70">
+            <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wide text-highlight border border-highlight-line rounded-full px-2.5 py-1 bg-scrim">
               {item.badge_text}
             </span>
           )}
         </div>
         <div className="p-4 flex flex-col gap-1.5 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-serif font-semibold text-cream text-[15px] leading-snug">{name}</h3>
-            <span className="text-gold font-serif font-semibold text-[15px] whitespace-nowrap">{formatPrice(item.price_cents)}</span>
+            <h3 className="font-serif font-semibold text-app text-[15px] leading-snug">{name}</h3>
+            <span className="text-highlight font-serif font-semibold text-[15px] whitespace-nowrap">{formatPrice(item.price_cents)}</span>
           </div>
-          {description && <p className="text-cream/55 text-xs leading-relaxed line-clamp-2">{description}</p>}
+          {description && <p className="text-app-soft text-xs leading-relaxed line-clamp-2">{description}</p>}
           <button onClick={handleAdd} className="btn-primary mt-auto self-start !px-4 !py-2 !text-[11px] active:scale-95 transition-transform">
             {added ? 'Added ✓' : 'Add to Cart'}
           </button>

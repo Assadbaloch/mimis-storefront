@@ -39,8 +39,8 @@ export default async function MenuPage() {
     <>
       <section className="px-5 md:px-8 pt-16 pb-10 text-center">
         <p className="section-label mb-3">Our Menu</p>
-        <h1 className="font-serif font-bold text-4xl md:text-5xl text-cream">Made fresh. Made halal.</h1>
-        <p className="text-cream/60 max-w-lg mx-auto mt-4">
+        <h1 className="font-serif font-bold text-4xl md:text-5xl text-app">Made fresh. Made halal.</h1>
+        <p className="text-app-soft max-w-lg mx-auto mt-4">
           Every item below is live and ready to order — if it&rsquo;s on the menu, it&rsquo;s in stock.
         </p>
       </section>
@@ -50,7 +50,7 @@ export default async function MenuPage() {
           <MenuBrowser groups={groups} />
         </Suspense>
       ) : (
-        <p className="text-center text-cream/50 py-20">The menu is temporarily unavailable. Please check back shortly.</p>
+        <p className="text-center text-app-soft py-20">The menu is temporarily unavailable. Please check back shortly.</p>
       )}
     </>
   );

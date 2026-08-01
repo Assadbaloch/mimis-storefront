@@ -70,13 +70,13 @@ export default function NotificationOptIn({ orderId }) {
 
   if (state === 'subscribed') {
     return (
-      <p className="text-center text-gold text-sm mt-5">We&rsquo;ll notify you the moment it&rsquo;s ready.</p>
+      <p className="text-center text-highlight text-sm mt-5">We&rsquo;ll notify you the moment it&rsquo;s ready.</p>
     );
   }
 
   if (state === 'denied') {
     return (
-      <p className="text-center text-cream/40 text-xs mt-5">
+      <p className="text-center text-app-faint text-xs mt-5">
         Notifications are blocked for this site in your browser settings.
       </p>
     );
@@ -84,30 +84,30 @@ export default function NotificationOptIn({ orderId }) {
 
   return (
     <div className="flex flex-col gap-2 mt-5">
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-cream/10 bg-cream/[0.03] px-4 py-3">
-        <p className="text-cream/70 text-sm">Get a notification the moment your order is ready.</p>
+      <div className="flex items-center justify-between gap-3 rounded-app-sm border border-line bg-surface px-4 py-3">
+        <p className="text-app-soft text-sm">Get a notification the moment your order is ready.</p>
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleEnable}
             disabled={state === 'subscribing'}
-            className="text-xs font-bold uppercase tracking-wide text-gold hover:text-gold/80 disabled:opacity-50"
+            className="text-xs font-bold uppercase tracking-wide text-highlight hover:opacity-80 disabled:opacity-50"
           >
             {state === 'subscribing' ? 'Enabling…' : 'Notify Me'}
           </button>
-          <button onClick={handleDismiss} className="text-cream/30 hover:text-cream/60 text-xs">
+          <button onClick={handleDismiss} className="text-app-faint hover:text-app-soft text-xs">
             Dismiss
           </button>
         </div>
       </div>
       {state === 'error' && (
-        <p className="text-center text-red-400 text-xs px-1">{errorMsg} Tap Notify Me to try again.</p>
+        <p className="text-center text-danger text-xs px-1">{errorMsg} Tap Notify Me to try again.</p>
       )}
-      <label className="flex items-start gap-2 px-1 text-cream/40 text-xs cursor-pointer select-none">
+      <label className="flex items-start gap-2 px-1 text-app-faint text-xs cursor-pointer select-none">
         <input
           type="checkbox"
           checked={marketingConsent}
           onChange={(e) => setMarketingConsent(e.target.checked)}
-          className="mt-0.5 accent-gold"
+          className="mt-0.5 accent-highlight"
         />
         <span>
           Also send me deals, new menu items, and limited-time offers. Optional

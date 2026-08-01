@@ -58,18 +58,18 @@ export default function CategoryPills({ categories, active, onSelect, searchSlot
   }
 
   return (
-    <div className="sticky top-20 z-40 bg-ink/95 backdrop-blur-md border-b border-cream/10 -mx-5 px-5 md:-mx-8 md:px-8">
+    <div className="sticky top-20 z-40 bg-surface-strong backdrop-blur-md border-b border-line -mx-5 px-5 md:-mx-8 md:px-8">
       {searchSlot && <div className="max-w-6xl mx-auto pt-3">{searchSlot}</div>}
       {hidePills ? <div className="h-2" /> : (
       <div className="relative max-w-6xl mx-auto">
         {showLeftFade && (
           <>
-            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 bg-gradient-to-r from-ink/95 to-transparent z-10" />
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 bg-gradient-to-r from-surface-strong to-transparent z-10" />
             <button
               type="button"
               onClick={() => scrollByPage(-1)}
               aria-label="Scroll categories left"
-              className="hidden md:flex absolute left-0.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-ink border border-cream/20 text-cream/70 hover:text-gold hover:border-gold/50 items-center justify-center transition-colors"
+              className="hidden md:flex absolute left-0.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-surface-strong border border-line text-app-soft hover:text-highlight hover:border-highlight-line items-center justify-center transition-colors"
             >
               ‹
             </button>
@@ -77,12 +77,12 @@ export default function CategoryPills({ categories, active, onSelect, searchSlot
         )}
         {showRightFade && (
           <>
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-ink/95 to-transparent z-10" />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-surface-strong to-transparent z-10" />
             <button
               type="button"
               onClick={() => scrollByPage(1)}
               aria-label="Scroll categories right"
-              className="hidden md:flex absolute right-0.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-ink border border-cream/20 text-cream/70 hover:text-gold hover:border-gold/50 items-center justify-center transition-colors"
+              className="hidden md:flex absolute right-0.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-surface-strong border border-line text-app-soft hover:text-highlight hover:border-highlight-line items-center justify-center transition-colors"
             >
               ›
             </button>

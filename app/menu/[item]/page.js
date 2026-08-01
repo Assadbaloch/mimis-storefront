@@ -70,13 +70,13 @@ export default async function ProductPage({ params }) {
     <div className="max-w-3xl mx-auto px-5 md:px-8 py-10 md:py-14">
       <Link
         href="/menu"
-        className="inline-flex items-center gap-1.5 text-cream/50 hover:text-gold text-xs font-bold uppercase tracking-wide transition-colors mb-6"
+        className="inline-flex items-center gap-1.5 text-app-soft hover:text-highlight text-xs font-bold uppercase tracking-wide transition-colors mb-6"
       >
         <span aria-hidden="true">←</span> Back to Menu
       </Link>
 
       <div className="grid md:grid-cols-[1.1fr,1fr] gap-8 md:gap-10">
-        <div className="rounded-3xl overflow-hidden border border-cream/10">
+        <div className="rounded-app-lg overflow-hidden border border-line">
           <Gallery
             media={item.media}
             fallbackImage={item.image_url}
@@ -90,13 +90,13 @@ export default async function ProductPage({ params }) {
 
         <div>
           <p className="section-label mb-2">{displayCategory(item.category)}</p>
-          <h1 className="font-serif font-bold text-3xl md:text-[2.25rem] text-cream leading-tight">{name}</h1>
-          <p className="text-gold font-serif font-semibold text-2xl mt-2">{formatPrice(item.price_cents)}</p>
+          <h1 className="font-serif font-bold text-3xl md:text-[2.25rem] text-app leading-tight">{name}</h1>
+          <p className="text-highlight font-serif font-semibold text-2xl mt-2">{formatPrice(item.price_cents)}</p>
 
           {description ? (
-            <p className="text-cream/65 text-base leading-relaxed mt-4">{description}</p>
+            <p className="text-app-soft text-base leading-relaxed mt-4">{description}</p>
           ) : (
-            <p className="text-cream/35 text-base leading-relaxed mt-4 italic">Hand-prepared fresh to order.</p>
+            <p className="text-app-faint text-base leading-relaxed mt-4 italic">Hand-prepared fresh to order.</p>
           )}
 
           <div className="mt-6">
@@ -108,7 +108,7 @@ export default async function ProductPage({ params }) {
       {item.related.length > 0 && (
         <div className="mt-16">
           <p className="section-label mb-1">You might also like</p>
-          <h2 className="font-serif font-bold text-2xl text-cream mb-5">More from {displayCategory(item.category)}</h2>
+          <h2 className="font-serif font-bold text-2xl text-app mb-5">More from {displayCategory(item.category)}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
             {item.related.map((r) => (
               <MenuItemCard key={r.clover_item_id} item={r} />

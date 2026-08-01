@@ -16,8 +16,8 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <div className="max-w-2xl mx-auto px-5 py-24 text-center">
-        <h1 className="font-serif font-bold text-3xl text-cream mb-3">Your cart is empty</h1>
-        <p className="text-cream/55 mb-8">Add something tasty from the menu to get started.</p>
+        <h1 className="font-serif font-bold text-3xl text-app mb-3">Your cart is empty</h1>
+        <p className="text-app-soft mb-8">Add something tasty from the menu to get started.</p>
         <Link href="/menu" className="btn-primary">Browse the Menu</Link>
       </div>
     );
@@ -25,29 +25,29 @@ export default function CartPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-5 py-16 pb-40 md:pb-28">
-      <h1 className="font-serif font-bold text-3xl md:text-4xl text-cream mb-8">Your Order</h1>
+      <h1 className="font-serif font-bold text-3xl md:text-4xl text-app mb-8">Your Order</h1>
       <div className="space-y-4">
         {items.map((item) => (
-          <div key={item._key} className="flex items-center gap-4 border-b border-cream/10 pb-4 animate-fade-in">
+          <div key={item._key} className="flex items-center gap-4 border-b border-line pb-4 animate-fade-in">
             <div className="flex-1">
-              <p className="font-serif font-semibold text-cream">{item.name}</p>
+              <p className="font-serif font-semibold text-app">{item.name}</p>
               {item.special_instructions && (
-                <p className="text-cream/45 text-xs mt-0.5">{item.special_instructions}</p>
+                <p className="text-app-faint text-xs mt-0.5">{item.special_instructions}</p>
               )}
-              <p className="text-gold text-sm mt-1">{formatPrice(item.price_cents)}</p>
+              <p className="text-highlight text-sm mt-1">{formatPrice(item.price_cents)}</p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => updateQuantity(item._key, item.quantity - 1)}
-                className="w-7 h-7 rounded-full border border-cream/20 text-cream/70 hover:border-gold hover:text-gold active:scale-90 transition-transform"
+                className="w-7 h-7 rounded-full border border-app-tint text-app-soft hover:border-highlight hover:text-highlight active:scale-90 transition-transform"
               >&minus;</button>
-              <span className="w-6 text-center text-cream">{item.quantity}</span>
+              <span className="w-6 text-center text-app">{item.quantity}</span>
               <button
                 onClick={() => updateQuantity(item._key, item.quantity + 1)}
-                className="w-7 h-7 rounded-full border border-cream/20 text-cream/70 hover:border-gold hover:text-gold active:scale-90 transition-transform"
+                className="w-7 h-7 rounded-full border border-app-tint text-app-soft hover:border-highlight hover:text-highlight active:scale-90 transition-transform"
               >+</button>
             </div>
-            <button onClick={() => removeItem(item._key)} className="text-cream/40 hover:text-brick text-xs ml-2">
+            <button onClick={() => removeItem(item._key)} className="text-app-faint hover:text-danger text-xs ml-2">
               Remove
             </button>
           </div>
@@ -55,24 +55,24 @@ export default function CartPage() {
       </div>
 
       <div className="flex items-center justify-between mt-8 pt-4">
-        <span className="text-cream/70 text-lg">Subtotal</span>
-        <span className={`font-serif font-semibold text-2xl ${discountCents > 0 ? 'text-cream/60 line-through' : 'text-gold'}`}>
+        <span className="text-app-soft text-lg">Subtotal</span>
+        <span className={`font-serif font-semibold text-2xl ${discountCents > 0 ? 'text-app-soft line-through' : 'text-highlight'}`}>
           {formatPrice(totalCents)}
         </span>
       </div>
       {discountCents > 0 && (
         <>
           <div className="flex items-center justify-between pt-1">
-            <span className="text-gold text-sm">Reward discount</span>
-            <span className="text-gold text-sm">&minus;{formatPrice(discountCents)}</span>
+            <span className="text-highlight text-sm">Reward discount</span>
+            <span className="text-highlight text-sm">&minus;{formatPrice(discountCents)}</span>
           </div>
-          <div className="flex items-center justify-between pt-2 mt-1 border-t border-cream/10">
-            <span className="text-cream/70 text-lg">Total due</span>
-            <span className="text-gold font-serif font-semibold text-2xl">{formatPrice(dueCents)}</span>
+          <div className="flex items-center justify-between pt-2 mt-1 border-t border-line">
+            <span className="text-app-soft text-lg">Total due</span>
+            <span className="text-highlight font-serif font-semibold text-2xl">{formatPrice(dueCents)}</span>
           </div>
         </>
       )}
-      <p className="text-cream/40 text-xs mt-1">Tax and any applicable fees are calculated at checkout.</p>
+      <p className="text-app-faint text-xs mt-1">Tax and any applicable fees are calculated at checkout.</p>
 
       <div className="mt-8">
         <MemberRewardsPanel onDiscountChange={setDiscountCents} />
@@ -82,15 +82,15 @@ export default function CartPage() {
           full item list, which on a long order meant scrolling past everything
           to find it. Sits above the mobile bottom tab bar (which is itself
           md:hidden, fixed bottom-0), flush to the viewport bottom on desktop. */}
-      <div className="fixed inset-x-0 bottom-16 md:bottom-0 z-30 bg-ink/95 backdrop-blur-md border-t border-cream/10">
+      <div className="fixed inset-x-0 bottom-16 md:bottom-0 z-30 bg-surface-strong backdrop-blur-md border-t border-line">
         <div className="max-w-2xl mx-auto px-5 py-3 flex items-center justify-between gap-4">
           <div>
-            <p className="text-cream/45 text-[11px] uppercase tracking-wide font-bold">
+            <p className="text-app-faint text-[11px] uppercase tracking-wide font-bold">
               {discountCents > 0 ? 'Total due' : 'Subtotal'}
             </p>
-            <p className="text-gold font-serif font-semibold text-lg">{formatPrice(dueCents)}</p>
+            <p className="text-highlight font-serif font-semibold text-lg">{formatPrice(dueCents)}</p>
             {discountCents > 0 && (
-              <p className="text-gold/70 text-[11px]">Reward applied &minus;{formatPrice(discountCents)}</p>
+              <p className="text-highlight text-[11px]">Reward applied &minus;{formatPrice(discountCents)}</p>
             )}
           </div>
           <Link href="/checkout" className="btn-primary !flex shrink-0">
