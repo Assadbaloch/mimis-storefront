@@ -117,6 +117,17 @@ export default function CheckoutPage() {
     setPrefilled(false);
   }
 
+  // Submitting swaps a long form for a much shorter summary WITHOUT changing
+  // route, so nothing else resets the scroll: the customer pressed a button at
+  // the bottom of the form and stayed at that offset, which is now past the end
+  // of the summary -- landing them in the footer with the order total somewhere
+  // above them. Route-level scroll handling cannot see this because the URL
+  // never changes; it has to be handled here, at the swap itself.
+  useEffect(() => {
+    if (!checkoutResult || typeof window === 'undefined') return;
+    window.scrollTo(0, 0);
+  }, [checkoutResult]);
+
   // A stored review always belongs to an order that was ALREADY placed, and
   // placing one empties the cart. So a non-empty cart means the customer has
   // started a new order since -- the saved review is stale and must not be

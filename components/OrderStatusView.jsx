@@ -189,6 +189,9 @@ export default function OrderStatusView({ heading, requireActive = false }) {
         setOrder(row);
         setOrderId(null);
         setNotFound(false);
+        // Same in-place swap as checkout: the lookup form is replaced by the
+        // order view without a route change, so nothing else resets scroll.
+        if (typeof window !== 'undefined') window.scrollTo(0, 0);
       }
     } catch {
       setLookupError('Could not reach the order system. Please try again.');
