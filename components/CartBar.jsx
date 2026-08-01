@@ -48,11 +48,14 @@ export default function CartBar() {
 
   if (hidden) return null;
 
+  // z-[95] is chosen, not arbitrary: above the theme's own floating CTA (80),
+  // so this can never end up buried underneath it, but below the product modal
+  // (100), so opening an item still covers the bar rather than fighting it.
   return (
     <Link
       href="/cart"
       aria-label={`View cart, ${count} item${count === 1 ? '' : 's'}, ${formatPrice(totalCents)}`}
-      className={`fixed inset-x-3 bottom-3 z-[60] flex items-center justify-between gap-3 rounded-full
+      className={`fixed inset-x-3 bottom-3 z-[95] flex items-center justify-between gap-3 rounded-full
         bg-accent text-on-accent shadow-2xl shadow-black/40 pl-5 pr-3 py-3
         md:inset-x-auto md:right-5 md:min-w-[320px] animate-fade-in
         ${bumping ? 'animate-pulse-once' : ''}`}
