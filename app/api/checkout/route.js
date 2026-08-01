@@ -18,6 +18,20 @@ import { NextResponse } from 'next/server';
 // fall back to discount_cents: 0 rather than failing the order.
 const N8N_BASE_URL = process.env.MIMIS_N8N_BASE_URL || 'https://automation.teamastrixdev.com';
 
+// Same normalization/validation the n8n Online Order Intake workflow now
+// enforces server-side (Calc Order Total + Has Phone?) -- duplicated here so
+// bad numbers get a clear, immediate error instead of a silent $0 delivery
+// fee discovered only after Uber rejects the dropoff phone. Deliberately
+// does NOT slice(-10) a too-long number down to a fake 10-digit string --
+// that's what let "89865342183" (11 digits, not a valid US number) through
+// undetected before.
+function normalizePhone(raw) {
+  const digits = String(raw || '').replace(/\D/g, '');
+  if (digits.length === 10) return digits;
+  if (digits.length === 11 && digits[0] === '1') return digits.slice(1);
+  return null;
+}
+
 export async function POST(request) {
   let body;
   try {
@@ -26,8 +40,9 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  if (!body?.phone_number) {
-    return NextResponse.json({ success: false, error: 'phone_number is required' }, { status: 400 });
+  const phone = normalizePhone(body?.phone_number);
+  if (!phone) {
+    return NextResponse.json({ success: false, error: 'A valid 10-digit phone number is required' }, { status: 400 });
   }
   if (!Array.isArray(body?.items) || body.items.length === 0) {
     return NextResponse.json({ success: false, error: 'items must be a non-empty array' }, { status: 400 });
@@ -58,7 +73,7 @@ export async function POST(request) {
       body: JSON.stringify({
         first_name: body.first_name || '',
         last_name: body.last_name || '',
-        phone_number: body.phone_number,
+        phone_number: phone,
         email: body.email || '',
         order_type: body.order_type || 'pickup',
         location: body.location || 'Madison Heights',

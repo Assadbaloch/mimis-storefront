@@ -1,10 +1,40 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/lib/cart';
 import { formatPrice } from '@/lib/format';
 import { REDEMPTION_CODE_KEY } from '@/lib/loyalty';
 import MemberRewardsPanel from '@/components/MemberRewardsPanel';
+
+// Session-scoped (not localStorage): this mirrors a live, ~15-minute Clover
+// checkout session, not something that should survive past the browser tab
+// closing the way mimis-last-order (order tracking) does. Guarded by
+// REVIEW_TTL_MS below so a stale entry never masks a genuinely new order.
+const REVIEW_STORAGE_KEY = 'mimis-checkout-review';
+const REVIEW_TTL_MS = 15 * 60 * 1000;
+
+function readStoredReview() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(REVIEW_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.savedAt || Date.now() - parsed.savedAt > REVIEW_TTL_MS) {
+      window.sessionStorage.removeItem(REVIEW_STORAGE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function storeReview(result) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify({ ...result, savedAt: Date.now() }));
+  } catch { /* ignore */ }
+}
 
 export default function CheckoutPage() {
   const { items, totalCents, clear } = useCart();
@@ -18,8 +48,24 @@ export default function CheckoutPage() {
   const [rewardCode, setRewardCode] = useState(null);
   const [discountCents, setDiscountCents] = useState(0);
   const [redirectNotice, setRedirectNotice] = useState('');
-  const [checkoutResult, setCheckoutResult] = useState(null);
+  // Initialized lazily from sessionStorage so a refresh (or the browser
+  // restoring a backgrounded tab) lands back on the real order review
+  // instead of the "Nothing to check out" screen -- the order already
+  // exists server-side and the cart is already cleared by that point, so
+  // losing this state previously meant losing the only place the customer
+  // could see their total or get back to Clover.
+  const [checkoutResult, setCheckoutResult] = useState(() => readStoredReview());
   const [redirecting, setRedirecting] = useState(false);
+
+  // Belt-and-suspenders: re-check on mount too, in case this component
+  // instance was created before hydration had access to sessionStorage.
+  useEffect(() => {
+    if (!checkoutResult) {
+      const stored = readStoredReview();
+      if (stored) setCheckoutResult(stored);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Client-side preview only -- the server (Online Order Intake workflow)
   // independently re-validates the redemption code against this same
   // phone number and is the actual source of truth for discount_cents,
@@ -109,8 +155,18 @@ export default function CheckoutPage() {
     setError('');
     setRedirectNotice('');
 
-    if (!form.phone_number.trim()) {
+    // Same 10-digit validation the server (app/api/checkout and the Online
+    // Order Intake workflow) enforces -- catching it here means a mistyped
+    // or malformed number never even makes a network round trip, instead of
+    // silently producing a $0 delivery fee later (what "89865342183" did).
+    const phoneDigits = form.phone_number.replace(/\D/g, '');
+    const validPhone = phoneDigits.length === 10 || (phoneDigits.length === 11 && phoneDigits[0] === '1');
+    if (!phoneDigits) {
       setError('Phone number is required.');
+      return;
+    }
+    if (!validPhone) {
+      setError('Please enter a valid 10-digit phone number.');
       return;
     }
 
@@ -185,14 +241,16 @@ export default function CheckoutPage() {
       // let the customer hit "Continue" themselves, rather than silently
       // redirecting to Clover on a timer -- that’s what was hiding the
       // discount math entirely on fast connections / short timers.
-      setCheckoutResult({
+      const result = {
         checkout_url: data.checkout_url,
         order_number: data.order_number,
         order_total_cents: subtotal,
         discount_cents: discount,
         delivery_fee_cents: deliveryFee,
         total_due_cents: data.total_due_cents ?? (subtotal + deliveryFee - discount),
-      });
+      };
+      setCheckoutResult(result);
+      storeReview(result);
       setSubmitting(false);
     } catch (err) {
       setError('Could not reach the order system. Please try again.');
