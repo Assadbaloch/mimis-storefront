@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/lib/cart';
 import { formatPrice } from '@/lib/format';
-import { REDEMPTION_CODE_KEY } from '@/lib/loyalty';
+import { REDEMPTION_CODE_KEY, MEMBER_PHONE_KEY, formatPhoneInput } from '@/lib/loyalty';
+import { readContact, saveContact, clearContact, fetchMemberContact, fillBlanks } from '@/lib/customer';
 import MemberRewardsPanel from '@/components/MemberRewardsPanel';
 
 // Session-scoped (not localStorage): this mirrors a live, ~15-minute Clover
@@ -61,6 +62,7 @@ export default function CheckoutPage() {
   // could see their total or get back to Clover.
   const [checkoutResult, setCheckoutResult] = useState(() => readStoredReview());
   const [redirecting, setRedirecting] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
 
   // Belt-and-suspenders: re-check on mount too, in case this component
   // instance was created before hydration had access to sessionStorage.
@@ -71,6 +73,49 @@ export default function CheckoutPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Pre-fill from this device's last checkout, then top up any still-blank
+  // fields from the loyalty record if this device already knows the customer's
+  // phone. Both paths fill blanks only, so anything typed always wins -- the
+  // async one can land after the customer has started typing.
+  useEffect(() => {
+    const saved = readContact();
+    let known = null;
+
+    if (saved) {
+      setForm((f) => fillBlanks(f, saved));
+      if (saved.order_type === 'delivery') setOrderType('delivery');
+      known = saved.phone_number;
+      setPrefilled(true);
+    }
+    if (!known && typeof window !== 'undefined') {
+      try { known = window.localStorage.getItem(MEMBER_PHONE_KEY); } catch { /* ignore */ }
+    }
+    if (!known) return;
+
+    let cancelled = false;
+    fetchMemberContact(known).then((member) => {
+      if (cancelled || !member) return;
+      setForm((f) => {
+        const next = fillBlanks(f, member);
+        if (!next.phone_number && member.phone_number) {
+          next.phone_number = formatPhoneInput(member.phone_number);
+        }
+        return next;
+      });
+      setPrefilled(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  function forgetMe() {
+    clearContact();
+    setForm({
+      first_name: '', last_name: '', phone_number: '', email: '', notes: '',
+      address_line1: '', address_line2: '', city: '', state: '', postal_code: '',
+    });
+    setPrefilled(false);
+  }
 
   // A stored review always belongs to an order that was ALREADY placed, and
   // placing one empties the cart. So a non-empty cart means the customer has
@@ -241,6 +286,9 @@ export default function CheckoutPage() {
         order_number: data.order_number,
         created_at: new Date().toISOString(),
       }));
+      // Only remembered once an order actually went through -- details from an
+      // abandoned attempt are not worth carrying forward.
+      saveContact(form, orderType);
       clear();
 
       const discount = data.discount_cents || 0;
@@ -352,6 +400,14 @@ export default function CheckoutPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {prefilled && (
+          <div className="flex items-center justify-between gap-3 rounded-app-sm border border-line bg-surface px-4 py-2.5">
+            <p className="text-app-soft text-xs">Your details are filled in from last time.</p>
+            <button type="button" onClick={forgetMe} className="text-app-faint hover:text-app-soft text-xs shrink-0 underline">
+              Not you?
+            </button>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4">
           <input required placeholder="First name" value={form.first_name} onChange={update('first_name')} className="input" />
           <input placeholder="Last name" value={form.last_name} onChange={update('last_name')} className="input" />

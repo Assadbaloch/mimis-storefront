@@ -1,7 +1,7 @@
 'use client';
 import Image from 'next/image';
 import { formatPrice, displayName } from '@/lib/format';
-import { useCart } from '@/lib/cart';
+import { useCart, cartKeyFor } from '@/lib/cart';
 import { useEffect, useState } from 'react';
 import ProductModal from '@/components/ProductModal';
 
@@ -10,11 +10,16 @@ import ProductModal from '@/components/ProductModal';
 // itself on arrival, satisfying the "direct the customer to the product" goal
 // rather than just scrolling them to the right category.
 export default function MenuItemCard({ item, large = false, autoOpen = false }) {
-  const { addItem } = useCart();
-  const [added, setAdded] = useState(false);
+  const { items, addItem, updateQuantity } = useCart();
   const [showModal, setShowModal] = useState(false);
   const name = displayName(item.name);
   const description = item.description_override || null;
+
+  // The plain line this card adds to: no modifiers, no instructions. Anything
+  // added through the modal with special instructions is a separate line and
+  // is deliberately not counted or altered here.
+  const plainKey = cartKeyFor({ clover_item_id: item.clover_item_id });
+  const quantity = items.find((i) => i._key === plainKey)?.quantity || 0;
 
   useEffect(() => {
     if (autoOpen) setShowModal(true);
@@ -32,8 +37,18 @@ export default function MenuItemCard({ item, large = false, autoOpen = false }) 
       special_instructions: '',
       image_url: item.image_url,
     });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1400);
+  }
+
+  function step(e, delta) {
+    e.stopPropagation();
+    updateQuantity(plainKey, quantity + delta);
+  }
+
+  // The card itself is a button that opens the product. Key presses on the
+  // stepper would otherwise bubble up to it and open the modal on every tap of
+  // plus or minus.
+  function swallowKeys(e) {
+    if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
   }
 
   return (
@@ -76,9 +91,38 @@ export default function MenuItemCard({ item, large = false, autoOpen = false }) 
             <span className="text-highlight font-serif font-semibold text-[15px] whitespace-nowrap">{formatPrice(item.price_cents)}</span>
           </div>
           {description && <p className="text-app-soft text-xs leading-relaxed line-clamp-2">{description}</p>}
-          <button onClick={handleAdd} className="btn-primary mt-auto self-start !px-4 !py-2 !text-[11px] active:scale-95 transition-transform">
-            {added ? 'Added ✓' : 'Add to Cart'}
-          </button>
+          {quantity === 0 ? (
+            <button
+              onClick={handleAdd}
+              aria-label={`Add ${name} to cart`}
+              className="btn-primary mt-auto self-start !px-4 !py-2 !text-[11px] active:scale-95 transition-transform"
+            >
+              Add to Cart
+            </button>
+          ) : (
+            <div
+              onKeyDown={swallowKeys}
+              className="mt-auto self-start flex items-center gap-1 rounded-full bg-accent text-on-accent p-1 animate-fade-in"
+            >
+              <button
+                onClick={(e) => step(e, -1)}
+                aria-label={quantity === 1 ? `Remove ${name} from cart` : `Decrease ${name} quantity`}
+                className="w-7 h-7 rounded-full grid place-items-center text-base leading-none hover:bg-on-accent-soft active:scale-90 transition-transform"
+              >
+                {quantity === 1 ? '✕' : '−'}
+              </button>
+              <span aria-live="polite" className="min-w-[1.5rem] text-center text-[13px] font-bold tabular-nums">
+                {quantity}
+              </span>
+              <button
+                onClick={(e) => step(e, 1)}
+                aria-label={`Increase ${name} quantity`}
+                className="w-7 h-7 rounded-full grid place-items-center text-base leading-none hover:bg-on-accent-soft active:scale-90 transition-transform"
+              >
+                +
+              </button>
+            </div>
+          )}
         </div>
       </div>
       {showModal && <ProductModal item={item} onClose={() => setShowModal(false)} />}

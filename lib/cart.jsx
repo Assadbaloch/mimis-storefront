@@ -4,6 +4,21 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 const CartContext = createContext(null);
 const STORAGE_KEY = 'mimis-cart-v1';
 
+// Identity of a cart line. Two adds of the same product with the same
+// modifiers and instructions collapse into one line with a higher quantity.
+//
+// Exported because callers outside the cart need to answer "is this exact
+// product already in the basket, and how many?" -- the menu card's quantity
+// stepper, for one. Recomputing that string by hand at the call site is how
+// the two silently drift apart the first time this format changes.
+export function cartKeyFor(item) {
+  return (
+    item.clover_item_id +
+    JSON.stringify(item.modifiers || []) +
+    (item.special_instructions || '')
+  );
+}
+
 function readStoredCart() {
   if (typeof window === 'undefined') return [];
   try {
@@ -34,7 +49,7 @@ export function CartProvider({ children }) {
     totalCents: items.reduce((sum, i) => sum + i.price_cents * i.quantity, 0),
     addItem(item) {
       setItems((prev) => {
-        const key = item.clover_item_id + JSON.stringify(item.modifiers || []) + (item.special_instructions || '');
+        const key = cartKeyFor(item);
         const existing = prev.find((i) => i._key === key);
         if (existing) {
           return prev.map((i) => (i._key === key ? { ...i, quantity: i.quantity + item.quantity } : i));
