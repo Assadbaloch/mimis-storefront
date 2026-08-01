@@ -31,15 +31,34 @@ export default function MenuBrowser({ groups }) {
   // it, which is exactly what looked like categories "doing nothing."
   const lastScrolledItemId = useRef(null);
   const lastScrolledCategory = useRef(null);
+  const mobileBarRef = useRef(null);
+  // While a programmatic scroll is in flight the scroll-spy must not fight it:
+  // passing over intervening sections would otherwise rewrite `active` and the
+  // highlight would land somewhere other than what was tapped.
+  const scrollLockRef = useRef(0);
 
-  // requestAnimationFrame alone can fire before menu-item images finish
-  // loading and shift section heights, leaving the scroll short of the real
-  // target. Re-running once more shortly after corrects for that drift.
+  // scrollIntoView({block:'start'}) puts the section flush against the viewport
+  // top, which parks it *behind* the sticky search bar -- so tapping "Burgers"
+  // left the Burgers heading hidden and whatever follows it filling the screen.
+  // Measuring the bar and scrolling to a computed offset is exact regardless of
+  // how tall that bar happens to be at the current breakpoint.
   function scrollToGroup(key) {
     setActive(key);
-    const run = () => sectionRefs.current[key]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scrollLockRef.current = Date.now() + 900;
+    const run = () => {
+      const el = sectionRefs.current[key];
+      if (!el) return;
+      // offsetHeight is 0 when the bar is display:none (desktop), which is
+      // correct there -- the sidebar is sticky but doesn't overlay content.
+      const barH = mobileBarRef.current?.offsetHeight || 0;
+      const top = window.scrollY + el.getBoundingClientRect().top - barH - 14;
+      window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
+    };
+    // Re-run after layout settles: images finishing load shift section offsets,
+    // and on mobile the body scroll-lock from the sheet is released a tick later.
     requestAnimationFrame(run);
-    setTimeout(run, 400);
+    setTimeout(run, 260);
+    setTimeout(run, 620);
   }
 
   // Flat, cross-category filter -- search isn't scoped to whichever category
@@ -63,6 +82,7 @@ export default function MenuBrowser({ groups }) {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
+        if (Date.now() < scrollLockRef.current) return;
         entries.forEach((entry) => {
           if (entry.isIntersecting) setActive(entry.target.dataset.key);
         });
@@ -194,7 +214,7 @@ export default function MenuBrowser({ groups }) {
     <>
       {/* Mobile / tablet: one slim sticky row — search + current category +
           menu button. Everything else lives in the sheet below. */}
-      <div className="lg:hidden sticky top-20 z-40 bg-surface-strong backdrop-blur-md border-b border-line px-5 md:px-8 py-3">
+      <div ref={mobileBarRef} className="lg:hidden sticky top-20 z-40 bg-surface-strong backdrop-blur-md border-b border-line px-5 md:px-8 py-3">
         <div className="flex items-center gap-2.5">
           <div className="flex-1 min-w-0">{searchBox}</div>
           <button

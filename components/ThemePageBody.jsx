@@ -46,7 +46,15 @@ export default async function ThemePageBody({ page }) {
 const CONDITIONAL_AT_RULES = new Set(['media', 'supports', 'container', 'layer', 'scope']);
 
 function scopeCss(css, scope) {
-  return scopeBlock(String(css || ''), scope);
+  // Comments are stripped before parsing, not preserved. Leaving them in broke
+  // this in two ways: a comment sitting directly above an at-rule made the
+  // prelude start with "/*" instead of "@", so `@media` was misread as a
+  // selector and the whole block was emitted as invalid CSS and dropped by the
+  // browser -- which is exactly why theme media queries appeared to do nothing.
+  // A comma inside a comment split the selector list, and a brace inside one
+  // threw off brace matching. None of it reaches the user, so dropping comments
+  // costs nothing and removes all three failure modes.
+  return scopeBlock(String(css || '').replace(/\/\*[\s\S]*?\*\//g, ''), scope);
 }
 
 function scopeBlock(css, scope) {
@@ -64,6 +72,12 @@ function scopeBlock(css, scope) {
     const prelude = css.slice(i, open);
     const body = css.slice(open + 1, close);
     const trimmed = prelude.trim();
+
+    if (!trimmed) {
+      // Stray block with no selector -- drop it rather than emit `#scope {`.
+      i = close + 1;
+      continue;
+    }
 
     if (trimmed.startsWith('@')) {
       const name = trimmed.slice(1).split(/[\s({]/)[0].toLowerCase();
