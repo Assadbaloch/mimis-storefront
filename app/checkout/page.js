@@ -36,6 +36,11 @@ function storeReview(result) {
   } catch { /* ignore */ }
 }
 
+function clearStoredReview() {
+  if (typeof window === 'undefined') return;
+  try { window.sessionStorage.removeItem(REVIEW_STORAGE_KEY); } catch { /* ignore */ }
+}
+
 export default function CheckoutPage() {
   const { items, totalCents, clear } = useCart();
   const [orderType, setOrderType] = useState('pickup');
@@ -66,6 +71,19 @@ export default function CheckoutPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // A stored review always belongs to an order that was ALREADY placed, and
+  // placing one empties the cart. So a non-empty cart means the customer has
+  // started a new order since -- the saved review is stale and must not be
+  // replayed. Without this, editing the cart and returning to checkout showed
+  // the previous order's totals for up to 15 minutes, with no way to get past
+  // it, because the review screen returns before the cart is ever examined.
+  useEffect(() => {
+    if (items.length > 0) {
+      clearStoredReview();
+      setCheckoutResult((current) => (current ? null : current));
+    }
+  }, [items.length]);
   // Client-side preview only -- the server (Online Order Intake workflow)
   // independently re-validates the redemption code against this same
   // phone number and is the actual source of truth for discount_cents,
@@ -92,7 +110,10 @@ export default function CheckoutPage() {
   // Order is already created server-side (pending_payment) and the cart is
   // already cleared by this point -- show the real math before sending them
   // to Clover instead of falling through to the empty-cart screen below.
-  if (checkoutResult) {
+  // Guarded on an empty cart so a live cart always wins over a saved review;
+  // the effect above clears the stored copy, this stops it rendering even for
+  // the single frame before that runs.
+  if (checkoutResult && items.length === 0) {
     const { order_number, order_total_cents, discount_cents, delivery_fee_cents, total_due_cents } = checkoutResult;
     return (
       <div className="max-w-md mx-auto px-5 py-16">

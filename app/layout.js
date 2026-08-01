@@ -12,6 +12,7 @@ import { getThemeShell } from '@/lib/theme';
 import { getEmbedContext } from '@/lib/themeContext';
 import { renderEmbeds } from '@/lib/embeds';
 import CartBridge from '@/components/CartBridge';
+import ScrollToTop from '@/components/ScrollToTop';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -83,6 +84,7 @@ export default async function RootLayout({ children }) {
     <html lang="en" className={fraunces.variable}>
       <body className={shell ? 'mimis-themed' : 'min-h-screen flex flex-col font-sans'}>
         <PwaRegister />
+        <ScrollToTop />
         <CartProvider>
           {shell ? (
             <>
