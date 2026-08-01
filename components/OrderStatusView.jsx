@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { formatPrice } from '@/lib/format';
+import { formatPhoneInput } from '@/lib/loyalty';
 import NotificationOptIn from '@/components/NotificationOptIn';
 
 const STATUS_LABEL = {
@@ -30,11 +31,37 @@ function deliveryStepIndex(status) {
   return DELIVERY_STEP_KEYS.indexOf(status);
 }
 
-export default function OrderStatusView({ heading }) {
+const LAST_ORDER_KEY = 'mimis-last-order';
+// A checkout that was started but never paid for is not an order the customer
+// should be shown days later -- the row is written before the Clover redirect,
+// so an abandoned cart otherwise sits on this page forever. Anything older than
+// this is dropped from the device regardless of state.
+const LAST_ORDER_TTL_MS = 24 * 60 * 60 * 1000;
+
+// Is this something the customer still has a live interest in? Used only for
+// the silent, same-device restore. Explicit lookups (URL link, or an order
+// number the customer typed in themselves) always display what they asked for.
+function isActiveOrder(o) {
+  if (!o) return false;
+  if (o.payment_status !== 'paid') return false;
+  if (o.status === 'cancelled') return false;
+  // A finished order stays visible briefly so "Completed" is the last thing
+  // they see after collecting, rather than the screen emptying on them.
+  if (o.status === 'completed') {
+    return Date.now() - new Date(o.created_at).getTime() < 3 * 60 * 60 * 1000;
+  }
+  return true;
+}
+
+export default function OrderStatusView({ heading, requireActive = false }) {
   const [order, setOrder] = useState(null);
   const [orderId, setOrderId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [lookupNumber, setLookupNumber] = useState('');
+  const [lookupPhone, setLookupPhone] = useState('');
+  const [lookingUp, setLookingUp] = useState(false);
+  const [lookupError, setLookupError] = useState('');
   const cancelledRef = useRef(false);
   const searchParams = useSearchParams();
 
@@ -46,15 +73,26 @@ export default function OrderStatusView({ heading }) {
     // Fall back to localStorage for same-device post-checkout flow.
     const urlOrderId = searchParams.get('order_id') || searchParams.get('order');
     let oid = urlOrderId || null;
+    // Following a link (or landing here straight from checkout) is an explicit
+    // request for THAT order, so it renders whatever its state -- including
+    // "Awaiting Payment", which is exactly what someone who abandoned Clover
+    // needs to see. Only the silent restore below is filtered.
+    let mustBeActive = false;
 
     if (!oid) {
       let stored;
       try {
-        stored = JSON.parse(window.localStorage.getItem('mimis-last-order') || 'null');
+        stored = JSON.parse(window.localStorage.getItem(LAST_ORDER_KEY) || 'null');
       } catch {
         stored = null;
       }
+      const savedAt = stored?.created_at ? new Date(stored.created_at).getTime() : 0;
+      if (stored?.order_id && savedAt && Date.now() - savedAt > LAST_ORDER_TTL_MS) {
+        try { window.localStorage.removeItem(LAST_ORDER_KEY); } catch { /* ignore */ }
+        stored = null;
+      }
       oid = stored?.order_id || null;
+      mustBeActive = requireActive;
     }
 
     if (!oid) {
@@ -67,7 +105,10 @@ export default function OrderStatusView({ heading }) {
     // page refreshes keep working without the param staying in the URL.
     if (urlOrderId) {
       try {
-        window.localStorage.setItem('mimis-last-order', JSON.stringify({ order_id: urlOrderId }));
+        window.localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({
+          order_id: urlOrderId,
+          created_at: new Date().toISOString(),
+        }));
       } catch { /* ignore */ }
     }
 
@@ -76,12 +117,19 @@ export default function OrderStatusView({ heading }) {
     const supabase = getSupabasePublicClient();
 
     async function fetchStatus() {
-      const { data, error } = await supabase.rpc('get_order_status', { p_order_id: oid });
+      const { data, error } = await supabase.rpc('lookup_order_status', { p_order_id: oid });
       if (cancelledRef.current) return;
-      if (error || !data || (Array.isArray(data) && data.length === 0)) {
+      const row = Array.isArray(data) ? data[0] : data;
+      if (error || !row) {
+        setNotFound(true);
+      } else if (mustBeActive && !isActiveOrder(row)) {
+        // Never paid for, cancelled, or long finished -- stop resurfacing it.
+        try { window.localStorage.removeItem(LAST_ORDER_KEY); } catch { /* ignore */ }
+        setOrder(null);
         setNotFound(true);
       } else {
-        setOrder(Array.isArray(data) ? data[0] : data);
+        setOrder(row);
+        setNotFound(false);
       }
       setLoading(false);
     }
@@ -113,7 +161,41 @@ export default function OrderStatusView({ heading }) {
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [searchParams]);
+  }, [searchParams, requireActive]);
+
+  // Manual lookup. Requires the phone used on the order as well as the order
+  // number: order numbers run in sequence, so number-only lookup would let
+  // anyone read every customer's order by counting upwards.
+  async function handleLookup(e) {
+    e.preventDefault();
+    const number = lookupNumber.trim();
+    const digits = lookupPhone.replace(/\D/g, '');
+    if (!number) { setLookupError('Enter the order number from your confirmation.'); return; }
+    if (digits.length < 10) { setLookupError('Enter the 10-digit phone number used on the order.'); return; }
+
+    setLookingUp(true);
+    setLookupError('');
+    try {
+      const { data, error } = await getSupabasePublicClient().rpc('lookup_order_status', {
+        p_order_number: number,
+        p_phone: digits,
+      });
+      const row = Array.isArray(data) ? data[0] : data;
+      if (error) {
+        setLookupError('Could not reach the order system. Please try again.');
+      } else if (!row) {
+        setLookupError('No order matches that number and phone. Both must match your confirmation — the phone is the one you entered when ordering.');
+      } else {
+        setOrder(row);
+        setOrderId(null);
+        setNotFound(false);
+      }
+    } catch {
+      setLookupError('Could not reach the order system. Please try again.');
+    } finally {
+      setLookingUp(false);
+    }
+  }
 
   if (loading) {
     return <p className="text-center text-app-soft py-24">Loading your order&hellip;</p>;
@@ -121,12 +203,50 @@ export default function OrderStatusView({ heading }) {
 
   if (notFound || !order) {
     return (
-      <div className="max-w-md mx-auto px-5 py-24 text-center">
-        <h1 className="font-serif font-bold text-2xl text-app mb-3">No recent order found</h1>
-        <p className="text-app-soft mb-8">
-          We can only show the order placed from this device. Place an order to track it here.
+      <div className="max-w-md mx-auto px-5 py-16 md:py-20">
+        <p className="section-label mb-2">{heading}</p>
+        <h1 className="font-serif font-bold text-3xl text-app mb-3">No active order</h1>
+        <p className="text-app-soft mb-7">
+          You don&rsquo;t have an order in progress right now. If you&rsquo;ve just placed one,
+          enter the order number from your confirmation along with the phone number you used.
         </p>
-        <Link href="/menu" className="btn-primary">Browse the Menu</Link>
+
+        <form onSubmit={handleLookup} className="rounded-app border border-line bg-surface p-5 space-y-3">
+          <label className="block">
+            <span className="text-app-soft text-xs uppercase tracking-wide font-bold">Order number</span>
+            <input
+              value={lookupNumber}
+              onChange={(e) => setLookupNumber(e.target.value)}
+              placeholder="e.g. MM-23508"
+              autoComplete="off"
+              className="input w-full mt-1.5"
+            />
+          </label>
+          <label className="block">
+            <span className="text-app-soft text-xs uppercase tracking-wide font-bold">Phone used on the order</span>
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={lookupPhone}
+              onChange={(e) => setLookupPhone(formatPhoneInput(e.target.value))}
+              placeholder="(555) 123-4567"
+              autoComplete="tel"
+              className="input w-full mt-1.5"
+            />
+          </label>
+          {lookupError && <p className="text-danger text-sm">{lookupError}</p>}
+          <button type="submit" disabled={lookingUp} className="btn-primary w-full justify-center !flex disabled:opacity-50">
+            {lookingUp ? 'Looking up…' : 'Track My Order'}
+          </button>
+        </form>
+
+        <p className="text-app-faint text-xs mt-4">
+          Orders placed on this device show up here automatically once payment goes through.
+        </p>
+
+        <div className="mt-8 text-center">
+          <Link href="/menu" className="btn-secondary">Browse the Menu</Link>
+        </div>
       </div>
     );
   }
