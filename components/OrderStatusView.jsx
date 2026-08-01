@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { formatPrice } from '@/lib/format';
 import { formatPhoneInput } from '@/lib/loyalty';
+import { useCart } from '@/lib/cart';
 import NotificationOptIn from '@/components/NotificationOptIn';
 
 const STATUS_LABEL = {
@@ -64,6 +65,24 @@ export default function OrderStatusView({ heading, requireActive = false }) {
   const [lookupError, setLookupError] = useState('');
   const cancelledRef = useRef(false);
   const searchParams = useSearchParams();
+  const { clear: clearCart } = useCart();
+  const cartClearedRef = useRef(false);
+
+  // The basket is emptied here rather than at checkout, because this is the
+  // first point at which payment is actually confirmed. Checkout only creates
+  // a pending_payment order; clearing there destroyed the order of anyone who
+  // backed out of Clover without paying.
+  //
+  // Guarded on `orderId`, which is only set for the customer's OWN order (from
+  // this device or a link they followed). An order pulled up through the
+  // number+phone lookup form -- tracking a family member's delivery, say --
+  // must never empty the basket of whoever is looking.
+  useEffect(() => {
+    if (!order || !orderId || cartClearedRef.current) return;
+    if (order.payment_status !== 'paid') return;
+    cartClearedRef.current = true;
+    clearCart();
+  }, [order, orderId, clearCart]);
 
   useEffect(() => {
     cancelledRef.current = false;

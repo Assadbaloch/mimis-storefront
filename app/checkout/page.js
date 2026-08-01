@@ -37,13 +37,19 @@ function storeReview(result) {
   } catch { /* ignore */ }
 }
 
+// Fingerprint of the basket. Used to decide whether a saved review still
+// describes what is currently in the cart -- see the staleness effect below.
+function cartSignature(items) {
+  return items.map((i) => `${i._key}x${i.quantity}`).sort().join('|');
+}
+
 function clearStoredReview() {
   if (typeof window === 'undefined') return;
   try { window.sessionStorage.removeItem(REVIEW_STORAGE_KEY); } catch { /* ignore */ }
 }
 
 export default function CheckoutPage() {
-  const { items, totalCents, clear } = useCart();
+  const { items, totalCents } = useCart();
   const [orderType, setOrderType] = useState('pickup');
   const [form, setForm] = useState({
     first_name: '', last_name: '', phone_number: '', email: '', notes: '',
@@ -128,18 +134,22 @@ export default function CheckoutPage() {
     window.scrollTo(0, 0);
   }, [checkoutResult]);
 
-  // A stored review always belongs to an order that was ALREADY placed, and
-  // placing one empties the cart. So a non-empty cart means the customer has
-  // started a new order since -- the saved review is stale and must not be
-  // replayed. Without this, editing the cart and returning to checkout showed
-  // the previous order's totals for up to 15 minutes, with no way to get past
-  // it, because the review screen returns before the cart is ever examined.
+  // Is the saved review still about THIS basket?
+  //
+  // The cart is no longer emptied when an order is created, so "cart is not
+  // empty" can no longer stand in for "a new order was started" -- an unpaid
+  // order legitimately coexists with the basket it was built from. Comparing
+  // the basket fingerprint captured at submit time answers it exactly:
+  //   * unchanged  -> the review still describes this cart, keep offering the
+  //                   payment link so an abandoned payment can be resumed.
+  //   * changed    -> the customer edited their order, so the review (and the
+  //                   Clover session behind it) is stale and must be dropped.
   useEffect(() => {
-    if (items.length > 0) {
-      clearStoredReview();
-      setCheckoutResult((current) => (current ? null : current));
-    }
-  }, [items.length]);
+    if (!checkoutResult || items.length === 0) return;
+    if (checkoutResult.cart_sig && checkoutResult.cart_sig === cartSignature(items)) return;
+    clearStoredReview();
+    setCheckoutResult(null);
+  }, [items, checkoutResult]);
   // Client-side preview only -- the server (Online Order Intake workflow)
   // independently re-validates the redemption code against this same
   // phone number and is the actual source of truth for discount_cents,
@@ -169,7 +179,7 @@ export default function CheckoutPage() {
   // Guarded on an empty cart so a live cart always wins over a saved review;
   // the effect above clears the stored copy, this stops it rendering even for
   // the single frame before that runs.
-  if (checkoutResult && items.length === 0) {
+  if (checkoutResult && (items.length === 0 || checkoutResult.cart_sig === cartSignature(items))) {
     const { order_number, order_total_cents, discount_cents, delivery_fee_cents, total_due_cents } = checkoutResult;
     return (
       <div className="max-w-md mx-auto px-5 py-16">
@@ -300,7 +310,12 @@ export default function CheckoutPage() {
       // Only remembered once an order actually went through -- details from an
       // abandoned attempt are not worth carrying forward.
       saveContact(form, orderType);
-      clear();
+      // NOTE: the cart is deliberately NOT cleared here. This point is only
+      // "order created, awaiting payment" -- the customer has not paid yet and
+      // may well come back from Clover without paying. Emptying the basket now
+      // meant an abandoned payment destroyed the whole order and they had to
+      // rebuild it from scratch. It is cleared once payment is actually
+      // confirmed instead (see OrderStatusView).
 
       const discount = data.discount_cents || 0;
       if (rewardCode && discount > 0) {
@@ -328,6 +343,8 @@ export default function CheckoutPage() {
         discount_cents: discount,
         delivery_fee_cents: deliveryFee,
         total_due_cents: data.total_due_cents ?? (subtotal + deliveryFee - discount),
+        // Captured so a later edit to the basket can invalidate this review.
+        cart_sig: cartSignature(items),
       };
       setCheckoutResult(result);
       storeReview(result);
