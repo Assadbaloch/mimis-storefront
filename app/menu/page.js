@@ -50,6 +50,15 @@ export default async function MenuPage() {
         <p className="text-app-soft max-w-lg mx-auto mt-4">
           Every item below is live and ready to order — if it&rsquo;s on the menu, it&rsquo;s in stock.
         </p>
+        {/* The two restaurants have genuinely different menus and prices, so
+            which one you're looking at can't be left implicit. */}
+        <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 text-xs text-app-soft">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          Showing the <span className="font-bold text-app">{location}</span> menu
+        </p>
       </section>
       <MenuRewardBanner />
       {groups.length > 0 ? (

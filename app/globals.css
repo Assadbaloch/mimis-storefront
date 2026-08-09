@@ -41,28 +41,57 @@
    its own palette, and a theme that does define them wins.
 --------------------------------------------------------------------------- */
 :root {
-  --mimis-bg: #0e0906;
-  --mimis-surface: rgba(245, 235, 215, 0.03);
-  --mimis-surface-strong: #16100b;
-  --mimis-text: #f5ebd7;
-  --mimis-text-soft: rgba(245, 235, 215, 0.55);
-  --mimis-accent: #b41d24;
+  /* 2026-08-10 — "Mimi's Original Design" recoloured to the Yummy Classic
+     palette. Layout, structure, fonts and content are deliberately unchanged;
+     only colour values moved. Sourced from the Yummy Classic theme's own token
+     contract (mimis.themes.global_css):
+        blue #1B4FA8  blue-dark #123A7E   red #C8102E
+        yellow #F7BB0A  green #1E9E4A     ink #14181F
+     Yummy Classic is a LIGHT design, so the page flips from the old dark
+     (#0e0906 / cream) look to white-on-ink. */
+  --mimis-bg: #ffffff;
+  /* Cards need to read against a white page. Yummy Classic gives its cards a
+     drop shadow; these tokens carry no shadow, so a faint ink tint plays that
+     role instead — same trick the old dark theme used in reverse. */
+  --mimis-surface: rgba(20, 24, 31, 0.035);
+  /* Opaque: modals, sheets and sticky bars must not let content show through. */
+  --mimis-surface-strong: #ffffff;
+  --mimis-text: #14181f;
+  --mimis-text-soft: rgba(20, 24, 31, 0.66);
+  --mimis-accent: #c8102e;
   --mimis-accent-contrast: #ffffff;
-  --mimis-highlight: #e6b95c;
-  --mimis-highlight-contrast: #0e0906;
-  --mimis-line: rgba(245, 235, 215, 0.14);
-  --mimis-danger: #b41d24;
+  /* Prices, links, active states. Yummy Classic's yellow (#F7BB0A) is the
+     visual analogue of the old gold, but it fails contrast as text on white —
+     the brand blue is the readable counterpart, and is what Yummy Classic
+     itself uses for card call-to-action buttons. Yellow is kept for chrome
+     accents below, where it sits on blue. */
+  --mimis-highlight: #1b4fa8;
+  --mimis-highlight-contrast: #ffffff;
+  --mimis-line: rgba(20, 24, 31, 0.12);
+  --mimis-danger: #c8102e;
   --mimis-radius: 16px;
   --mimis-font-display: var(--font-fraunces), Georgia, serif;
   --mimis-font-body: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  /* Legacy fixed palette — admin + default (non-themed) chrome only.
-     These never change with a theme. RGB channels so Tailwind opacity
-     modifiers (bg-cream/10) keep working in admin screens. */
-  --c-ink:   14 9 6;
-  --c-cream: 245 235 215;
-  --c-gold:  230 185 92;
-  --c-brick: 180 29 36;
+  /* Fixed palette — storefront chrome (header/footer/tab bar) AND the admin
+     screens. Never themed: an active theme restyles the shop pages, but these
+     stay put so the admin tools are always legible.
+
+     These are ROLE names, not literal colours, and the roles are what stayed
+     constant through the 2026-08-10 recolour:
+        ink   = base surface  (was near-black, now white)
+        cream = foreground    (was cream, now near-black ink)
+        gold  = accent/links  (was gold, now Yummy Classic blue)
+        brick = danger/CTA    (was brick red, now Yummy Classic red)
+     Because every usage is semantic (`bg-ink` for surfaces, `text-cream` for
+     text, `bg-cream/10` for raised panels), swapping the two neutrals inverts
+     the whole UI coherently — light panels on white, dark text — rather than
+     needing every class name rewritten. Kept as RGB channels so Tailwind
+     opacity modifiers (bg-cream/10) keep working. */
+  --c-ink:   255 255 255;
+  --c-cream: 20 24 31;
+  --c-gold:  27 79 168;
+  --c-brick: 200 16 46;
 
   --font-display: var(--mimis-font-display);
   --font-body: var(--mimis-font-body);
