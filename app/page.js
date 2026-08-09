@@ -175,17 +175,20 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* HALAL TRUST SECTION */}
-      <section className="relative px-5 md:px-8 py-20 overflow-hidden border-y border-emerald-800/40">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-950 via-emerald-900/95 to-emerald-950" />
+      {/* HALAL TRUST SECTION — a solid Yummy Classic blue band.
+          Was a hardcoded dark emerald gradient with themed `text-cream` text;
+          when that token flipped to near-black in the light recolour it left
+          black-on-dark-green and was unreadable. The band class now owns both
+          its background and its foreground so they can never drift apart. */}
+      <section className="band-solid band-blue px-5 md:px-8 py-20 overflow-hidden">
         <div className="max-w-5xl mx-auto relative flex flex-col md:flex-row items-center gap-10 text-center md:text-left">
-          <div className="w-24 h-24 shrink-0 rounded-full border-2 border-gold flex items-center justify-center bg-emerald-950">
-            <span className="text-gold text-3xl">&#9670;</span>
+          <div className="band-emblem w-24 h-24 shrink-0 rounded-full flex items-center justify-center">
+            <span className="text-3xl">&#9670;</span>
           </div>
           <div>
             <p className="section-label mb-2">Our Promise</p>
-            <h2 className="font-serif font-bold text-3xl md:text-4xl text-cream mb-3">Certified halal. Every order, every time.</h2>
-            <p className="text-cream/70 max-w-xl leading-relaxed">
+            <h2 className="font-serif font-bold text-3xl md:text-4xl mb-3">Certified halal. Every order, every time.</h2>
+            <p className="band-lede max-w-xl leading-relaxed">
               Every kitchen sources halal-certified meat and prepares it with dedicated equipment
               and procedures — no shortcuts, no substitutions.
             </p>
@@ -211,8 +214,8 @@ export default async function HomePage() {
                   ) : (
                     <Image src={item.image_url} alt={displayCategory(item.category)} fill className="menu-media object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
                   )}
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/80 to-transparent p-3">
-                    <p className="text-cream text-xs font-semibold">{displayCategory(item.category)}</p>
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-scrim to-transparent p-3">
+                    <p className="text-white text-xs font-semibold">{displayCategory(item.category)}</p>
                   </div>
                 </Link>
               ))}
@@ -248,14 +251,17 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* SOCIAL PROOF */}
-      <section className="px-5 md:px-8 py-16 border-t border-cream/10">
+      {/* SOCIAL PROOF — solid yellow band. Yummy Classic alternates full-bleed
+          blocks of brand colour rather than running white end to end; this and
+          the blue halal band above are what give the page that rhythm. Yellow
+          carries near-black text (set by .band-yellow) for contrast. */}
+      <section className="band-solid band-yellow px-5 md:px-8 py-16">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="flex justify-center gap-1 text-gold text-xl mb-4">
+          <div className="flex justify-center gap-1 text-xl mb-4">
             {'★★★★★'.split('').map((s, i) => <span key={i}>{s}</span>)}
           </div>
-          <h2 className="font-serif font-bold text-2xl md:text-3xl text-cream">Loved across Madison Heights &amp; Warren</h2>
-          <p className="text-cream/55 mt-3">Join the neighbors who order from us every week.</p>
+          <h2 className="font-serif font-bold text-2xl md:text-3xl">Loved across Madison Heights &amp; Warren</h2>
+          <p className="band-lede mt-3">Join the neighbors who order from us every week.</p>
         </div>
       </section>
 
@@ -277,8 +283,8 @@ export default async function HomePage() {
                   ) : (
                     <Image src={g.image_url} alt={displayName(g.name)} fill className="menu-media object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
                   )}
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/80 to-transparent p-3">
-                    <p className="text-cream text-xs font-semibold truncate">{displayName(g.name)}</p>
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-scrim to-transparent p-3">
+                    <p className="text-white text-xs font-semibold truncate">{displayName(g.name)}</p>
                   </div>
                 </Link>
               ))}
@@ -303,7 +309,7 @@ export default async function HomePage() {
               {newsMedia.map((n) => (
                 <div
                   key={n.id}
-                  className="relative shrink-0 w-[280px] md:w-[340px] aspect-video rounded-2xl overflow-hidden border border-cream/10 bg-black/30 snap-start"
+                  className="relative shrink-0 w-[280px] md:w-[340px] aspect-video rounded-2xl overflow-hidden border border-cream/10 bg-cream/[0.06] snap-start"
                 >
                   {n.media_type === 'video' ? (
                     <video
@@ -319,8 +325,8 @@ export default async function HomePage() {
                     <Image src={n.url} alt={n.caption || 'Featured in the news'} fill className="object-cover" sizes="340px" />
                   )}
                   {n.caption && (
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/85 to-transparent p-3 text-left">
-                      <p className="text-cream text-xs font-semibold">{n.caption}</p>
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-scrim to-transparent p-3 text-left">
+                      <p className="text-white text-xs font-semibold">{n.caption}</p>
                     </div>
                   )}
                 </div>

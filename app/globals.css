@@ -181,6 +181,41 @@ html, body {
   color: var(--mimis-highlight);
 }
 
+/* ---------------------------------------------------------------------------
+   Colour bands — ported from the Yummy Classic theme (.band-blue/-red/-yellow).
+
+   The recolour to a light palette left the page almost entirely white, which
+   is nothing like Yummy Classic's look: it alternates full-bleed blocks of
+   solid brand colour. These classes bring that back.
+
+   Each band sets BOTH its background and its foreground, and everything inside
+   inherits via currentColor. That is the whole point: the previous halal
+   section hardcoded a dark emerald gradient but drew its text with the themed
+   `text-cream` token — so the moment that token flipped from cream to near
+   black, it became black text on dark green and was unreadable. A band owns
+   its own contrast, so no future palette change can desync the two.
+--------------------------------------------------------------------------- */
+.band-solid { position: relative; }
+.band-solid .section-label,
+.band-solid h1, .band-solid h2, .band-solid h3, .band-solid p, .band-solid a {
+  color: inherit;
+}
+.band-solid .section-label { opacity: 0.85; }
+.band-solid .band-lede { opacity: 0.88; }
+
+.band-blue   { background-color: #1b4fa8; color: #ffffff; }
+.band-red    { background-color: #c8102e; color: #ffffff; }
+.band-yellow { background-color: #f7bb0a; color: #14181f; }
+.band-ink    { background-color: #14181f; color: #ffffff; }
+
+/* Ring/emblem used inside a band — borrows the band's own foreground so it
+   stays visible whichever band colour it sits on. */
+.band-emblem {
+  border: 2px solid currentColor;
+  color: inherit;
+  opacity: 0.9;
+}
+
 .cat-pill {
   font-size: 12px;
   font-weight: 700;
