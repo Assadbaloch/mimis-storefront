@@ -6,11 +6,11 @@ const LOCATIONS = [
 ];
 
 export default function SiteFooter() {
+  // Footer surface: bg-black/30 was fine over the old near-black page, but over
+  // the light recolour it renders as mid-grey behind near-black text -- poor
+  // contrast. A faint tint of the foreground colour keeps the footer distinct
+  // from the page at any palette without fighting the text on top of it.
   return (
-    {/* bg-black/30 was fine over the old near-black page, but over the light
-        recolour it renders as mid-grey behind near-black text — poor contrast.
-        A faint tint of the foreground colour keeps the footer distinct from the
-        page at any palette without fighting the text on top of it. */}
     <footer className="border-t border-cream/10 bg-cream/[0.04] mt-24">
       <div className="max-w-6xl mx-auto px-5 md:px-8 py-14 grid gap-12 md:grid-cols-[1.2fr_1fr_1fr]">
         <div>
