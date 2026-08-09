@@ -1,17 +1,23 @@
 import { Suspense } from 'react';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
+import { getActiveLocation } from '@/lib/locationServer';
 import { displayCategory, categorySortIndex } from '@/lib/format';
 import MenuBrowser from '@/components/MenuBrowser';
 import MenuRewardBanner from '@/components/MenuRewardBanner';
 
-export const revalidate = 60;
+// Was `revalidate = 60` (one cached page for everyone). The menu now differs
+// per restaurant, so a single shared cache entry would serve one store's menu
+// to the other store's customers. Reading the location cookie makes this
+// route dynamic; per-request rendering is the correct trade here.
+export const dynamic = 'force-dynamic';
 
-async function getMenu() {
+async function getMenu(location) {
   const supabase = getSupabasePublicClient();
   const { data, error } = await supabase
     .from('menu_items')
-    .select('id, clover_item_id, name, category, price_cents, image_url, video_url, badge_text, description_override, sort_order')
+    .select('id, product_id, clover_item_id, name, category, price_cents, image_url, video_url, badge_text, description_override, sort_order')
     .eq('available', true)
+    .eq('location', location)
     .gt('price_cents', 0)
     .order('sort_order', { ascending: true });
 
@@ -33,7 +39,8 @@ async function getMenu() {
 }
 
 export default async function MenuPage() {
-  const groups = await getMenu();
+  const location = await getActiveLocation();
+  const groups = await getMenu(location);
 
   return (
     <>

@@ -1,40 +1,42 @@
 'use client';
-// ⚠ DEPRECATED 2026-08-10 -- replaced by components/AdminProductEditor.jsx.
-// SAFE TO DELETE: nothing imports this any more.
-//
-// Do not bring it back. It edits the editorial columns ON menu_items
-// (image_url, description_override, badge_text, featured, sort_order), which
-// are now a derived mirror owned by the menu_products sync trigger -- anything
-// saved through here is silently reverted the next time the parent product is
-// edited, and it edits only ONE location's copy, which is the duplication
-// problem AdminProductEditor exists to fix.
 import { useRef, useState } from 'react';
 import Image from 'next/image';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { formatPrice, displayName } from '@/lib/format';
 
-// Picks the cover image/video that the storefront grid reads directly off
-// menu_items (image_url/video_url) -- first image and first video in gallery
-// order. Lets the fast denormalized grid path keep working untouched while
-// the full ordered gallery lives in mimis.menu_item_media.
+// Editor for ONE canonical product (mimis.menu_products), replacing the old
+// per-menu_items_row AdminItemEditor.
+//
+// Why this exists: menu_items is one row per (location, Clover item), so a
+// product both restaurants carry had two rows -- and the old editor rendered a
+// card for each. Uploading a photo for "Chicken Gyro" meant doing it twice,
+// once per store, and the two could drift apart. Editing the product here
+// writes once and a database trigger fans the content out to every linked
+// location (see migration menu_products_sync_trigger).
+//
+// What is NOT editable here, by design: name, category, price and availability
+// belong to Clover and differ per restaurant. They are shown read-only below,
+// one line per location, so the owner can see what each store actually charges
+// without being able to type a price that Clover would immediately overwrite.
+
 function deriveCover(mediaList) {
   const image = mediaList.find((m) => m.media_type === 'image');
   const video = mediaList.find((m) => m.media_type === 'video');
   return { image_url: image?.url || '', video_url: video?.url || '' };
 }
 
-export default function AdminItemEditor({ item }) {
+export default function AdminProductEditor({ product, items = [], onChanged }) {
   const supabase = getSupabasePublicClient();
   const dropInputRef = useRef(null);
   const dragIndexRef = useRef(null);
 
   const [fields, setFields] = useState({
-    description_override: item.description_override || '',
-    featured: item.featured,
-    badge_text: item.badge_text || '',
-    sort_order: item.sort_order ?? 0,
-    image_url: item.image_url || '',
-    video_url: item.video_url || '',
+    description: product.description || '',
+    featured: product.featured,
+    badge_text: product.badge_text || '',
+    sort_order: product.sort_order ?? 0,
+    image_url: product.image_url || '',
+    video_url: product.video_url || '',
   });
   const [media, setMedia] = useState(null); // null = not loaded yet
   const [expanded, setExpanded] = useState(false);
@@ -52,7 +54,7 @@ export default function AdminItemEditor({ item }) {
     const { data, error: loadError } = await supabase
       .from('menu_item_media')
       .select('id, media_type, url, sort_order')
-      .eq('item_id', item.id)
+      .eq('product_id', product.id)
       .order('sort_order', { ascending: true });
     if (loadError) {
       setError(loadError.message);
@@ -72,24 +74,46 @@ export default function AdminItemEditor({ item }) {
     setSaving(true);
     setError('');
     const { error: updateError } = await supabase
-      .from('menu_items')
+      .from('menu_products')
       .update({
-        description_override: fields.description_override || null,
+        description: fields.description || null,
         featured: fields.featured,
         badge_text: fields.badge_text || null,
         sort_order: Number(fields.sort_order) || 0,
         image_url: fields.image_url || null,
         video_url: fields.video_url || null,
       })
-      .eq('id', item.id);
+      .eq('id', product.id);
 
     setSaving(false);
     if (updateError) {
       setError(updateError.message);
-    } else {
-      setSavedAt(Date.now());
-      setTimeout(() => setSavedAt(null), 2000);
+      return;
     }
+    setSavedAt(Date.now());
+    setTimeout(() => setSavedAt(null), 2000);
+    onChanged?.();
+  }
+
+  // A location can opt out of the shared content and keep its own photo /
+  // description -- for the genuine cases where one store plates a dish
+  // differently. While opted out, that location stops receiving updates made
+  // here; opting back in re-inherits on the next save.
+  async function toggleOverride(item) {
+    const next = !item.editorial_override;
+    const { error: overrideError } = await supabase
+      .from('menu_items')
+      .update({ editorial_override: next })
+      .eq('id', item.id);
+    if (overrideError) {
+      setError(overrideError.message);
+      return;
+    }
+    if (!next) {
+      // Re-inherit immediately so the row doesn't sit stale until the next edit.
+      await supabase.rpc('sync_menu_items_from_product', { p_product_id: product.id });
+    }
+    onChanged?.();
   }
 
   async function uploadFiles(fileList) {
@@ -107,7 +131,7 @@ export default function AdminItemEditor({ item }) {
       const file = files[i];
       setUploadProgress(`Uploading ${i + 1} of ${files.length}…`);
       const ext = file.name.split('.').pop();
-      const path = `${item.clover_item_id}-${Date.now()}-${i}.${ext}`;
+      const path = `product-${product.id}-${Date.now()}-${i}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from('mimis-menu-images')
@@ -120,7 +144,7 @@ export default function AdminItemEditor({ item }) {
 
       const { data: publicUrlData } = supabase.storage.from('mimis-menu-images').getPublicUrl(path);
       const media_type = file.type.startsWith('video/') ? 'video' : 'image';
-      newRows.push({ item_id: item.id, media_type, url: publicUrlData.publicUrl, sort_order: nextSortOrder++ });
+      newRows.push({ product_id: product.id, media_type, url: publicUrlData.publicUrl, sort_order: nextSortOrder++ });
     }
 
     setUploadProgress('');
@@ -163,12 +187,10 @@ export default function AdminItemEditor({ item }) {
     set('video_url', cover.video_url);
   }
 
-  // Reorder via native drag-and-drop among the gallery thumbnails (separate
-  // from the OS-file-drop dropzone above -- tracked with a plain ref instead
-  // of dataTransfer since we're reordering in-memory rows, not dropping files).
   function handleThumbDragStart(index) {
     dragIndexRef.current = index;
   }
+
   async function handleThumbDrop(index) {
     const from = dragIndexRef.current;
     dragIndexRef.current = null;
@@ -185,9 +207,11 @@ export default function AdminItemEditor({ item }) {
 
     const { error: reorderError } = await supabase
       .from('menu_item_media')
-      .upsert(reordered.map((m) => ({ id: m.id, item_id: item.id, media_type: m.media_type, url: m.url, sort_order: m.sort_order })));
+      .upsert(reordered.map((m) => ({ id: m.id, product_id: product.id, media_type: m.media_type, url: m.url, sort_order: m.sort_order })));
     if (reorderError) setError(reorderError.message);
   }
+
+  const sharedCount = items.filter((i) => !i.editorial_override).length;
 
   return (
     <div className="rounded-2xl border border-cream/10 bg-cream/[0.03] p-4">
@@ -201,7 +225,7 @@ export default function AdminItemEditor({ item }) {
           {fields.video_url ? (
             <video src={fields.video_url} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
           ) : fields.image_url ? (
-            <Image src={fields.image_url} alt={item.name} fill className="object-cover" sizes="96px" />
+            <Image src={fields.image_url} alt={product.name} fill className="object-cover" sizes="96px" />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-cream/25 text-[10px] text-center px-1">No photo</div>
           )}
@@ -217,9 +241,13 @@ export default function AdminItemEditor({ item }) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="font-serif font-semibold text-cream text-sm">{displayName(item.name)}</p>
-              <p className="text-cream/40 text-xs">{formatPrice(item.price_cents)} &middot; price/name set by Clover</p>
+            <div className="min-w-0">
+              <p className="font-serif font-semibold text-cream text-sm">{displayName(product.name)}</p>
+              <p className="text-cream/40 text-[11px]">
+                {sharedCount > 0
+                  ? `One edit updates ${sharedCount} location${sharedCount === 1 ? '' : 's'}`
+                  : 'Every location overrides this — edits here apply to none'}
+              </p>
             </div>
             <label className="flex items-center gap-1.5 text-[11px] text-cream/70 shrink-0">
               <input type="checkbox" checked={fields.featured} onChange={(e) => set('featured', e.target.checked)} />
@@ -227,10 +255,40 @@ export default function AdminItemEditor({ item }) {
             </label>
           </div>
 
+          {/* Per-location facts, straight from Clover. Read-only on purpose:
+              anything typed here would be overwritten by the next hourly sync. */}
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {items.map((item) => (
+              <span
+                key={item.id}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] ${
+                  item.available ? 'border-cream/15 text-cream/70' : 'border-brick/40 text-brick/80'
+                }`}
+                title={item.available ? 'Available at this location' : 'Marked unavailable in Clover'}
+              >
+                <span className="font-semibold">{item.location}</span>
+                <span className="opacity-70">{formatPrice(item.price_cents)}</span>
+                {!item.available && <span className="uppercase tracking-wide">off</span>}
+                <button
+                  type="button"
+                  onClick={() => toggleOverride(item)}
+                  className={`ml-0.5 rounded px-1 ${item.editorial_override ? 'bg-gold/80 text-ink font-bold' : 'text-cream/35 hover:text-cream/70'}`}
+                  title={
+                    item.editorial_override
+                      ? 'This location uses its own photo/description. Click to go back to the shared one.'
+                      : 'Uses the shared photo/description. Click to give this location its own.'
+                  }
+                >
+                  {item.editorial_override ? 'own' : 'shared'}
+                </button>
+              </span>
+            ))}
+          </div>
+
           <textarea
-            placeholder="Custom description for the storefront (optional)"
-            value={fields.description_override}
-            onChange={(e) => set('description_override', e.target.value)}
+            placeholder="Description shown on the storefront (optional)"
+            value={fields.description}
+            onChange={(e) => set('description', e.target.value)}
             className="input w-full mt-2 !text-xs"
             rows={2}
           />
@@ -280,7 +338,9 @@ export default function AdminItemEditor({ item }) {
             <p className="text-cream/60 text-xs">
               {uploadProgress || 'Drag & drop photos or videos here, or click to browse'}
             </p>
-            <p className="text-cream/30 text-[10px] mt-1">Multiple files supported &middot; first item becomes the cover</p>
+            <p className="text-cream/30 text-[10px] mt-1">
+              Multiple files supported &middot; first item becomes the cover &middot; shown at every location carrying this product
+            </p>
             <input
               ref={dropInputRef}
               type="file"

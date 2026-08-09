@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/lib/cart';
+import { useLocation } from '@/lib/location';
 import { formatPrice } from '@/lib/format';
 import { REDEMPTION_CODE_KEY, MEMBER_PHONE_KEY, formatPhoneInput } from '@/lib/loyalty';
 import { readContact, saveContact, clearContact, fetchMemberContact, fillBlanks } from '@/lib/customer';
@@ -50,6 +51,7 @@ function clearStoredReview() {
 
 export default function CheckoutPage() {
   const { items, totalCents } = useCart();
+  const { location, current: currentStore } = useLocation();
   const [orderType, setOrderType] = useState('pickup');
   const [form, setForm] = useState({
     first_name: '', last_name: '', phone_number: '', email: '', notes: '',
@@ -282,7 +284,11 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           ...form,
           order_type: orderType,
-          location: 'Madison Heights',
+          // Was hardcoded to 'Madison Heights' until 2026-08-10, which meant
+          // every online order landed at that store no matter what the
+          // customer wanted -- Warren was unreachable online. Now carries the
+          // store the basket was actually built from.
+          location,
           redemption_code: rewardCode || undefined,
           delivery_address,
           items: items.map((i) => ({
@@ -365,8 +371,8 @@ export default function CheckoutPage() {
       <h1 className="font-serif font-bold text-3xl md:text-4xl text-app mb-2">Checkout</h1>
       <p className="text-app-soft mb-6">
         {orderType === 'delivery'
-          ? 'Delivered from our Madison Heights location.'
-          : 'Pickup from Madison Heights — 28931 John R Rd.'}
+          ? `Delivered from our ${currentStore?.display_name || location} location.`
+          : `Pickup from ${currentStore?.display_name || location}${currentStore?.display_address ? ` — ${currentStore.display_address}` : ''}.`}
       </p>
 
       <div className="grid grid-cols-2 gap-2 mb-8">

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
+import { useLocation } from '@/lib/location';
 import { formatPrice, displayName } from '@/lib/format';
 
 // Rotating "trending / suggested for you" banner for the rewards dashboard.
@@ -22,6 +23,7 @@ const HIDE_KEY = 'mimis-storefront-trending-hidden';
 const LABELS = ['🔥 Trending now', '⭐ Customer favorite', '👍 Popular pick', "💛 Mimi's bestseller"];
 
 export default function TrendingBanner() {
+  const { location } = useLocation();
   const [items, setItems] = useState(null); // null = still loading, [] = nothing usable
   const [index, setIndex] = useState(0);
   const [hidden, setHidden] = useState(true);
@@ -29,7 +31,10 @@ export default function TrendingBanner() {
   useEffect(() => {
     setHidden(window.localStorage.getItem(HIDE_KEY) === '1');
     load();
-  }, []);
+    // Re-resolve against the new store when the customer switches: the
+    // trending names stay the same but the linkable item ids do not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location]);
 
   async function load() {
     try {
@@ -49,10 +54,15 @@ export default function TrendingBanner() {
         .map((t) => t.item_name)
         .filter((n) => !DENYLIST.has(displayName(n).toLowerCase()));
 
+      // Scoped to the selected store: these cards deep-link to
+      // /menu/<clover_item_id>, and that id only resolves at the restaurant
+      // it came from. Unscoped, a Warren customer got Madison Heights links
+      // that 404 -- and duplicate cards for the items both stores carry.
       const { data: menuRows } = await supabase
         .from('menu_items')
         .select('clover_item_id, name, price_cents, image_url, video_url')
         .eq('available', true)
+        .eq('location', location)
         .gt('price_cents', 0)
         .in('name', candidateNames);
 

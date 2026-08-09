@@ -4,6 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useCart } from '@/lib/cart';
+import { useLocation } from '@/lib/location';
+import { LocationPicker } from '@/components/LocationPicker';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { displayCategory, categorySortIndex } from '@/lib/format';
 
@@ -17,6 +19,7 @@ const NAV_LINKS = [
 export default function SiteHeader() {
   const pathname = usePathname();
   const { count } = useCart();
+  const { location } = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -34,12 +37,17 @@ export default function SiteHeader() {
   // -- same grouping rules as /menu's own getMenu() -- so the header never goes
   // stale relative to whatever Clover actually has live. Light query: category
   // text only, not images/prices.
+  //
+  // Scoped to the selected restaurant: the two stores don't carry identical
+  // menus (~118 shared items, but each also has categories the other doesn't),
+  // so an unscoped list advertised categories that lead to an empty menu.
   useEffect(() => {
     const supabase = getSupabasePublicClient();
     supabase
       .from('menu_items')
       .select('category')
       .eq('available', true)
+      .eq('location', location)
       .gt('price_cents', 0)
       .then(({ data, error }) => {
         if (error || !data) return;
@@ -53,7 +61,7 @@ export default function SiteHeader() {
           .sort((a, b) => categorySortIndex(a.key) - categorySortIndex(b.key));
         setCategories(cats);
       });
-  }, []);
+  }, [location]);
 
   // Owner-uploaded logo from /admin/settings, falls back to the text
   // wordmark below when null. Fetched once -- the anon client's RLS allows
@@ -149,6 +157,7 @@ export default function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <LocationPicker className="hidden sm:block text-cream" />
           <Link href="/cart" className="relative btn-secondary !px-4 !py-3" aria-label="View cart">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="9" cy="21" r="1" />
@@ -249,7 +258,10 @@ export default function SiteHeader() {
                 )
               )}
             </nav>
-            <div className="mt-auto p-5">
+            <div className="mt-auto p-5 space-y-3">
+              {/* The header picker is hidden below sm:, so the drawer carries
+                  it on mobile -- otherwise phone users could never switch. */}
+              <LocationPicker className="text-cream -ml-3" />
               <Link href="/menu" className="btn-primary w-full justify-center">Start Order</Link>
             </div>
           </div>

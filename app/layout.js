@@ -8,6 +8,8 @@ import PwaRegister from '@/components/PwaRegister';
 import JoinNotifyBanner from '@/components/JoinNotifyBanner';
 import InstallAppBanner from '@/components/InstallAppBanner';
 import { CartProvider } from '@/lib/cart';
+import { LocationProvider } from '@/lib/location';
+import { LocationGate } from '@/components/LocationPicker';
 import { getThemeShell } from '@/lib/theme';
 import { getEmbedContext } from '@/lib/themeContext';
 import { renderEmbeds } from '@/lib/embeds';
@@ -86,6 +88,10 @@ export default async function RootLayout({ children }) {
       <body className={shell ? 'mimis-themed' : 'min-h-screen flex flex-col font-sans'}>
         <PwaRegister />
         <ScrollToTop />
+        {/* LocationProvider wraps CartProvider because switching store empties
+            the basket -- the switch handler needs both, and the cart must
+            already exist when a location change fires. */}
+        <LocationProvider>
         <CartProvider>
           {shell ? (
             <>
@@ -154,7 +160,12 @@ export default async function RootLayout({ children }) {
           <CartBar />
           <JoinNotifyBanner />
           <InstallAppBanner />
+          {/* Rendered for BOTH shells: a themed site has no SiteHeader, so this
+              first-visit prompt is the only place the customer is asked which
+              restaurant they're ordering from. */}
+          <LocationGate />
         </CartProvider>
+        </LocationProvider>
       </body>
     </html>
   );

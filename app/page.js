@@ -1,19 +1,25 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
+import { getActiveLocation } from '@/lib/locationServer';
 import { displayName, displayCategory } from '@/lib/format';
 import MenuItemCard from '@/components/MenuItemCard';
 import { getThemePage } from '@/lib/theme';
 import ThemePageBody from '@/components/ThemePageBody';
 
-export const revalidate = 60;
+// Dynamic rather than `revalidate = 60`: every card below deep-links to
+// /menu/<clover_item_id>, and those ids are per-Clover-merchant. A cached
+// homepage built from one store's items would hand the other store's
+// customers links that 404 on arrival.
+export const dynamic = 'force-dynamic';
 
-async function getFeaturedItems() {
+async function getFeaturedItems(location) {
   const supabase = getSupabasePublicClient();
   const { data, error } = await supabase
     .from('menu_items')
     .select('clover_item_id, name, price_cents, image_url, video_url, badge_text, description_override')
     .eq('available', true)
+    .eq('location', location)
     .eq('featured', true)
     .order('sort_order', { ascending: true })
     .limit(4);
@@ -27,12 +33,13 @@ async function getFeaturedItems() {
 // Real photos/videos uploaded via /admin/menu — used for the hero backdrop and
 // the "From Our Kitchen" gallery. No stock imagery: this grows automatically as
 // the owner uploads more product media, videos first.
-async function getGalleryMedia() {
+async function getGalleryMedia(location) {
   const supabase = getSupabasePublicClient();
   const { data, error } = await supabase
     .from('menu_items')
     .select('clover_item_id, name, image_url, video_url')
     .eq('available', true)
+    .eq('location', location)
     .or('image_url.not.is.null,video_url.not.is.null')
     .order('sort_order', { ascending: true })
     .limit(8);
@@ -62,12 +69,13 @@ async function getNewsMedia() {
 
 // One real photo/video per category, for the "Made fresh, the right way" showcase —
 // no stock photography. Grows/changes automatically as real product media is uploaded.
-async function getCategoryShowcase() {
+async function getCategoryShowcase(location) {
   const supabase = getSupabasePublicClient();
   const { data, error } = await supabase
     .from('menu_items')
     .select('clover_item_id, name, category, image_url, video_url')
     .eq('available', true)
+    .eq('location', location)
     .or('image_url.not.is.null,video_url.not.is.null')
     .order('sort_order', { ascending: true });
   if (error) {
@@ -93,9 +101,10 @@ export default async function HomePage() {
   const themeHome = await getThemePage('');
   if (themeHome) return <ThemePageBody page={themeHome} />;
 
-  const featured = await getFeaturedItems();
-  const gallery = await getGalleryMedia();
-  const showcase = await getCategoryShowcase();
+  const location = await getActiveLocation();
+  const featured = await getFeaturedItems(location);
+  const gallery = await getGalleryMedia(location);
+  const showcase = await getCategoryShowcase(location);
   const newsMedia = await getNewsMedia();
   const heroMedia = gallery[0] || null;
 

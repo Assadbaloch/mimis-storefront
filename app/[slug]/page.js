@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
+import { getActiveLocation } from '@/lib/locationServer';
 import PageSections from '@/components/PageSections';
 import { getThemePage } from '@/lib/theme';
 import ThemePageBody from '@/components/ThemePageBody';
@@ -20,7 +21,9 @@ import ThemePageBody from '@/components/ThemePageBody';
 // staring at a 404 for over a minute (Next caches the notFound() too), which
 // reads as "the CMS is broken". 10s trades a little extra DB traffic on these
 // low-volume marketing pages for publishing that feels immediate.
-export const revalidate = 10;
+// CMS pages can contain product blocks, which are now location-scoped, so a
+// single cached copy can no longer be shared across both restaurants.
+export const dynamic = 'force-dynamic';
 
 async function fetchPage(slug) {
   const supabase = getSupabasePublicClient();
@@ -48,10 +51,12 @@ async function fetchMenuIfNeeded(sections) {
   const needsMenu = sections.some((s) => s.type === 'product_category' || s.type === 'product_showcase');
   if (!needsMenu) return [];
   const supabase = getSupabasePublicClient();
+  const location = await getActiveLocation();
   const { data } = await supabase
     .from('menu_items')
     .select('*')
     .eq('available', true)
+    .eq('location', location)
     .order('sort_order', { ascending: true });
   return data || [];
 }

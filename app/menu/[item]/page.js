@@ -1,12 +1,16 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
+import { getActiveLocation } from '@/lib/locationServer';
 import { displayName, displayCategory, formatPrice } from '@/lib/format';
 import Gallery from '@/components/Gallery';
 import ProductDetailActions from '@/components/ProductDetailActions';
 import MenuItemCard from '@/components/MenuItemCard';
 
-export const revalidate = 60;
+// Dynamic for the same reason as /menu: clover_item_id is unique per Clover
+// merchant, so the SAME product has a different id at each restaurant and the
+// page must resolve against the customer's selected store.
+export const dynamic = 'force-dynamic';
 
 // `params.item` is the Clover item id -- same identifier already used by the
 // `/menu?item=<clover_item_id>` deep-link convention, just promoted to a real
@@ -14,27 +18,32 @@ export const revalidate = 60;
 // rather than only reachable via a query string that auto-opens a modal.
 async function getItem(cloverItemId) {
   const supabase = getSupabasePublicClient();
+  const location = await getActiveLocation();
   const { data: item, error } = await supabase
     .from('menu_items')
-    .select('id, clover_item_id, name, category, price_cents, image_url, video_url, badge_text, description_override')
+    .select('id, product_id, clover_item_id, name, category, price_cents, image_url, video_url, badge_text, description_override')
     .eq('clover_item_id', cloverItemId)
     .eq('available', true)
+    .eq('location', location)
     .gt('price_cents', 0)
     .maybeSingle();
 
   if (error || !item) return null;
 
   const [{ data: media }, { data: related }] = await Promise.all([
+    // Gallery lives on the canonical product, so both restaurants show the
+    // same photos without either having to re-upload them.
     supabase
       .from('menu_item_media')
       .select('media_type, url, sort_order')
-      .eq('item_id', item.id)
+      .eq('product_id', item.product_id)
       .order('sort_order', { ascending: true }),
     supabase
       .from('menu_items')
       .select('clover_item_id, name, category, price_cents, image_url, video_url, badge_text, description_override, sort_order')
       .eq('category', item.category)
       .eq('available', true)
+      .eq('location', location)
       .gt('price_cents', 0)
       .neq('clover_item_id', cloverItemId)
       .order('sort_order', { ascending: true })

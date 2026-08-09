@@ -30,13 +30,16 @@ export default function ProductModal({ item, onClose }) {
   // Gallery rows aren't part of the grid's lean menu_items query (kept fast
   // on purpose), so fetch them lazily the moment a customer actually opens
   // a product -- only paid for when someone looks.
+  // Keyed on product_id, not item_id: the gallery belongs to the product, so
+  // a set of photos uploaded once appears at both restaurants rather than
+  // having to be re-uploaded against each location's own menu_items row.
   useEffect(() => {
-    if (item.media || !item.id) return;
+    if (item.media || !item.product_id) return;
     let cancelled = false;
     getSupabasePublicClient()
       .from('menu_item_media')
       .select('media_type, url, sort_order')
-      .eq('item_id', item.id)
+      .eq('product_id', item.product_id)
       .order('sort_order', { ascending: true })
       .then(({ data }) => {
         if (!cancelled && data) setMedia(data);
@@ -44,7 +47,7 @@ export default function ProductModal({ item, onClose }) {
     return () => {
       cancelled = true;
     };
-  }, [item.id, item.media]);
+  }, [item.product_id, item.media]);
 
   function handleAdd() {
     addItem({
