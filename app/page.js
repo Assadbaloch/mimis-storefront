@@ -57,6 +57,24 @@ async function getGalleryMedia(location) {
 // "Featured in the news" clips, managed from /admin/settings. Public/anon RLS
 // on mimis.news_media filters to active = true, so this never needs to filter
 // client-side.
+// Full menu list, used only so a "Popular items" block can resolve items the
+// owner pinned by hand -- those ids won't be in the auto-featured set.
+async function getAllMenuItems(location) {
+  const supabase = getSupabasePublicClient();
+  const { data, error } = await supabase
+    .from('menu_items')
+    .select('id, clover_item_id, name, price_cents, image_url, video_url, badge_text, description_override, category')
+    .eq('available', true)
+    .eq('location', location)
+    .gt('price_cents', 0)
+    .order('sort_order', { ascending: true });
+  if (error) {
+    console.error('getAllMenuItems', error.message);
+    return [];
+  }
+  return data || [];
+}
+
 async function getNewsMedia() {
   const supabase = getSupabasePublicClient();
   const { data, error } = await supabase
@@ -112,7 +130,32 @@ export default async function HomePage() {
   // Owner-authored blocks from /admin/pages → "Home page". Empty by default,
   // so the page looks identical until something is actually added.
   const slots = await getHomeSlots();
+  const storeLocations = await getStoreLocations();
   const heroMedia = gallery[0] || null;
+
+  // Data the owner-editable blocks draw on. They keep pulling live content
+  // (featured items, uploaded menu photos, press clips) rather than freezing
+  // whatever was picked the day the block was added.
+  const homeData = { featured, gallery, showcase, newsMedia };
+
+  // FULL-CMS MODE: once the home page has its own sections, they compose the
+  // whole page in the order set in /admin/pages. The hardcoded design below is
+  // the fallback for when there are none -- and unpublishing the Home page
+  // record brings it straight back, which is the one-click undo.
+  if (slots.all.length) {
+    // Only pay for the full menu when a block might actually need it.
+    const needsMenu = slots.all.some((s) =>
+      ['featured_items', 'product_category', 'product_showcase'].includes(s.type));
+    const menuItems = needsMenu ? await getAllMenuItems(location) : featured;
+    return (
+      <PageSections
+        sections={slots.all}
+        menuItems={menuItems}
+        storeLocations={storeLocations}
+        homeData={homeData}
+      />
+    );
+  }
 
   return (
     <>
@@ -162,7 +205,7 @@ export default async function HomePage() {
       </section>
 
       {/* Owner slot: directly under the hero. */}
-      <PageSections sections={slots.top} />
+      <PageSections sections={slots.top} storeLocations={storeLocations} />
 
       {/* POPULAR THIS WEEK */}
       {featured.length > 0 && (
@@ -185,7 +228,7 @@ export default async function HomePage() {
       )}
 
       {/* Owner slot: after "Popular this week". */}
-      <PageSections sections={slots.middle} />
+      <PageSections sections={slots.middle} storeLocations={storeLocations} />
 
       {/* HALAL TRUST SECTION — a solid Yummy Classic blue band.
           Was a hardcoded dark emerald gradient with themed `text-cream` text;
@@ -357,7 +400,7 @@ export default async function HomePage() {
 
       {/* Owner slot: above the footer. Also the default landing place for any
           section saved without an explicit slot. */}
-      <PageSections sections={slots.bottom} />
+      <PageSections sections={slots.bottom} storeLocations={storeLocations} />
     </>
   );
 }

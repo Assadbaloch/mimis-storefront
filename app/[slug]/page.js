@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { getActiveLocation } from '@/lib/locationServer';
 import { HOME_SLUG } from '@/lib/homeSlots';
+import { getStoreLocations } from '@/lib/storeLocations';
 import PageSections from '@/components/PageSections';
 import { getThemePage } from '@/lib/theme';
 import ThemePageBody from '@/components/ThemePageBody';
@@ -102,6 +103,10 @@ export default async function CmsPage({ params }) {
 
   const { page, sections } = result;
   const menuItems = await fetchMenuIfNeeded(sections);
+  // Only fetched when a Locations block is actually on the page.
+  const storeLocations = sections.some((s) => s.type === 'locations')
+    ? await getStoreLocations()
+    : [];
 
   // The shared header/footer live in the root layout, so a child route can't
   // unmount them. Hiding them with CSS is the low-risk way to support a
@@ -115,7 +120,7 @@ export default async function CmsPage({ params }) {
   return (
     <>
       {hideChrome && <style dangerouslySetInnerHTML={{ __html: hideChrome }} />}
-      <PageSections sections={sections} menuItems={menuItems} />
+      <PageSections sections={sections} menuItems={menuItems} storeLocations={storeLocations} />
     </>
   );
 }

@@ -1,11 +1,12 @@
 import Link from 'next/link';
+import { getStoreLocations } from '@/lib/storeLocations';
 
-const LOCATIONS = [
-  { name: 'Madison Heights', address: '28931 John R Rd, Madison Heights, MI 48071', status: 'Now Taking Orders' },
-  { name: 'Warren', address: '8113 E 9 Mile Rd, Warren, MI 48089', status: 'Opening Soon' },
-];
-
-export default function SiteFooter() {
+// Server component: the store list is read from mimis.store_locations rather
+// than hardcoded here. The previous local LOCATIONS array was a third copy of
+// the same information (home page and database held the others) and had gone
+// stale -- it still told customers Warren was "Opening Soon" after it opened.
+export default async function SiteFooter() {
+  const LOCATIONS = await getStoreLocations();
   // Footer surface: bg-black/30 was fine over the old near-black page, but over
   // the light recolour it renders as mid-grey behind near-black text -- poor
   // contrast. A faint tint of the foreground colour keeps the footer distinct
@@ -25,10 +26,15 @@ export default function SiteFooter() {
 
         <div className="grid grid-cols-2 gap-6" id="locations">
           {LOCATIONS.map((loc) => (
-            <div key={loc.name}>
+            <div key={loc.key}>
               <div className="text-sm font-bold text-cream mb-1">{loc.name}</div>
               <div className="text-xs text-cream/60 leading-relaxed">{loc.address}</div>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-gold mt-2">{loc.status}</div>
+              {loc.phone && (
+                <a href={`tel:${loc.phone.replace(/[^\d+]/g, '')}`} className="text-xs text-cream/50 hover:text-gold">{loc.phone}</a>
+              )}
+              {loc.status && (
+                <div className="text-[11px] font-bold uppercase tracking-wide text-gold mt-2">{loc.status}</div>
+              )}
             </div>
           ))}
         </div>

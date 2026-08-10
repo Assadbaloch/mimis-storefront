@@ -107,18 +107,18 @@ export default function PageBuilder() {
       // Position is rewritten from array order on every save, so reordering can
       // never leave two sections claiming the same slot.
       for (const [i, s] of sections.entries()) {
-        // `slot` only means anything on the home page (see lib/homeSlots.js);
-        // on a normal CMS page it stays null and sections simply run in order.
+        // `slot` is deliberately cleared: the home page is now composed of
+        // blocks in explicit position order like any other page, so a leftover
+        // slot value would be a second, conflicting idea of where a block goes.
         if (s._isNew) {
           const { error } = await supabase.from('page_sections').insert({
-            page_id: id, type: s.type, position: i, config: s.config, active: s.active !== false,
-            slot: isHome ? (s.slot || 'bottom') : null,
+            page_id: id, type: s.type, position: i, config: s.config,
+            active: s.active !== false, slot: null,
           });
           if (error) throw error;
         } else {
           const { error } = await supabase.from('page_sections').update({
-            position: i, config: s.config, active: s.active !== false,
-            slot: isHome ? (s.slot || 'bottom') : null,
+            position: i, config: s.config, active: s.active !== false, slot: null,
             updated_at: new Date().toISOString(),
           }).eq('id', s.id);
           if (error) throw error;
@@ -206,33 +206,18 @@ export default function PageBuilder() {
       <h2 className="text-cream/60 text-xs uppercase tracking-wide mb-2">Sections</h2>
       {isHome && (
         <p className="text-cream/45 text-xs mb-3 leading-relaxed">
-          These blocks are added <em>into</em> the built-in home page — the hero, Popular This Week,
-          the halal band, locations and news stay where they are. Choose where each block drops in.
+          This is your whole home page, top to bottom. Reorder with the arrows, edit any block, or
+          add new ones. To undo everything at once, untick <strong>Published</strong> above and the
+          original built-in design comes back.
         </p>
       )}
       <div className="space-y-2 mb-4">
         {sections.map((s, i) => (
-          <div key={s.id}>
-            {isHome && (
-              <div className="flex items-center gap-2 mb-1 pl-1">
-                <label className="text-cream/45 text-[11px] uppercase tracking-wide">Position on home</label>
-                <select
-                  className="input !py-1 !text-xs"
-                  value={s.slot || 'bottom'}
-                  onChange={(e) => changeSection(i, { ...s, slot: e.target.value })}
-                >
-                  <option value="top">Under the hero</option>
-                  <option value="middle">After Popular This Week</option>
-                  <option value="bottom">Above the footer</option>
-                </select>
-              </div>
-            )}
-            <SectionEditor section={s}
-              isFirst={i === 0} isLast={i === sections.length - 1}
-              onChange={(next) => changeSection(i, next)}
-              onRemove={() => removeSection(i)}
-              onMove={(d) => moveSection(i, d)} />
-          </div>
+          <SectionEditor key={s.id} section={s}
+            isFirst={i === 0} isLast={i === sections.length - 1}
+            onChange={(next) => changeSection(i, next)}
+            onRemove={() => removeSection(i)}
+            onMove={(d) => moveSection(i, d)} />
         ))}
         {!sections.length && (
           <p className="text-cream/45 text-sm text-center py-8 border border-dashed border-cream/15 rounded-xl">
