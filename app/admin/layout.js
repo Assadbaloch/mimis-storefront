@@ -14,6 +14,7 @@ const ADMIN_NAV_LINKS = [
   { href: '/admin/themes', label: 'Themes' },
   { href: '/admin/media', label: 'Media' },
   { href: '/admin/settings', label: 'Storefront Settings' },
+  { href: '/admin/help', label: 'Help' },
 ];
 
 export default function AdminLayout({ children }) {

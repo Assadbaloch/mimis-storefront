@@ -1,5 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { GuidePanel } from '@/components/admin/Guide';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { displayCategory, categorySortIndex } from '@/lib/format';
 import AdminProductEditor from '@/components/AdminProductEditor';
@@ -125,11 +127,36 @@ export default function AdminMenuPage() {
   return (
     <div className="max-w-4xl mx-auto px-5 py-10">
       <h1 className="font-serif font-bold text-3xl text-cream mb-2">Menu Editor</h1>
-      <p className="text-cream/55 text-sm mb-6">
+      <p className="text-cream/55 text-sm mb-4">
         Add photos, a description, a badge, featured status or display order once — it applies to every
         restaurant that carries the item. Price, name, category and availability always come from Clover,
         per location, and can&rsquo;t be changed here.
       </p>
+
+      <GuidePanel title="How this screen works" defaultOpen={false}>
+        <p>
+          <strong>One card per product.</strong> If both restaurants sell it you get a single card —
+          the line under the name tells you how many locations your edit will update.
+        </p>
+        <p>
+          <strong>The small pills</strong> show each restaurant&rsquo;s price and availability. Those
+          come from Clover and are read-only. Click <strong>shared</strong> / <strong>own</strong> on
+          a pill to let one restaurant keep its own picture instead of the common one.
+        </p>
+        <p>
+          <strong>Manage media</strong> takes several files at once. Drag the thumbnails to reorder —
+          the first is the cover shown in the menu grid, the rest become a gallery.
+        </p>
+        <p>
+          <strong>Photo at one restaurant but not the other?</strong> The dish is probably listed
+          twice in Clover under different names. Use the ⚠ filters above, then{' '}
+          <strong>Same as another item…</strong> on the card to merge them.
+        </p>
+        <p>
+          Photos save as soon as they upload; everything else needs the <strong>Save</strong> button
+          on that card. <Link href="/admin/help#menu" className="text-gold/80 hover:text-gold">Full guide →</Link>
+        </p>
+      </GuidePanel>
 
       <div className="flex flex-wrap gap-3 mb-6">
         <input placeholder="Search items…" value={search} onChange={(e) => setSearch(e.target.value)} className="input flex-1 min-w-[180px]" />

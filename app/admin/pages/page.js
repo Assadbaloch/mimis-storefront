@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { GuidePanel } from '@/components/admin/Guide';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 
 // Pages manager: list, create, publish/unpublish, delete.
@@ -70,10 +71,34 @@ export default function AdminPagesList() {
   return (
     <div className="max-w-4xl mx-auto px-5 py-10">
       <h1 className="font-serif font-bold text-3xl text-cream mb-2">Pages</h1>
-      <p className="text-cream/55 text-sm mb-6">
-        Build extra pages for the site — each one gets its own web address and appears
+      <p className="text-cream/55 text-sm mb-4">
+        Your home page, plus any extra pages you build. Each extra page gets its own web address
         under mimispizza.astrixshop.com.
       </p>
+
+      <GuidePanel title="Start here" defaultOpen={false}>
+        <p>
+          <strong>Home page</strong> is your real, live home page, broken into blocks from top to
+          bottom. Open it to reorder, edit, remove or add blocks — text, photos, videos, a slideshow,
+          menu items, your locations and more.
+        </p>
+        <p>
+          <strong>Your undo:</strong> untick <strong>Published</strong> on the Home page and the
+          original built-in design comes straight back. Your blocks are kept, just not shown — tick
+          it again to return to your version.
+        </p>
+        <p>
+          A few addresses belong to the shop itself (<span className="font-mono">menu</span>,{' '}
+          <span className="font-mono">cart</span>, <span className="font-mono">checkout</span>,{' '}
+          <span className="font-mono">rewards</span>, <span className="font-mono">admin</span>) and
+          can&rsquo;t be reused for your own pages.
+        </p>
+        <p>
+          <Link href="/admin/help#pages" className="text-gold/80 hover:text-gold">
+            Full guide, including what every block does →
+          </Link>
+        </p>
+      </GuidePanel>
 
       <form onSubmit={handleCreate} className="flex gap-3 mb-8">
         <input value={title} onChange={(e) => setTitle(e.target.value)}
