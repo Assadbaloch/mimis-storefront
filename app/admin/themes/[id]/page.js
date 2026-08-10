@@ -3,21 +3,36 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
-import { GuidePanel, THEME_TAB_HELP } from '@/components/admin/Guide';
+import { GuidePanel } from '@/components/admin/Guide';
+import { importTheme, composeThemeSource } from '@/lib/themeImport';
 
-// Theme editor: the layout shell, plus the theme's pages.
-// Deliberately a code editor rather than a visual builder — the whole point of
-// this system is that a complete design is pasted in as-is. Pages are created
-// only by importing an HTML file (mimis:page markers); they can be edited and
-// published here, but never created by hand.
+// Theme editor: ONE document.
+//
+// A theme is edited as the same single HTML file it was imported from --
+// header, styles, pages (separated by <!-- mimis:page --> markers) and footer
+// together, exactly as a designer would hand it over. The old layout / CSS /
+// head / pages tabs edited four derived fragments separately, which meant the
+// original file could never be recovered and, worse, edits bypassed the import
+// validation entirely.
+//
+// Saving runs the document back through the SAME importer that validates fresh
+// imports. The hard requirements -- live menu tags, an ordering path, the
+// --mimis-* style tokens -- therefore hold on every save, not just the first
+// import: the safety net cannot be edited away afterwards.
+//
+// Themes imported before source_html existed are reconstructed from their
+// fragments on first open (composeThemeSource) and become single-file from
+// their next save.
 
 export default function ThemeEditor() {
   const { id } = useParams();
   const router = useRouter();
   const [theme, setTheme] = useState(null);
-  const [pages, setPages] = useState([]);
-  const [tab, setTab] = useState('layout');
+  const [sourceText, setSourceText] = useState('');
+  const [saveErrors, setSaveErrors] = useState([]);
+  const [saveWarnings, setSaveWarnings] = useState([]);
   const [status, setStatus] = useState('');
+  const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   const load = useCallback(async () => {
@@ -25,7 +40,8 @@ export default function ThemeEditor() {
     const { data: t } = await supabase.from('themes').select('*').eq('id', id).maybeSingle();
     if (!t) { router.replace('/admin/themes'); return; }
     const { data: p } = await supabase.from('theme_pages').select('*').eq('theme_id', id).order('sort_order');
-    setTheme(t); setPages(p || []);
+    setTheme(t);
+    setSourceText(t.source_html || composeThemeSource(t, p || []));
   }, [id, router]);
 
   useEffect(() => { load(); }, [load]);
@@ -37,108 +53,129 @@ export default function ThemeEditor() {
     return () => window.removeEventListener('beforeunload', h);
   }, [dirty]);
 
-  function edit(patch) { setTheme((t) => ({ ...t, ...patch })); setDirty(true); }
-
-  const missingOutlet = theme && theme.layout_html && !/data-mimis-outlet/.test(theme.layout_html);
-  const inlinedLogo = theme && /<img[^>]+(logo|brand)[^>]*>/i.test(theme.layout_html || '');
-
   async function save() {
     setStatus('');
-    const { error } = await getSupabasePublicClient().from('themes').update({
-      name: theme.name, description: theme.description,
-      layout_html: theme.layout_html, global_css: theme.global_css,
-      head_snippet: theme.head_snippet, updated_at: new Date().toISOString(),
-    }).eq('id', id);
-    setStatus(error ? `Could not save: ${error.message}` : 'Saved');
-    if (!error) setDirty(false);
-    setTimeout(() => setStatus(''), 2500);
+    setSaveErrors([]);
+    setSaveWarnings([]);
+
+    // Same pipeline as a fresh import: reject the save outright if the
+    // document fails the hard requirements.
+    const result = importTheme(sourceText);
+    setSaveWarnings(result.warnings || []);
+    if (!result.ok) {
+      setSaveErrors(result.errors);
+      return;
+    }
+
+    setSaving(true);
+    const supabase = getSupabasePublicClient();
+    try {
+      const { error: tErr } = await supabase.from('themes').update({
+        name: theme.name,
+        description: theme.description,
+        source_html: sourceText,
+        layout_html: result.layoutHtml,
+        global_css: result.globalCss,
+        head_snippet: result.headSnippet,
+        updated_at: new Date().toISOString(),
+      }).eq('id', id);
+      if (tErr) throw tErr;
+
+      // Pages are replaced wholesale from the document -- but each page's
+      // published status is carried over BY SLUG. Without this, saving an
+      // ACTIVE theme would reset its pages to draft and take the live home
+      // page down mid-edit. Pages new to the document default to published:
+      // in a single-file model, writing a page into the file IS the intent to
+      // have it exist.
+      const { data: existing } = await supabase
+        .from('theme_pages').select('slug, status').eq('theme_id', id);
+      const statusBySlug = new Map((existing || []).map((p) => [p.slug, p.status]));
+
+      const { error: delErr } = await supabase.from('theme_pages').delete().eq('theme_id', id);
+      if (delErr) throw delErr;
+
+      const rows = result.pages.map((p, i) => ({
+        theme_id: id,
+        slug: p.slug,
+        title: p.title,
+        html: p.html,
+        status: statusBySlug.get(p.slug) || 'published',
+        sort_order: i,
+      }));
+      const { error: pErr } = await supabase.from('theme_pages').insert(rows);
+      if (pErr) throw pErr;
+
+      setDirty(false);
+      setStatus('Saved');
+      setTimeout(() => setStatus(''), 2500);
+    } catch (e) {
+      setSaveErrors([`Could not save: ${e.message}`]);
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!theme) return <p className="text-center text-cream/50 py-24">Loading theme…</p>;
 
+  const pageCount = (sourceText.match(/<!--\s*mimis:page\b/gi) || []).length + 1;
+
   return (
-    <div className="max-w-4xl mx-auto px-5 py-8">
+    <div className="max-w-5xl mx-auto px-5 py-8">
       <div className="flex items-center gap-3 mb-5">
         <Link href="/admin/themes" className="text-cream/50 hover:text-cream text-sm">← Themes</Link>
         <div className="flex-1" />
-        {status && <span className={`text-sm ${status === 'Saved' ? 'text-gold' : 'text-brick'}`}>{status}</span>}
-        <button onClick={save} disabled={!dirty} className="btn-primary text-sm disabled:opacity-40">
-          {dirty ? 'Save Changes' : 'Saved'}
+        {status && <span className="text-sm text-gold">{status}</span>}
+        <button onClick={save} disabled={!dirty || saving} className="btn-primary text-sm disabled:opacity-40">
+          {saving ? 'Saving…' : dirty ? 'Save Changes' : 'Saved'}
         </button>
       </div>
 
-      <input value={theme.name} onChange={(e) => edit({ name: e.target.value })}
+      <input value={theme.name} onChange={(e) => { setTheme((t) => ({ ...t, name: e.target.value })); setDirty(true); }}
         className="input w-full mb-4 font-serif text-xl" />
 
-      <div className="flex gap-4 border-b border-cream/10 mb-4">
-        {['layout', 'css', 'head', 'pages'].map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`pb-2 text-xs uppercase tracking-wide font-bold ${tab === t ? 'text-gold border-b-2 border-gold' : 'text-cream/50 hover:text-cream'}`}>
-            {t === 'head' ? 'Head' : t === 'css' ? 'Global CSS' : t}
-          </button>
-        ))}
-      </div>
-
-      <GuidePanel title={THEME_TAB_HELP[tab].title} defaultOpen={false}>
-        {THEME_TAB_HELP[tab].body}
+      <GuidePanel title="How this editor works" defaultOpen={false}>
+        <p>
+          This is the whole theme as one HTML file — the same file that was imported. Header and
+          footer are shared across pages; everything between them is the home page; additional pages
+          start with a <code>&lt;!-- mimis:page slug=&quot;…&quot; title=&quot;…&quot; --&gt;</code> marker.
+        </p>
+        <p>
+          Saving re-checks the document. It must contain a live menu tag
+          (<code>&lt;mimis-menu&gt;</code>), a way to order (add-to-cart buttons or a link
+          to <code>/menu</code>), and the <code>--mimis-*</code> style variables that the menu, cart
+          and checkout pages take their look from. A file missing any of these won&rsquo;t save —
+          that&rsquo;s deliberate, so a broken or static design can&rsquo;t go live.
+        </p>
       </GuidePanel>
 
-      {tab === 'layout' && (
-        <div>
-          {missingOutlet && (
-            <p className="text-brick text-sm mb-2">
-              This layout has no <code>&lt;div data-mimis-outlet&gt;&lt;/div&gt;</code>. Pages have nowhere to render,
-              so the site will fall back to the default design until it&rsquo;s added.
-            </p>
-          )}
-          {inlinedLogo && (
-            <p className="text-gold text-sm mb-2">
-              Looks like an image is being used as the logo. Use <code>&lt;mimis-logo&gt;&lt;/mimis-logo&gt;</code> instead
-              so it always matches the uploaded brand logo.
-            </p>
-          )}
-          <CodeArea value={theme.layout_html || ''} onChange={(v) => edit({ layout_html: v })} rows={26} />
+      {saveErrors.length > 0 && (
+        <div className="rounded-xl border border-brick/40 bg-brick/10 p-4 mb-4">
+          <p className="text-cream font-semibold text-sm mb-1">Not saved — fix these first:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            {saveErrors.map((e, i) => <li key={i} className="text-cream/80 text-sm">{e}</li>)}
+          </ul>
+        </div>
+      )}
+      {saveWarnings.length > 0 && (
+        <div className="rounded-xl border border-gold/30 bg-gold/[0.07] p-4 mb-4">
+          <p className="text-cream font-semibold text-sm mb-1">Worth a look (saved anyway):</p>
+          <ul className="list-disc pl-5 space-y-1">
+            {saveWarnings.map((w, i) => <li key={i} className="text-cream/75 text-sm">{w}</li>)}
+          </ul>
         </div>
       )}
 
-      {tab === 'css' && <CodeArea value={theme.global_css || ''} onChange={(v) => edit({ global_css: v })} rows={20} />}
-      {tab === 'head' && <CodeArea value={theme.head_snippet || ''} onChange={(v) => edit({ head_snippet: v })} rows={12} />}
+      <p className="text-cream/45 text-xs mb-2">
+        {pageCount === 1 ? 'Single page site' : `${pageCount} pages`} · edited as one document
+      </p>
 
-      {tab === 'pages' && (
-        <div>
-          {/* Pages come exclusively from the imported HTML file (split on
-              <!-- mimis:page --> markers). No manual page creation here — a
-              hand-added page would drift from the single-file source of truth.
-              To add a page: regenerate the HTML with the page included (the
-              Design-with-AI prompt covers this) and re-import the theme. */}
-          {!pages.length ? (
-            <p className="text-cream/50 text-sm py-6 text-center">
-              No pages in this theme. Pages come from the imported HTML file — re-import with
-              <code className="text-gold"> &lt;!-- mimis:page --&gt;</code> markers to add more.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {pages.map((p) => (
-                <div key={p.id} className="flex items-center gap-3 rounded-xl border border-cream/12 bg-cream/[0.03] px-4 py-3">
-                  <div className="flex-1 min-w-0">
-                    <span className="text-cream text-sm font-semibold">{p.title}</span>
-                    <span className="block text-cream/45 text-xs">/{p.slug} · {p.status}</span>
-                  </div>
-                  <Link href={`/admin/themes/${id}/pages/${p.id}`} className="btn-primary text-xs px-3 py-1.5">Edit</Link>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      <textarea
+        value={sourceText}
+        onChange={(e) => { setSourceText(e.target.value); setDirty(true); }}
+        rows={34}
+        spellCheck={false}
+        className="w-full bg-ink border border-cream/15 rounded-lg p-3 text-cream font-mono text-xs leading-relaxed"
+      />
     </div>
-  );
-}
-
-function CodeArea({ value, onChange, rows }) {
-  return (
-    <textarea value={value} rows={rows} spellCheck={false}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full bg-ink border border-cream/15 rounded-lg p-3 text-cream font-mono text-xs leading-relaxed" />
   );
 }

@@ -68,6 +68,9 @@ export default function ThemesPage() {
       const { data: theme, error: tErr } = await supabase.from('themes').insert({
         name: name.trim(),
         status: 'draft',
+        // The pasted file itself is the theme's source of truth from here on;
+        // the fields below are derived from it and regenerated on every save.
+        source_html: source,
         layout_html: result.layoutHtml,
         global_css: result.globalCss,
         head_snippet: result.headSnippet,
