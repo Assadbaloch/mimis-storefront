@@ -62,22 +62,27 @@ export function LocationPicker({ className = '' }) {
 
   return (
     <div className={`relative ${className}`} ref={ref}>
+      {/* Sizing matters here: this sits in the global header, so anything that
+          refuses to shrink pushes the whole page wider than a phone screen and
+          makes every route scroll sideways. Hence min-w-0 + truncate, and the
+          "Ordering from" caption only appears once there's room for it. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="flex items-center gap-1.5 text-left rounded-full px-3 py-2 hover:bg-cream/10 transition-colors"
+        title={`Ordering from ${current?.display_name || location}`}
+        className="flex items-center gap-1.5 text-left rounded-full px-2 sm:px-3 py-2 hover:bg-cream/10 transition-colors min-w-0 max-w-[42vw] sm:max-w-none"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-70">
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
           <circle cx="12" cy="10" r="3" />
         </svg>
-        <span className="leading-tight">
-          <span className="block text-[9px] uppercase tracking-wider opacity-60">Ordering from</span>
-          <span className="block text-xs font-semibold">{current?.display_name || location}</span>
+        <span className="leading-tight min-w-0">
+          <span className="hidden sm:block text-[9px] uppercase tracking-wider opacity-60">Ordering from</span>
+          <span className="block text-xs font-semibold truncate">{current?.display_name || location}</span>
         </span>
-        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className={`opacity-60 transition-transform ${open ? 'rotate-180' : ''}`}>
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className={`shrink-0 opacity-60 transition-transform ${open ? 'rotate-180' : ''}`}>
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>

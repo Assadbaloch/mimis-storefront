@@ -91,8 +91,11 @@ export default function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 bg-ink/90 backdrop-blur-md border-b border-cream/10">
-      <div className="max-w-6xl mx-auto px-5 md:px-8 h-20 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      {/* min-w-0 on both groups: flex children default to min-width:auto and
+          refuse to shrink below their content, so on a narrow phone the header
+          grew past the viewport and dragged every page into sideways scroll. */}
+      <div className="max-w-6xl mx-auto px-5 md:px-8 h-20 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
@@ -103,13 +106,15 @@ export default function SiteHeader() {
             <span className="block w-5 h-[1.5px] bg-cream" />
             <span className="block w-5 h-[1.5px] bg-cream" />
           </button>
-          <Link href="/" className="flex items-center" aria-label="Mimi's Pizza &amp; Burger home">
+          <Link href="/" className="flex items-center min-w-0" aria-label="Mimi's Pizza &amp; Burger home">
             {logoUrl ? (
-              <span className="relative h-10 w-32 block">
+              // Narrower on phones: at w-32 the logo alone ate a third of a
+              // 390px screen before the picker and cart were even placed.
+              <span className="relative h-9 w-24 sm:h-10 sm:w-32 block shrink">
                 <Image src={logoUrl} alt="Mimi's Pizza &amp; Burger" fill className="object-contain object-left" sizes="160px" priority />
               </span>
             ) : (
-              <span className="font-serif italic text-2xl text-gold tracking-tight">Mimi&rsquo;s</span>
+              <span className="font-serif italic text-xl sm:text-2xl text-gold tracking-tight whitespace-nowrap">Mimi&rsquo;s</span>
             )}
           </Link>
         </div>
@@ -156,10 +161,11 @@ export default function SiteHeader() {
           )}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
           {/* Visible at every width: which restaurant you're ordering from
               changes the menu and the prices, so it can't be tucked behind the
-              mobile drawer. */}
+              mobile drawer. It shrinks/truncates rather than pushing the header
+              wide (see LocationPicker). */}
           <LocationPicker className="text-cream" />
           <Link href="/cart" className="relative btn-secondary !px-4 !py-3" aria-label="View cart">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

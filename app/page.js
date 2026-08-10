@@ -8,6 +8,7 @@ import { getThemePage } from '@/lib/theme';
 import ThemePageBody from '@/components/ThemePageBody';
 import PageSections from '@/components/PageSections';
 import { getHomeSlots } from '@/lib/homeSlots';
+import { getStoreLocations } from '@/lib/storeLocations';
 
 // Dynamic rather than `revalidate = 60`: every card below deep-links to
 // /menu/<clover_item_id>, and those ids are per-Clover-merchant. A cached
@@ -240,19 +241,26 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto">
           <p className="section-label mb-2 text-center">Where to Find Us</p>
           <h2 className="font-serif font-bold text-3xl md:text-4xl text-cream text-center mb-12">Two Michigan kitchens</h2>
+          {/* Driven by mimis.store_locations — was a hardcoded array that still
+              said Warren was "Opening Soon" weeks after it started trading, and
+              couldn't be corrected from the admin. */}
           <div className="grid md:grid-cols-2 gap-6">
-            {[
-              { name: 'Madison Heights', address: '28931 John R Rd, Madison Heights, MI 48071', status: 'Now Taking Orders', live: true },
-              { name: 'Warren', address: '8113 E 9 Mile Rd, Warren, MI 48089', status: 'Opening Soon', live: false },
-            ].map((loc) => (
-              <div key={loc.name} className="menu-card rounded-2xl border border-cream/10 bg-cream/[0.03] p-7 hover:border-gold/30">
-                <div className="flex items-center justify-between mb-3">
+            {storeLocations.map((loc) => (
+              <div key={loc.key} className="menu-card rounded-2xl border border-cream/10 bg-cream/[0.03] p-7 hover:border-gold/30">
+                <div className="flex items-center justify-between gap-3 mb-3">
                   <h3 className="font-serif font-semibold text-xl text-cream">{loc.name}</h3>
-                  <span className={`text-[11px] font-bold uppercase tracking-wide rounded-full px-3 py-1 ${loc.live ? 'bg-gold/15 text-gold' : 'bg-cream/10 text-cream/60'}`}>
-                    {loc.status}
-                  </span>
+                  {loc.status && (
+                    <span className={`text-[11px] font-bold uppercase tracking-wide rounded-full px-3 py-1 shrink-0 ${loc.live ? 'bg-gold/15 text-gold' : 'bg-cream/10 text-cream/60'}`}>
+                      {loc.status}
+                    </span>
+                  )}
                 </div>
                 <p className="text-cream/60 text-sm">{loc.address}</p>
+                {loc.phone && (
+                  <a href={`tel:${loc.phone.replace(/[^\d+]/g, '')}`} className="text-cream/50 text-sm hover:text-gold mt-1 inline-block">
+                    {loc.phone}
+                  </a>
+                )}
                 {loc.live && (
                   <Link href="/menu" className="btn-primary mt-5 inline-flex">Order from this kitchen</Link>
                 )}

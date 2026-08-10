@@ -101,6 +101,24 @@ html, body {
   background-color: var(--mimis-bg);
   color: var(--mimis-text);
   font-family: var(--mimis-font-body);
+  /* Defence in depth against sideways scroll on phones. One element wider than
+     the screen drags the WHOLE page into horizontal scroll, which reads as
+     "the site is cut off and I have to swipe" -- the individual causes are
+     fixed at source, but this stops any future one reaching customers.
+     `clip` rather than `hidden` because `hidden` on html/body silently breaks
+     position:sticky (the header and the menu's category bar both rely on it). */
+  overflow-x: clip;
+}
+
+/* Images and media should never be the thing that overflows. */
+img, video, iframe, canvas, svg {
+  max-width: 100%;
+}
+
+/* Long unbroken strings -- a pasted URL in a description, an item name with no
+   spaces -- can force a block wider than the viewport with no visible cause. */
+h1, h2, h3, p, li, a, span {
+  overflow-wrap: break-word;
 }
 
 * {
