@@ -38,6 +38,16 @@ export default function SectionSlideshow({ images = [], headline = '', autoplay 
   if (!count) return null;
 
   const isVideo = (url) => /\.(mp4|webm|mov|m4v)(\?|$)/i.test(String(url));
+  // Slides can be a YouTube/Vimeo link as well as an uploaded file, since every
+  // media field in the builder now accepts all three sources.
+  const toEmbed = (url) => {
+    const s = String(url || '');
+    const yt = s.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{6,})/);
+    if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+    const vm = s.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
+    return null;
+  };
   const radius = rounded === false ? '' : 'rounded-app-lg';
 
   return (
@@ -69,7 +79,10 @@ export default function SectionSlideshow({ images = [], headline = '', autoplay 
         >
           {slides.map((src, i) => (
             <div key={`${src}-${i}`} className="w-full shrink-0 aspect-[16/9] bg-app-wash" aria-hidden={i !== index}>
-              {isVideo(src) ? (
+              {toEmbed(src) && !isVideo(src) ? (
+                <iframe src={toEmbed(src)} title={`Slide ${i + 1}`} className="w-full h-full" allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
+              ) : isVideo(src) ? (
                 <video src={src} className="w-full h-full object-cover" muted loop playsInline autoPlay />
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element

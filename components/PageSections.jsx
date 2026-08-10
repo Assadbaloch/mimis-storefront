@@ -79,6 +79,28 @@ function colsClass(n) {
 
 const isVideo = isVideoFile;
 
+// One media value can now be any of three things -- an uploaded image, an
+// uploaded video file, or a YouTube/Vimeo link -- because every media field in
+// the builder accepts all three. Renderers must therefore never assume a file.
+function MediaFrame({ url, alt = '', className = '', rounded = true, controls = true }) {
+  if (!url) return null;
+  const radius = rounded ? 'rounded-app-lg' : '';
+  const embed = toEmbedUrl(url);
+  if (embed && !isVideo(url)) {
+    return (
+      <div className={`relative w-full aspect-video overflow-hidden ${radius} ${className}`}>
+        <iframe src={embed} title={alt || 'Video'} className="absolute inset-0 w-full h-full" allowFullScreen
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
+      </div>
+    );
+  }
+  if (isVideo(url)) {
+    return <video src={url} className={`w-full h-auto ${radius} ${className}`} controls={controls} playsInline preload="metadata" />;
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={url} alt={alt} className={`w-full h-auto ${radius} ${className}`} />;
+}
+
 /* ----------------------------------------------------------------- blocks */
 
 function Hero({ c, homeData = {} }) {
@@ -90,6 +112,7 @@ function Hero({ c, homeData = {} }) {
   const autoBg = homeData.gallery?.[0];
   const bg = c.background || autoBg?.video_url || autoBg?.image_url || '';
   const overlay = Number(c.overlay ?? 45) / 100;
+  const light = c.text_color === 'dark on light';
 
   return (
     <section className={`relative w-full flex ${heights[c.height] || heights.medium} overflow-hidden`}>
@@ -99,11 +122,21 @@ function Hero({ c, homeData = {} }) {
         // eslint-disable-next-line @next/next/no-img-element
         <img className="absolute inset-0 w-full h-full object-cover" src={bg} alt="" />
       ))}
-      <div className="absolute inset-0 bg-ink" style={{ opacity: bg ? overlay : 1 }} />
-      <div className={`relative z-10 w-full max-w-4xl mx-auto px-5 py-20 flex flex-col justify-center ${aligns[c.align] || aligns.center}`}>
-        {c.eyebrow && <p className="section-label mb-3 text-gold">{c.eyebrow}</p>}
-        {c.headline && <h1 className="font-serif font-bold text-4xl sm:text-5xl lg:text-6xl text-cream leading-tight">{c.headline}</h1>}
-        {c.subtext && <p className="text-cream/70 text-lg mt-5 max-w-2xl whitespace-pre-line">{c.subtext}</p>}
+      {/* Scrim + text colour are tied together. Over a photo the copy must be
+          white on a dark wash -- after the light recolour this block inherited
+          near-black text over a lightened image, which was barely readable.
+          "light" flips it for a pale image with dark type. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundColor: light ? '#ffffff' : '#000000',
+          opacity: bg ? overlay : 1,
+        }}
+      />
+      <div className={`relative z-10 w-full max-w-4xl mx-auto px-5 py-20 flex flex-col justify-center ${aligns[c.align] || aligns.center} ${light ? 'text-app' : 'text-white'}`}>
+        {c.eyebrow && <p className={`section-label mb-3 ${light ? '' : '!text-white/80'}`}>{c.eyebrow}</p>}
+        {c.headline && <h1 className="font-serif font-bold text-4xl sm:text-5xl lg:text-6xl leading-tight">{c.headline}</h1>}
+        {c.subtext && <p className={`text-lg mt-5 max-w-2xl whitespace-pre-line ${light ? 'text-app-soft' : 'text-white/80'}`}>{c.subtext}</p>}
         {c.button_label && c.button_url && (
           <Link href={c.button_url} className="btn-primary mt-8 inline-flex">{c.button_label}</Link>
         )}
@@ -187,18 +220,8 @@ function MediaText({ c }) {
   const mediaLeft = c.media_side === 'left';
 
   const mediaEl = !hasMedia ? null : (
-    <div className="w-full rounded-app-lg overflow-hidden bg-app-wash">
-      {embed ? (
-        <div className="relative w-full aspect-video">
-          <iframe src={embed} title={c.headline || 'Video'} className="absolute inset-0 w-full h-full" allowFullScreen
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
-        </div>
-      ) : isVideo(media) ? (
-        <video src={media} className="w-full h-auto" controls playsInline preload="metadata" />
-      ) : (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={media} alt={c.headline || ''} className="w-full h-auto" />
-      )}
+    <div className="w-full overflow-hidden">
+      <MediaFrame url={c.embed_url || media} alt={c.headline || ''} />
     </div>
   );
 
@@ -221,9 +244,25 @@ function MediaText({ c }) {
     </div>
   );
 
+  // How much width the picture takes at desktop. Without this the split was
+  // always 50/50, which makes a short caption look stranded beside a big video.
+  const SPLIT = {
+    'one third': 'md:grid-cols-[1fr_2fr]',
+    half: 'md:grid-cols-2',
+    'two thirds': 'md:grid-cols-[2fr_1fr]',
+  };
+  const splitKey = c.media_width || 'half';
+  // The grid template is written media-first, so flip it when the media sits
+  // on the right, otherwise "one third" would size the text column instead.
+  const gridCols = hasMedia
+    ? (mediaLeft
+        ? (SPLIT[splitKey] || SPLIT.half)
+        : { 'one third': 'md:grid-cols-[2fr_1fr]', half: 'md:grid-cols-2', 'two thirds': 'md:grid-cols-[1fr_2fr]' }[splitKey] || 'md:grid-cols-2')
+    : '';
+
   return (
     <section className={`px-5 py-14 ${band}`}>
-      <div className={`max-w-6xl mx-auto grid gap-8 md:gap-12 items-center ${hasMedia ? 'md:grid-cols-2' : ''}`}>
+      <div className={`max-w-6xl mx-auto grid gap-8 md:gap-12 items-center ${gridCols}`}>
         {hasMedia && mediaLeft && <div className="order-1">{mediaEl}</div>}
         <div className={hasMedia && mediaLeft ? 'order-2' : 'order-2 md:order-1'}>{copyEl}</div>
         {hasMedia && !mediaLeft && <div className="order-1 md:order-2">{mediaEl}</div>}
@@ -336,7 +375,11 @@ function NewsStrip({ c, homeData }) {
           <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-2 -mx-5 px-5 md:-mx-8 md:px-8">
             {clips.map((n) => (
               <div key={n.id} className="relative shrink-0 w-[280px] md:w-[340px] aspect-video rounded-app-lg overflow-hidden border border-line bg-app-wash snap-start">
-                {n.media_type === 'video' ? (
+                {toEmbedUrl(n.url) && !isVideo(n.url) ? (
+                  <iframe src={toEmbedUrl(n.url)} title={n.caption || 'Press clip'}
+                    className="absolute inset-0 w-full h-full" allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
+                ) : n.media_type === 'video' || isVideo(n.url) ? (
                   <video src={n.url} className="absolute inset-0 w-full h-full object-cover" controls playsInline preload="metadata" />
                 ) : (
                   // eslint-disable-next-line @next/next/no-img-element

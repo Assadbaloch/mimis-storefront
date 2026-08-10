@@ -2,8 +2,55 @@
 import { useEffect, useState } from 'react';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { getSectionType } from '@/lib/sectionTypes';
-import { isVideoFile } from '@/lib/embed';
+import { isVideoFile, toEmbedUrl } from '@/lib/embed';
 import MediaPicker from './MediaPicker';
+
+// Small "or paste a link" row shared by every media field.
+//
+// The library and the uploader already existed; what was missing was a way to
+// use a YouTube/Vimeo clip anywhere media is accepted. Previously only a couple
+// of block types had a separate embed_url text box, so the news strip and the
+// slideshow could take pictures but not video links.
+function UrlAdd({ onAdd, placeholder }) {
+  const [url, setUrl] = useState('');
+  function submit() {
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    onAdd(trimmed);
+    setUrl('');
+  }
+  return (
+    <div className="flex gap-2 mt-2">
+      <input
+        className="flex-1 bg-black/25 border border-cream/12 rounded-lg px-3 py-1.5 text-cream text-xs placeholder:text-cream/30"
+        placeholder={placeholder}
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } }}
+      />
+      <button type="button" onClick={submit} disabled={!url.trim()}
+        className="text-gold text-xs font-bold uppercase tracking-wide disabled:opacity-30">
+        Add
+      </button>
+    </div>
+  );
+}
+
+// Thumbnail that copes with all three kinds of value: an uploaded image, an
+// uploaded video file, or a YouTube/Vimeo link (which has no file extension and
+// would otherwise render as a broken image).
+function Thumb({ url, className }) {
+  if (toEmbedUrl(url) && !isVideoFile(url)) {
+    return (
+      <div className={`${className} bg-black/40 grid place-items-center text-cream/60 text-[10px] text-center px-1`}>
+        ▶ Video link
+      </div>
+    );
+  }
+  if (isVideoFile(url)) return <video src={url} className={className} muted />;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={url} alt="" className={className} />;
+}
 
 // Renders the settings form for one section, driven entirely by the `fields`
 // array in lib/sectionTypes.js. No per-type form components -- adding a new
@@ -146,10 +193,7 @@ function Field({ field, value, onChange }) {
           <div className="flex items-center gap-3">
             {value ? (
               <div className="relative">
-                {isVideoFile(value)
-                  ? <video src={value} className="w-24 h-16 object-cover rounded-lg" muted />
-                  // eslint-disable-next-line @next/next/no-img-element
-                  : <img src={value} alt="" className="w-24 h-16 object-cover rounded-lg" />}
+                <Thumb url={value} className="w-24 h-16 object-cover rounded-lg" />
               </div>
             ) : (
               <div className="w-24 h-16 rounded-lg border border-dashed border-cream/20 grid place-items-center text-cream/30 text-xs">
@@ -158,11 +202,18 @@ function Field({ field, value, onChange }) {
             )}
             <div className="flex flex-col gap-1">
               <button type="button" onClick={() => setPickerOpen(true)} className="text-gold text-sm text-left">
-                {value ? 'Change' : 'Choose or upload'}
+                {value ? 'Change' : 'Choose from library or upload'}
               </button>
               {value && <button type="button" onClick={() => onChange('')} className="text-cream/45 text-xs text-left hover:text-brick">Remove</button>}
             </div>
           </div>
+          {/* Third way in: paste a link. Every media field offers library,
+              upload AND a URL, so a YouTube clip is never a special case that
+              only some blocks happen to support. */}
+          <UrlAdd
+            placeholder="…or paste a YouTube / Vimeo / image link"
+            onAdd={(url) => onChange(url)}
+          />
           <MediaPicker open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={(url) => onChange(url)} />
         </div>
       );
@@ -175,16 +226,19 @@ function Field({ field, value, onChange }) {
           <div className="flex flex-wrap gap-2 mb-2">
             {list.map((url, i) => (
               <div key={i} className="relative">
-                {isVideoFile(url)
-                  ? <video src={url} className="w-20 h-14 object-cover rounded-md" muted />
-                  // eslint-disable-next-line @next/next/no-img-element
-                  : <img src={url} alt="" className="w-20 h-14 object-cover rounded-md" />}
+                <Thumb url={url} className="w-20 h-14 object-cover rounded-md" />
                 <button type="button" onClick={() => onChange(list.filter((_, j) => j !== i))}
                   className="absolute -top-1.5 -right-1.5 bg-brick text-cream w-5 h-5 rounded-full text-xs leading-none">×</button>
               </div>
             ))}
           </div>
-          <button type="button" onClick={() => setPickerOpen(true)} className="text-gold text-sm">+ Add images</button>
+          <button type="button" onClick={() => setPickerOpen(true)} className="text-gold text-sm">
+            + Choose from library or upload
+          </button>
+          <UrlAdd
+            placeholder="…or paste a YouTube / Vimeo / image link and press Add"
+            onAdd={(url) => onChange([...list, url])}
+          />
           <MediaPicker open={pickerOpen} multiple onClose={() => setPickerOpen(false)}
             onSelect={(urls) => onChange([...list, ...urls])} />
         </div>
