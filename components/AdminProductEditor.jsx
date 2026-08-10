@@ -25,10 +25,14 @@ function deriveCover(mediaList) {
   return { image_url: image?.url || '', video_url: video?.url || '' };
 }
 
-export default function AdminProductEditor({ product, items = [], onChanged }) {
+export default function AdminProductEditor({ product, items = [], allProducts = [], onChanged }) {
   const supabase = getSupabasePublicClient();
   const dropInputRef = useRef(null);
   const dragIndexRef = useRef(null);
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [mergeTarget, setMergeTarget] = useState('');
+  const [mergeSearch, setMergeSearch] = useState('');
+  const [merging, setMerging] = useState(false);
 
   const [fields, setFields] = useState({
     description: product.description || '',
@@ -113,6 +117,38 @@ export default function AdminProductEditor({ product, items = [], onChanged }) {
       // Re-inherit immediately so the row doesn't sit stale until the next edit.
       await supabase.rpc('sync_menu_items_from_product', { p_product_id: product.id });
     }
+    onChanged?.();
+  }
+
+  // Folds this product into another one. Used when the same dish exists under
+  // two names in Clover -- typically a retired Madison entry that holds the
+  // photos, and the current entry both restaurants actually carry.
+  async function handleMerge() {
+    if (!mergeTarget) return;
+    const target = allProducts.find((p) => p.id === mergeTarget);
+    if (!target) return;
+    const ok = window.confirm(
+      `Merge "${displayName(product.name)}" into "${displayName(target.name)}"?\n\n` +
+      `• Photos and gallery move across\n` +
+      `• Every location currently showing "${displayName(product.name)}" will show "${displayName(target.name)}"'s content\n` +
+      `• "${displayName(target.name)}" keeps anything it already has\n\n` +
+      `This can't be undone automatically.`
+    );
+    if (!ok) return;
+
+    setMerging(true);
+    setError('');
+    const { error: mergeErr } = await supabase.rpc('merge_menu_products', {
+      p_source: product.id,
+      p_target: mergeTarget,
+    });
+    setMerging(false);
+    if (mergeErr) {
+      setError(mergeErr.message);
+      return;
+    }
+    setMergeOpen(false);
+    setMergeTarget('');
     onChanged?.();
   }
 
@@ -311,16 +347,74 @@ export default function AdminProductEditor({ product, items = [], onChanged }) {
               {saving ? 'Saving…' : savedAt ? 'Saved ✓' : 'Save'}
             </button>
           </div>
-          <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center justify-between gap-3 mt-2">
             {error && <p className="text-brick text-xs">{error}</p>}
             <button
               type="button"
+              onClick={() => setMergeOpen((v) => !v)}
+              className="text-cream/45 hover:text-cream/80 text-[11px] font-bold uppercase tracking-wide ml-auto"
+              title="Use when the same dish appears twice in Clover under different names"
+            >
+              Same as another item…
+            </button>
+            <button
+              type="button"
               onClick={toggleExpanded}
-              className="text-gold/80 hover:text-gold text-[11px] font-bold uppercase tracking-wide ml-auto"
+              className="text-gold/80 hover:text-gold text-[11px] font-bold uppercase tracking-wide"
             >
               {expanded ? 'Hide media manager ▲' : `Manage media (${media?.length ?? '…'}) ▾`}
             </button>
           </div>
+
+          {mergeOpen && (
+            <div className="mt-3 rounded-xl border border-cream/12 bg-black/20 p-3">
+              <p className="text-cream/60 text-[11px] leading-relaxed mb-2">
+                Merging moves this item&rsquo;s photos onto the one you pick, and points every
+                location at it. Use it when Clover holds the same dish under an old and a new name —
+                the photos usually sit on the old one. <strong className="text-cream/80">Pick the
+                name you actually sell under.</strong>
+              </p>
+              <input
+                className="input w-full !text-xs mb-2"
+                placeholder="Search for the item to merge into…"
+                value={mergeSearch}
+                onChange={(e) => setMergeSearch(e.target.value)}
+              />
+              <select
+                className="input w-full !text-xs"
+                value={mergeTarget}
+                onChange={(e) => setMergeTarget(e.target.value)}
+                size={6}
+              >
+                {allProducts
+                  .filter((p) => p.id !== product.id)
+                  .filter((p) => !mergeSearch || p.name.toLowerCase().includes(mergeSearch.toLowerCase()))
+                  .slice(0, 200)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {displayName(p.name)}{p.image_url ? ' · has photo' : ''}
+                    </option>
+                  ))}
+              </select>
+              <div className="flex items-center gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={handleMerge}
+                  disabled={!mergeTarget || merging}
+                  className="btn-primary !px-4 !py-2 !text-[11px] disabled:opacity-40"
+                >
+                  {merging ? 'Merging…' : 'Merge'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMergeOpen(false); setMergeTarget(''); }}
+                  className="text-cream/50 hover:text-cream text-[11px]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

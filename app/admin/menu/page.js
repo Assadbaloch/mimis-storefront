@@ -81,7 +81,18 @@ export default function AdminMenuPage() {
     if (category !== 'all' && categoryOf(p.id) !== category) return false;
     if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (scope === 'shared' && items.length < 2) return false;
-    if (scope !== 'all' && scope !== 'shared') {
+    // Photos that only one restaurant benefits from. These are usually a dish
+    // Clover lists twice under an old and a new name, with the photo stuck on
+    // the retired one -- exactly what "Same as another item…" is for.
+    if (scope === 'stranded_photos') {
+      if (!p.image_url) return false;
+      if (new Set(items.map((i) => i.location)).size > 1) return false;
+    }
+    if (scope === 'missing_photos') {
+      if (p.image_url) return false;
+      if (new Set(items.map((i) => i.location)).size < 2) return false;
+    }
+    if (!['all', 'shared', 'stranded_photos', 'missing_photos'].includes(scope)) {
       const only = items.length === 1 && items[0].location === scope;
       if (!only) return false;
     }
@@ -104,7 +115,8 @@ export default function AdminMenuPage() {
     return (
       <div className="space-y-3">
         {list.map((p) => (
-          <AdminProductEditor key={p.id} product={p} items={itemsByProduct[p.id] || []} onChanged={load} />
+          <AdminProductEditor key={p.id} product={p} items={itemsByProduct[p.id] || []}
+            allProducts={products} onChanged={load} />
         ))}
       </div>
     );
@@ -130,11 +142,29 @@ export default function AdminMenuPage() {
         <select value={scope} onChange={(e) => setScope(e.target.value)} className="input">
           <option value="all">All locations</option>
           <option value="shared">Shared by all</option>
+          <option value="stranded_photos">⚠ Photos only one location sees</option>
+          <option value="missing_photos">⚠ Shared items with no photo</option>
           {locations.map((l) => (
             <option key={l} value={l}>Only at {l}</option>
           ))}
         </select>
       </div>
+
+      {scope === 'stranded_photos' && (
+        <p className="text-cream/50 text-xs mb-4 leading-relaxed rounded-xl border border-cream/12 bg-cream/[0.03] p-3">
+          These items have a photo but are only carried by one restaurant — so the other one shows
+          nothing. Usually the same dish exists twice in Clover under an old and a new name, with the
+          photo stuck on the retired one. Open <strong>Same as another item…</strong> on each and
+          merge it into the name you actually sell under; the photo moves and both locations get it.
+        </p>
+      )}
+      {scope === 'missing_photos' && (
+        <p className="text-cream/50 text-xs mb-4 leading-relaxed rounded-xl border border-cream/12 bg-cream/[0.03] p-3">
+          Both restaurants carry these, but there&rsquo;s no photo. Either upload one here, or check
+          the <strong>Photos only one location sees</strong> filter — the picture may already exist
+          on a duplicate entry waiting to be merged in.
+        </p>
+      )}
 
       {shared.length > 0 && (
         <section className="mb-10">
