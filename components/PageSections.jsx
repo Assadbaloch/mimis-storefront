@@ -449,27 +449,21 @@ function Gallery({ c }) {
 
 function ProductGrid({ c, items }) {
   if (!items.length) return null;
+  // Renders the SAME card the menu uses, rather than a lookalike.
+  //
+  // This block used to draw its own simplified card: no Add to Cart (just an
+  // "Order Now →" label), no badge, no quantity stepper, no product modal --
+  // and it linked to /menu?item=<uuid> when that deep-link convention expects
+  // clover_item_id, so the link silently failed to open anything. On the home
+  // page, next to real menu cards, it read as broken styling. Reusing
+  // MenuItemCard means these blocks can never drift from the menu again.
   return (
     <section className="max-w-6xl mx-auto px-5 py-14">
-      {c.headline && <h2 className="font-serif font-bold text-3xl text-cream mb-2 text-center">{c.headline}</h2>}
-      {c.subtext && <p className="text-cream/60 text-center mb-8 max-w-2xl mx-auto whitespace-pre-line">{c.subtext}</p>}
-      <div className={`grid grid-cols-1 ${colsClass(c.columns)} gap-5`}>
+      {c.headline && <h2 className="font-serif font-bold text-3xl text-app mb-2 text-center">{c.headline}</h2>}
+      {c.subtext && <p className="text-app-soft text-center mb-8 max-w-2xl mx-auto whitespace-pre-line">{c.subtext}</p>}
+      <div className={`grid grid-cols-2 ${colsClass(c.columns)} gap-4 md:gap-5`}>
         {items.map((item) => (
-          <Link key={item.id} href={`/menu?item=${item.id}`}
-            className="rounded-2xl border border-cream/10 bg-cream/[0.03] overflow-hidden hover:border-gold/40 transition">
-            {item.image_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={item.image_url} alt={item.name} className="w-full h-44 object-cover" />
-            )}
-            <div className="p-4">
-              <h3 className="font-serif font-semibold text-lg text-cream">{item.name}</h3>
-              {item.description && <p className="text-cream/55 text-sm mt-1 line-clamp-2">{item.description}</p>}
-              <div className="flex items-center justify-between mt-3">
-                {c.show_price !== false && <span className="text-gold font-semibold">{formatPrice(item.price_cents)}</span>}
-                <span className="text-cream/70 text-sm">{c.button_label || 'Order Now'} &rarr;</span>
-              </div>
-            </div>
-          </Link>
+          <MenuItemCard key={item.clover_item_id || item.id} item={item} />
         ))}
       </div>
     </section>
