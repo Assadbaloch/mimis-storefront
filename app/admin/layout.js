@@ -6,6 +6,11 @@ import { getSupabasePublicClient } from '@/lib/supabaseClient';
 
 const ADMIN_NAV_LINKS = [
   { href: '/admin/menu', label: 'Menu' },
+  // /admin/pages has existed since the page builder was built but was never
+  // linked here, so the only way in was to type the URL. That's also where the
+  // home page's editable sections live now, which made the whole feature look
+  // missing.
+  { href: '/admin/pages', label: 'Pages' },
   { href: '/admin/themes', label: 'Themes' },
   { href: '/admin/media', label: 'Media' },
   { href: '/admin/settings', label: 'Storefront Settings' },
