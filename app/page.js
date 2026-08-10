@@ -355,48 +355,9 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* FEATURED IN THE NEWS — managed from /admin/settings, falls back to the
-          "coming soon" placeholder when the owner hasn't added any clips yet. */}
-      <section className="px-5 md:px-8 py-16">
-        <div className="max-w-5xl mx-auto text-center">
-          <p className="section-label mb-2">As Seen In</p>
-          <h2 className="font-serif font-bold text-2xl md:text-3xl text-cream mb-8">Featured in the news</h2>
-
-          {newsMedia.length === 0 ? (
-            <div className="max-w-3xl mx-auto aspect-video rounded-2xl border border-cream/10 bg-cream/[0.03] flex items-center justify-center">
-              <p className="text-cream/40 text-sm">News coverage coming soon</p>
-            </div>
-          ) : (
-            <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-2 -mx-5 px-5 md:-mx-8 md:px-8">
-              {newsMedia.map((n) => (
-                <div
-                  key={n.id}
-                  className="relative shrink-0 w-[280px] md:w-[340px] aspect-video rounded-2xl overflow-hidden border border-cream/10 bg-cream/[0.06] snap-start"
-                >
-                  {n.media_type === 'video' ? (
-                    <video
-                      src={n.url}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      controls
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Image src={n.url} alt={n.caption || 'Featured in the news'} fill className="object-cover" sizes="340px" />
-                  )}
-                  {n.caption && (
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-scrim to-transparent p-3 text-left">
-                      <p className="text-white text-xs font-semibold">{n.caption}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+      {/* "Featured in the news" was removed from this design (2026-08-10, owner
+          request). It still exists as an optional "As seen in the news" block
+          in the page builder for anyone who wants it back. */}
 
       {/* Owner slot: above the footer. Also the default landing place for any
           section saved without an explicit slot. */}
