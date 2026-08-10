@@ -4,13 +4,16 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 
+// Design lives in ONE place: Themes. A theme is a complete HTML site (single or
+// multi page) imported as a file, with its own pages edited under that theme.
+//
+// The block-based page builder at /admin/pages is deliberately NOT linked here.
+// It was a second, parallel way to build the site that could never offer full
+// CSS control, and having both meant two mental models for the same job. The
+// routes still work if typed directly, so nothing already built is lost, but
+// the theme is the supported path.
 const ADMIN_NAV_LINKS = [
   { href: '/admin/menu', label: 'Menu' },
-  // /admin/pages has existed since the page builder was built but was never
-  // linked here, so the only way in was to type the URL. That's also where the
-  // home page's editable sections live now, which made the whole feature look
-  // missing.
-  { href: '/admin/pages', label: 'Pages' },
   { href: '/admin/themes', label: 'Themes' },
   { href: '/admin/media', label: 'Media' },
   { href: '/admin/settings', label: 'Storefront Settings' },
