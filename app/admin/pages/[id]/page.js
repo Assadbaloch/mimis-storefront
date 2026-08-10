@@ -46,6 +46,12 @@ export default function PageBuilder() {
 
   function updatePage(patch) { setPage((p) => ({ ...p, ...patch })); setDirty(true); }
 
+  // The home page is a real page record under the reserved slug 'home', but it
+  // behaves differently: its blocks slot into the built-in design rather than
+  // making up the whole page, and its address is fixed. Declared here (not
+  // further down) because save() closes over it.
+  const isHome = page?.slug === 'home';
+
   function addSection(type) {
     setSections((prev) => [...prev, {
       id: `new-${crypto.randomUUID()}`,
@@ -101,14 +107,18 @@ export default function PageBuilder() {
       // Position is rewritten from array order on every save, so reordering can
       // never leave two sections claiming the same slot.
       for (const [i, s] of sections.entries()) {
+        // `slot` only means anything on the home page (see lib/homeSlots.js);
+        // on a normal CMS page it stays null and sections simply run in order.
         if (s._isNew) {
           const { error } = await supabase.from('page_sections').insert({
             page_id: id, type: s.type, position: i, config: s.config, active: s.active !== false,
+            slot: isHome ? (s.slot || 'bottom') : null,
           });
           if (error) throw error;
         } else {
           const { error } = await supabase.from('page_sections').update({
             position: i, config: s.config, active: s.active !== false,
+            slot: isHome ? (s.slot || 'bottom') : null,
             updated_at: new Date().toISOString(),
           }).eq('id', s.id);
           if (error) throw error;
@@ -138,7 +148,7 @@ export default function PageBuilder() {
         <div className="flex-1" />
         {status && <span className={`text-sm ${status === 'Saved' ? 'text-gold' : 'text-brick'}`}>{status}</span>}
         {page.status === 'published' && (
-          <a href={`/${page.slug}`} target="_blank" rel="noreferrer" className="text-cream/50 hover:text-cream text-sm">Preview ↗</a>
+          <a href={isHome ? '/' : `/${page.slug}`} target="_blank" rel="noreferrer" className="text-cream/50 hover:text-cream text-sm">Preview ↗</a>
         )}
         <button onClick={save} disabled={saving || !dirty}
           className="btn-primary text-sm disabled:opacity-40">
@@ -155,10 +165,19 @@ export default function PageBuilder() {
           </div>
           <div>
             <label className="block text-cream/60 text-xs uppercase tracking-wide mb-1">Web address</label>
-            <div className="flex items-center gap-1">
-              <span className="text-cream/40 text-sm">/</span>
-              <input className="input flex-1" value={page.slug || ''} onChange={(e) => updatePage({ slug: e.target.value })} />
-            </div>
+            {isHome ? (
+              // The home page lives at "/" and its slug is what wires it to the
+              // built-in design -- editing it would orphan the blocks.
+              <div className="flex items-center gap-2 h-[42px]">
+                <span className="text-cream/70 text-sm font-mono">/</span>
+                <span className="text-cream/40 text-xs">Home page — address can&rsquo;t be changed</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <span className="text-cream/40 text-sm">/</span>
+                <input className="input flex-1" value={page.slug || ''} onChange={(e) => updatePage({ slug: e.target.value })} />
+              </div>
+            )}
           </div>
         </div>
         <div>
@@ -185,13 +204,35 @@ export default function PageBuilder() {
 
       {/* Sections */}
       <h2 className="text-cream/60 text-xs uppercase tracking-wide mb-2">Sections</h2>
+      {isHome && (
+        <p className="text-cream/45 text-xs mb-3 leading-relaxed">
+          These blocks are added <em>into</em> the built-in home page — the hero, Popular This Week,
+          the halal band, locations and news stay where they are. Choose where each block drops in.
+        </p>
+      )}
       <div className="space-y-2 mb-4">
         {sections.map((s, i) => (
-          <SectionEditor key={s.id} section={s}
-            isFirst={i === 0} isLast={i === sections.length - 1}
-            onChange={(next) => changeSection(i, next)}
-            onRemove={() => removeSection(i)}
-            onMove={(d) => moveSection(i, d)} />
+          <div key={s.id}>
+            {isHome && (
+              <div className="flex items-center gap-2 mb-1 pl-1">
+                <label className="text-cream/45 text-[11px] uppercase tracking-wide">Position on home</label>
+                <select
+                  className="input !py-1 !text-xs"
+                  value={s.slot || 'bottom'}
+                  onChange={(e) => changeSection(i, { ...s, slot: e.target.value })}
+                >
+                  <option value="top">Under the hero</option>
+                  <option value="middle">After Popular This Week</option>
+                  <option value="bottom">Above the footer</option>
+                </select>
+              </div>
+            )}
+            <SectionEditor section={s}
+              isFirst={i === 0} isLast={i === sections.length - 1}
+              onChange={(next) => changeSection(i, next)}
+              onRemove={() => removeSection(i)}
+              onMove={(d) => moveSection(i, d)} />
+          </div>
         ))}
         {!sections.length && (
           <p className="text-cream/45 text-sm text-center py-8 border border-dashed border-cream/15 rounded-xl">

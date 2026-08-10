@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { getActiveLocation } from '@/lib/locationServer';
+import { HOME_SLUG } from '@/lib/homeSlots';
 import PageSections from '@/components/PageSections';
 import { getThemePage } from '@/lib/theme';
 import ThemePageBody from '@/components/ThemePageBody';
@@ -26,6 +27,12 @@ import ThemePageBody from '@/components/ThemePageBody';
 export const dynamic = 'force-dynamic';
 
 async function fetchPage(slug) {
+  // 'home' is the record backing the built-in home page's editable slots (see
+  // lib/homeSlots.js). It is deliberately NOT servable here -- otherwise the
+  // same blocks would render both on "/" and again at "/home", which is
+  // duplicate content and confusing to edit.
+  if (slug === HOME_SLUG) return null;
+
   const supabase = getSupabasePublicClient();
   const { data: page } = await supabase
     .from('pages')

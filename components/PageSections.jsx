@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { formatPrice } from '@/lib/format';
 import { normalizeEmbeds, toEmbedUrl, isVideoFile } from '@/lib/embed';
+import SectionSlideshow from '@/components/SectionSlideshow';
 
 // Renders a CMS page's sections. Server component: menu data is fetched once
 // on the server per page render, so a page with several menu sections still
@@ -28,6 +29,15 @@ function Section({ section, menuItems }) {
     case 'image': return <ImageBlock c={c} />;
     case 'video': return <VideoBlock c={c} />;
     case 'gallery': return <Gallery c={c} />;
+    case 'slideshow': return (
+      <SectionSlideshow
+        images={Array.isArray(c.images) ? c.images : []}
+        headline={c.headline || ''}
+        autoplay={c.autoplay === true}
+        interval={c.interval}
+        rounded={c.rounded !== false}
+      />
+    );
     case 'product_category': return <ProductGrid c={c} items={filterByCategory(menuItems, c)} />;
     case 'product_showcase': return <ProductGrid c={c} items={filterByIds(menuItems, c)} />;
     case 'cta_banner': return <CtaBanner c={c} />;

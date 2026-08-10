@@ -6,6 +6,8 @@ import { displayName, displayCategory } from '@/lib/format';
 import MenuItemCard from '@/components/MenuItemCard';
 import { getThemePage } from '@/lib/theme';
 import ThemePageBody from '@/components/ThemePageBody';
+import PageSections from '@/components/PageSections';
+import { getHomeSlots } from '@/lib/homeSlots';
 
 // Dynamic rather than `revalidate = 60`: every card below deep-links to
 // /menu/<clover_item_id>, and those ids are per-Clover-merchant. A cached
@@ -106,6 +108,9 @@ export default async function HomePage() {
   const gallery = await getGalleryMedia(location);
   const showcase = await getCategoryShowcase(location);
   const newsMedia = await getNewsMedia();
+  // Owner-authored blocks from /admin/pages → "Home page". Empty by default,
+  // so the page looks identical until something is actually added.
+  const slots = await getHomeSlots();
   const heroMedia = gallery[0] || null;
 
   return (
@@ -155,6 +160,9 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Owner slot: directly under the hero. */}
+      <PageSections sections={slots.top} />
+
       {/* POPULAR THIS WEEK */}
       {featured.length > 0 && (
         <section className="px-5 md:px-8 pb-20">
@@ -174,6 +182,9 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Owner slot: after "Popular this week". */}
+      <PageSections sections={slots.middle} />
 
       {/* HALAL TRUST SECTION — a solid Yummy Classic blue band.
           Was a hardcoded dark emerald gradient with themed `text-cream` text;
@@ -335,6 +346,10 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+
+      {/* Owner slot: above the footer. Also the default landing place for any
+          section saved without an explicit slot. */}
+      <PageSections sections={slots.bottom} />
     </>
   );
 }
