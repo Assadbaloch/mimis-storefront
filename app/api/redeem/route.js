@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 
-// Server-only proxy to the n8n Reward Redemption webhook -- mirrors
+// Server-only proxy to the redeem-reward Supabase Edge Function (the n8n
+// workflow it replaced was retired at cutover -- its webhook now 404s, which
+// surfaced as "Could not redeem that reward" on every attempt) -- mirrors
 // app/api/enroll/route.js and app/api/checkout/route.js exactly (keeps
 // MIMIS_WEBHOOK_SECRET out of the browser bundle). Contract verified
-// directly against the live n8n workflow (zU5VxFe5U8mp0BEq):
-//   POST /webhook/redeem-reward, header X-Mimis-Webhook-Secret,
+// directly against the deployed function -- identical to the old n8n one:
+//   POST /functions/v1/redeem-reward, header X-Mimis-Webhook-Secret,
 //   body { action: "redeem"|"status", phone_number, reward_id? }
 //
 //   action "redeem" -> { success, code, redemption_id, reward_name,
@@ -15,7 +17,8 @@ import { NextResponse } from 'next/server';
 //   action "status" -> { success, points_balance, current_tier,
 //     active_redemptions: [{ code, reward_name, reward_value, status,
 //     expires_at }] } or { success: false, error: "customer_not_found" }
-const N8N_BASE_URL = process.env.MIMIS_N8N_BASE_URL || 'https://automation.teamastrixdev.com';
+const FUNCTIONS_BASE_URL =
+  process.env.MIMIS_FUNCTIONS_BASE_URL || 'https://igchqqyassrfpsliyjec.supabase.co/functions/v1';
 
 export async function POST(request) {
   let body;
@@ -49,7 +52,7 @@ export async function POST(request) {
   }
 
   try {
-    const upstream = await fetch(`${N8N_BASE_URL}/webhook/redeem-reward`, {
+    const upstream = await fetch(`${FUNCTIONS_BASE_URL}/redeem-reward`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

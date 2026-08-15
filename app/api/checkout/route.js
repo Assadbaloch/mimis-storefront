@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 
-// Server-only proxy to the n8n Online Order Intake webhook. Keeps
+// Server-only proxy to the online-order-intake Supabase Edge Function (the
+// n8n workflow it replaced was retired at cutover -- its webhook now 404s,
+// which surfaced as "Could not start checkout" on every order). Keeps
 // MIMIS_WEBHOOK_SECRET out of the browser bundle entirely -- that one stays a
 // real, user-supplied Vercel env var (it's a true credential, unlike the
-// Supabase anon key). Contract verified directly against the live n8n
-// workflow (KxHdYKLCXeyrxgHS):
-//   POST /webhook/online-order-intake, header X-Mimis-Webhook-Secret,
+// Supabase anon key). Contract verified directly against the deployed
+// function (v5) -- identical to the old n8n contract:
+//   POST /functions/v1/online-order-intake, header X-Mimis-Webhook-Secret,
 //   body { first_name, last_name, phone_number (required), email, order_type,
 //          location, notes, redemption_code (optional),
 //          delivery_address (optional, required when order_type is "delivery"):
@@ -16,7 +18,8 @@ import { NextResponse } from 'next/server';
 // redemption_code is validated server-side (mimis.redemptions) against the
 // customer matched by phone_number -- invalid/expired/mismatched codes just
 // fall back to discount_cents: 0 rather than failing the order.
-const N8N_BASE_URL = process.env.MIMIS_N8N_BASE_URL || 'https://automation.teamastrixdev.com';
+const FUNCTIONS_BASE_URL =
+  process.env.MIMIS_FUNCTIONS_BASE_URL || 'https://igchqqyassrfpsliyjec.supabase.co/functions/v1';
 
 // Same normalization/validation the n8n Online Order Intake workflow now
 // enforces server-side (Calc Order Total + Has Phone?) -- duplicated here so
@@ -64,7 +67,7 @@ export async function POST(request) {
   }
 
   try {
-    const upstream = await fetch(`${N8N_BASE_URL}/webhook/online-order-intake`, {
+    const upstream = await fetch(`${FUNCTIONS_BASE_URL}/online-order-intake`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -1,14 +1,16 @@
 import { NextResponse } from 'next/server';
 
-// Server-only proxy to the n8n Loyalty Enrollment webhook (the same one the
-// GHL signup form posts to). Keeps MIMIS_WEBHOOK_SECRET out of the browser
-// bundle -- mirrors app/api/checkout/route.js exactly. Contract verified
-// directly against the live n8n workflow (czsPjyVwUVbBtbrQ):
-//   POST /webhook/loyalty-enroll, header X-Mimis-Webhook-Secret,
+// Server-only proxy to the loyalty-enroll Supabase Edge Function (the n8n
+// workflow it replaced was retired at cutover; the GHL signup form posts to
+// the same function). Keeps MIMIS_WEBHOOK_SECRET out of the browser bundle --
+// mirrors app/api/checkout/route.js exactly. Contract verified directly
+// against the deployed function -- identical to the old n8n one:
+//   POST /functions/v1/loyalty-enroll, header X-Mimis-Webhook-Secret,
 //   body { full_name, email, phone (required), birthday, preferred_location }
 //   -> { success, status: "enrolled"|"already_enrolled", message, customer_id,
 //        points_balance, current_tier?, is_new }
-const N8N_BASE_URL = process.env.MIMIS_N8N_BASE_URL || 'https://automation.teamastrixdev.com';
+const FUNCTIONS_BASE_URL =
+  process.env.MIMIS_FUNCTIONS_BASE_URL || 'https://igchqqyassrfpsliyjec.supabase.co/functions/v1';
 
 export async function POST(request) {
   let body;
@@ -45,7 +47,7 @@ export async function POST(request) {
   }
 
   try {
-    const upstream = await fetch(`${N8N_BASE_URL}/webhook/loyalty-enroll`, {
+    const upstream = await fetch(`${FUNCTIONS_BASE_URL}/loyalty-enroll`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
