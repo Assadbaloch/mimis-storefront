@@ -59,6 +59,7 @@ export default function BusinessInfoEditor() {
           display_address: l.display_address,
           display_phone: l.display_phone,
           status_label: l.status_label,
+          google_place_id: l.google_place_id || null,
         }).eq('location', l.location);
         if (error) throw error;
       }
@@ -106,6 +107,13 @@ export default function BusinessInfoEditor() {
               <Field label="Status" value={l.status_label} onChange={(v) => editLoc(l.location, { status_label: v })} />
               <Field label="Address (as shown)" value={l.display_address} onChange={(v) => editLoc(l.location, { display_address: v })} />
               <Field label="Phone (as shown)" value={l.display_phone} onChange={(v) => editLoc(l.location, { display_phone: v })} />
+              {/* Public identifier, safe to store and display. The Places API
+                  key it pairs with is server-only and never lives here. */}
+              <Field label="Google Place ID (for live reviews)" value={l.google_place_id}
+                onChange={(v) => editLoc(l.location, { google_place_id: v })} />
+              <p className="text-cream/40 text-xs -mt-1">
+                Find it with Google&rsquo;s Place ID Finder. Leave blank to turn live reviews off for this location.
+              </p>
             </div>
 
             <p className="text-cream/60 text-xs uppercase tracking-wide mb-2">Opening hours</p>
