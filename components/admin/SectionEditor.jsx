@@ -126,6 +126,8 @@ function summarise(section, def) {
 
 function Field({ field, value, onChange }) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  // Index of the media_multi entry currently being replaced, or null.
+  const [replacingIdx, setReplacingIdx] = useState(null);
   const label = (
     <label className="block text-cream/60 text-xs uppercase tracking-wide mb-1">
       {field.label}{field.required && <span className="text-brick"> *</span>}
@@ -220,15 +222,35 @@ function Field({ field, value, onChange }) {
 
     case 'media_multi': {
       const list = Array.isArray(value) ? value : [];
+      // Order is meaningful here -- these lists drive slideshows and photo
+      // grids, where "which picture is first" is a real editorial decision.
+      // Without reorder the only way to move a slide was remove + re-add, which
+      // appends to the end; and replacing one in place was impossible.
+      const move = (i, delta) => {
+        const j = i + delta;
+        if (j < 0 || j >= list.length) return;
+        const next = [...list];
+        [next[i], next[j]] = [next[j], next[i]];
+        onChange(next);
+      };
+      const replaceAt = (i, url) => onChange(list.map((u, j) => (j === i ? url : u)));
       return (
         <div>
           {label}
           <div className="flex flex-wrap gap-2 mb-2">
             {list.map((url, i) => (
-              <div key={i} className="relative">
+              <div key={i} className="relative group">
                 <Thumb url={url} className="w-20 h-14 object-cover rounded-md" />
-                <button type="button" onClick={() => onChange(list.filter((_, j) => j !== i))}
+                <button type="button" title="Remove" onClick={() => onChange(list.filter((_, j) => j !== i))}
                   className="absolute -top-1.5 -right-1.5 bg-brick text-cream w-5 h-5 rounded-full text-xs leading-none">×</button>
+                <div className="flex items-center justify-between mt-1 px-0.5">
+                  <button type="button" title="Move earlier" disabled={i === 0} onClick={() => move(i, -1)}
+                    className="text-cream/40 hover:text-cream disabled:opacity-20 text-xs leading-none">←</button>
+                  <button type="button" title="Replace this one" onClick={() => setReplacingIdx(i)}
+                    className="text-cream/40 hover:text-gold text-[10px] leading-none">swap</button>
+                  <button type="button" title="Move later" disabled={i === list.length - 1} onClick={() => move(i, 1)}
+                    className="text-cream/40 hover:text-cream disabled:opacity-20 text-xs leading-none">→</button>
+                </div>
               </div>
             ))}
           </div>
@@ -241,6 +263,52 @@ function Field({ field, value, onChange }) {
           />
           <MediaPicker open={pickerOpen} multiple onClose={() => setPickerOpen(false)}
             onSelect={(urls) => onChange([...list, ...urls])} />
+          {/* Replace flow: same picker, but the chosen file overwrites one slot
+              instead of being appended, so position is preserved. */}
+          <MediaPicker open={replacingIdx !== null} onClose={() => setReplacingIdx(null)}
+            onSelect={(url) => { replaceAt(replacingIdx, Array.isArray(url) ? url[0] : url); setReplacingIdx(null); }} />
+        </div>
+      );
+    }
+
+    case 'repeater': {
+      const list = Array.isArray(value) ? value : [];
+      const itemFields = field.item_fields || [];
+      const move = (i, delta) => {
+        const j = i + delta;
+        if (j < 0 || j >= list.length) return;
+        const next = [...list];
+        [next[i], next[j]] = [next[j], next[i]];
+        onChange(next);
+      };
+      const setItem = (i, key, v) =>
+        onChange(list.map((it, j) => (j === i ? { ...it, [key]: v } : it)));
+      return (
+        <div>
+          {label}
+          <div className="space-y-2">
+            {list.map((item, i) => (
+              <div key={i} className="border border-cream/10 rounded-lg bg-ink/40">
+                <div className="flex items-center gap-1 px-3 py-2 border-b border-cream/10">
+                  <span className="flex-1 text-cream/70 text-xs truncate">
+                    {item?.[field.item_title] || `Item ${i + 1}`}
+                  </span>
+                  <IconBtn label="Move up" disabled={i === 0} onClick={() => move(i, -1)}>↑</IconBtn>
+                  <IconBtn label="Move down" disabled={i === list.length - 1} onClick={() => move(i, 1)}>↓</IconBtn>
+                  <IconBtn label="Remove" onClick={() => onChange(list.filter((_, j) => j !== i))}>🗑</IconBtn>
+                </div>
+                <div className="p-3 space-y-3">
+                  {itemFields.map((sub) => (
+                    <Field key={sub.key} field={sub} value={item?.[sub.key]}
+                      onChange={(v) => setItem(i, sub.key, v)} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={() => onChange([...list, {}])} className="text-gold text-sm mt-2">
+            + {field.add_label || 'Add item'}
+          </button>
         </div>
       );
     }
