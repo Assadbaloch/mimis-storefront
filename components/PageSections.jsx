@@ -3,6 +3,7 @@ import { formatPrice, displayCategory, displayName } from '@/lib/format';
 import { normalizeEmbeds, toEmbedUrl, isVideoFile } from '@/lib/embed';
 import SectionSlideshow from '@/components/SectionSlideshow';
 import MenuItemCard from '@/components/MenuItemCard';
+import { getGoogleReviews, resolvePlaceId } from '@/lib/googleReviews';
 
 // Renders a CMS page's sections. Server component: menu data is fetched once
 // on the server per page render, so a page with several menu sections still
@@ -27,9 +28,12 @@ function Section({ section, menuItems, storeLocations, homeData }) {
   const c = section.config || {};
   switch (section.type) {
     case 'hero': return <Hero c={c} homeData={homeData} />;
+    case 'hero_video': return <HeroVideo c={c} />;
     case 'text': return <TextBlock c={c} />;
     case 'media_text': return <MediaText c={c} />;
     case 'locations': return <LocationsBlock c={c} storeLocations={storeLocations} />;
+    case 'trust_bar': return <TrustBar c={c} />;
+    case 'reviews': return <Reviews c={c} storeLocations={storeLocations} />;
     case 'featured_items': return <FeaturedItems c={c} homeData={homeData} />;
     case 'menu_media': return <MenuMedia c={c} homeData={homeData} />;
     case 'news_strip': return <NewsStrip c={c} homeData={homeData} />;
@@ -185,6 +189,97 @@ function headingColour(c) {
 }
 function bodyColour(c) {
   return bandClass(c) ? 'band-lede' : 'text-app-soft';
+}
+
+// Full-bleed video hero, ported from the reference design.
+//
+// Not a variant of Hero: that block flattens a single overlay across the whole
+// image and carries one button. Here the wash is a horizontal taper that clears
+// the left third for text and leaves the food on the right at full saturation,
+// which is the entire point of the treatment -- a flat scrim greys out the
+// subject. Hence a separate block rather than more switches on the old one.
+function HeroVideo({ c }) {
+  const src = c.video || '';
+  const lines = String(c.headline || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  const accent = (c.accent_word || '').trim();
+  const height = c.height === 'tall' ? 'h-[80vh]' : 'h-[100dvh]';
+
+  // The accent word is matched per line rather than by splitting the whole
+  // string, so a headline that repeats the word only gilds the line it's on.
+  function renderLine(line, i) {
+    if (!accent || !line.toLowerCase().includes(accent.toLowerCase())) {
+      return <span key={i} className="block">{line}</span>;
+    }
+    const at = line.toLowerCase().indexOf(accent.toLowerCase());
+    return (
+      <span key={i} className="block">
+        {line.slice(0, at)}
+        <span className="italic text-[#C99700]">{line.slice(at, at + accent.length)}</span>
+        {line.slice(at + accent.length)}
+      </span>
+    );
+  }
+
+  return (
+    <section className={`relative w-full ${height} bg-[#F3EFE4] overflow-hidden`}>
+      {src && (
+        <video
+          className="absolute inset-0 w-full h-full object-cover object-[65%_center] md:object-[center_15%] scale-[1.06] md:scale-[1.08]"
+          src={src} autoPlay muted loop playsInline preload="auto"
+          style={{ filter: 'contrast(1.08) saturate(1.12) sepia(0.06)' }}
+        />
+      )}
+
+      {/* Reading panel: opaque at the left edge, fully clear by 70% across. */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: 'linear-gradient(90deg, rgba(243,239,228,.92) 0%, rgba(243,239,228,.82) 28%, rgba(243,239,228,.48) 48%, rgba(243,239,228,.12) 70%, transparent 100%)',
+      }} />
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse 55% 70% at 0% 50%, rgba(201,151,0,.08) 0%, transparent 100%)',
+      }} />
+      {/* Fades the video into the page rather than ending on a hard edge. */}
+      <div className="absolute bottom-0 left-0 w-full h-20 md:h-28 pointer-events-none z-20" style={{
+        background: 'linear-gradient(to top, rgba(243,239,228,.65) 0%, transparent 100%)',
+      }} />
+
+      <div className="relative z-10 h-full flex flex-col justify-center px-6 sm:px-10 md:px-16 lg:px-24 pt-24 pb-16 md:py-0">
+        <div className="w-full mx-auto md:mx-0 flex flex-col items-center md:items-start text-center md:text-left"
+             style={{ maxWidth: 'min(90vw, 820px)' }}>
+          {lines.length > 0 && (
+            <h1 className="font-serif font-bold text-[#1D2021] leading-[1.0] tracking-tight w-full mb-8 md:mb-10"
+                style={{ fontSize: 'clamp(2.4rem, 8vw, 6.5rem)' }}>
+              {lines.map(renderLine)}
+            </h1>
+          )}
+
+          <div className="flex flex-wrap justify-center md:justify-start gap-3 md:gap-4 lg:gap-5">
+            {c.primary_label && (
+              <Link href={c.primary_url || '/menu'}
+                className="inline-flex items-center rounded-full font-bold bg-[#C8102E] hover:bg-[#A80D27] text-white transition-transform hover:scale-105 duration-300 shadow-lg"
+                style={{ fontSize: 'clamp(0.85rem, 1.8vw, 1.15rem)', height: 'clamp(44px, 5.5vw, 64px)', padding: '0 clamp(24px, 4vw, 48px)' }}>
+                {c.primary_label}
+              </Link>
+            )}
+            {c.secondary_label && (
+              <Link href={c.secondary_url || '/menu'}
+                className="inline-flex items-center rounded-full font-bold bg-[#FFF9EC] text-[#174A91] border-2 border-[#174A91] hover:bg-[#174A91] hover:text-white transition-all hover:scale-105 duration-300"
+                style={{ fontSize: 'clamp(0.85rem, 1.8vw, 1.15rem)', height: 'clamp(44px, 5.5vw, 64px)', padding: '0 clamp(24px, 4vw, 48px)' }}>
+                {c.secondary_label}
+              </Link>
+            )}
+          </div>
+
+          {c.link_label && (
+            <Link href={c.link_url || '/rewards'}
+              className="mt-6 md:mt-8 font-bold uppercase text-[#0b4221] hover:text-[#C8102E] transition-colors"
+              style={{ fontSize: 'clamp(10px, 1.5vw, 15px)', letterSpacing: '0.15em' }}>
+              {c.link_label}
+            </Link>
+          )}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function TextBlock({ c }) {
@@ -508,6 +603,151 @@ function ProductGrid({ c, items }) {
         {items.map((item) => (
           <MenuItemCard key={item.clover_item_id || item.id} item={item} />
         ))}
+      </div>
+    </section>
+  );
+}
+
+// A band of short proof points. Deliberately text-first: the picture is
+// optional, because the common case (halal sourcing, freshness, locations) has
+// no icon and shouldn't render an empty box waiting for one.
+function TrustBar({ c }) {
+  const items = Array.isArray(c.items) ? c.items.filter((i) => i && (i.title || i.label)) : [];
+  if (!items.length) return null;
+  const band = bandClass(c);
+  return (
+    <section className={`px-5 md:px-8 py-14 ${band}`}>
+      <div className={`max-w-6xl mx-auto grid grid-cols-2 ${colsClass(c.columns || '4')} gap-8`}>
+        {items.map((item, i) => (
+          <div key={i} className={`flex flex-col pl-5 border-l-2 ${band ? 'border-current/30' : 'border-gold/40'}`}>
+            {/* Sized by a wrapper rather than by classes on the media itself:
+                MediaFrame sets its own w-full/h-auto, and a competing width
+                utility on the same element resolves unpredictably. */}
+            {item.media && (
+              <div className="w-10 mb-3 overflow-hidden">
+                <MediaFrame url={item.media} alt={item.title || ''} rounded={false}
+                  className="object-contain" controls={false} />
+              </div>
+            )}
+            {item.label && (
+              <h4 className={`text-[10px] tracking-[0.2em] font-bold uppercase mb-2 ${band ? 'opacity-80' : 'text-gold'}`}>
+                {item.label}
+              </h4>
+            )}
+            {item.title && (
+              <h3 className={`font-serif font-bold text-lg md:text-2xl ${headingColour(c)}`}>{item.title}</h3>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// Async server component: when the block is set to pull from Google it fetches
+// at render time. Nothing about the key reaches the client -- only the finished
+// review text does.
+async function Reviews({ c, storeLocations = [] }) {
+  const fromGoogle = c.source === 'live from Google';
+  const limit = Number(c.limit);
+
+  let items;
+  let google = null;
+
+  const manual = Array.isArray(c.items) ? c.items.filter((i) => i && i.quote) : [];
+
+  if (fromGoogle) {
+    // A Place ID saved in Storefront Settings wins. If there isn't one, look it
+    // up from the store's name and address -- which are already on record -- so
+    // the only thing anyone has to configure is the API key.
+    const store = storeLocations.find((l) => l.placeId) || storeLocations[0];
+    const placeId = store?.placeId
+      || (store ? await resolvePlaceId(`${store.name} ${store.address}`) : null);
+    google = await getGoogleReviews(placeId, limit > 0 ? limit : 5);
+  }
+
+  if (google?.reviews?.length) {
+    items = google.reviews.map((r) => ({
+      quote: r.quote,
+      author: r.author,
+      location: r.when,
+      rating: r.rating,
+      media: r.photo,
+      href: r.authorUrl,
+    }));
+  } else {
+    // No API key yet, or Google errored with nothing cached: fall back to the
+    // reviews typed into the block. These are real reviews copied from the
+    // listing, so the section ships with substance instead of empty -- and the
+    // moment a key exists this branch stops being reached, with no setting to
+    // remember to flip. `google` is cleared so Google attribution is not shown
+    // over content that did not come from the API.
+    google = null;
+    items = limit > 0 ? manual.slice(0, limit) : manual;
+  }
+
+  if (!items.length) return null;
+  const band = bandClass(c);
+  return (
+    <section className={`px-5 md:px-8 py-16 ${band}`}>
+      <div className="max-w-6xl mx-auto">
+        {c.eyebrow && <p className="section-label mb-2 text-center">{c.eyebrow}</p>}
+        {c.headline && (
+          <h2 className={`font-serif font-bold text-3xl md:text-4xl text-center ${headingColour(c)}`}>{c.headline}</h2>
+        )}
+        {c.subtext && <p className={`text-center mt-3 ${bodyColour(c)}`}>{c.subtext}</p>}
+        <div className={`grid ${colsClass(c.columns || '3')} gap-5 mt-10`}>
+          {items.map((item, i) => {
+            // Rating is stored as a string from a select; clamp so a bad value
+            // can't render a hundred stars or a negative-length array.
+            const stars = Math.max(0, Math.min(5, Number(item.rating ?? 5) || 0));
+            return (
+              <figure key={i}
+                className={`rounded-2xl p-6 flex flex-col ${band ? 'bg-black/10' : 'bg-cream/[0.04] border border-cream/10'}`}>
+                {stars > 0 && (
+                  <div className="text-gold text-sm mb-3" aria-label={`${stars} out of 5 stars`}>
+                    {'★'.repeat(stars)}<span className="opacity-30">{'★'.repeat(5 - stars)}</span>
+                  </div>
+                )}
+                <blockquote className={`flex-1 leading-relaxed ${bodyColour(c)}`}>&ldquo;{item.quote}&rdquo;</blockquote>
+                {(item.author || item.location || item.media) && (
+                  <figcaption className="flex items-center gap-3 mt-5">
+                    {item.media && (
+                      <div className="w-9 h-9 rounded-full overflow-hidden shrink-0">
+                        <MediaFrame url={item.media} alt={item.author || ''} rounded={false}
+                          className="object-cover" controls={false} />
+                      </div>
+                    )}
+                    <span className="text-sm">
+                      {item.author && (
+                        // Google's terms require author attribution to link
+                        // back to the reviewer's profile where one is given.
+                        item.href
+                          ? <a href={item.href} target="_blank" rel="noopener noreferrer"
+                              className={`font-semibold hover:underline ${headingColour(c)}`}>{item.author}</a>
+                          : <span className={`font-semibold ${headingColour(c)}`}>{item.author}</span>
+                      )}
+                      {item.location && <span className={`block text-xs ${bodyColour(c)}`}>{item.location}</span>}
+                    </span>
+                  </figcaption>
+                )}
+              </figure>
+            );
+          })}
+        </div>
+
+        {/* Required Google attribution whenever the content came from Places. */}
+        {google && (
+          <p className={`text-xs mt-6 text-center ${bodyColour(c)}`}>
+            {google.rating != null && (
+              <>Rated {google.rating.toFixed(1)}
+                {google.total != null && ` from ${google.total.toLocaleString()} reviews`} · </>
+            )}
+            {google.mapsUrl
+              ? <a href={google.mapsUrl} target="_blank" rel="noopener noreferrer" className="underline">Reviews from Google</a>
+              : 'Reviews from Google'}
+          </p>
+        )}
       </div>
     </section>
   );
