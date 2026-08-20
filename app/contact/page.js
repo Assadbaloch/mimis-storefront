@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getActiveDesign } from '@/lib/design';
 import OrderAtLocationLink from '@/components/designs/reference/OrderAtLocationLink';
+import OrderModeTabs from '@/components/designs/reference/OrderModeTabs';
 
 // Contact page, ported from the reference design.
 //
@@ -35,22 +36,9 @@ export default async function ContactPage() {
                   minutes, delivery within 8-10 miles. Further out depends on availability. Or scroll down to drop us a message.
                 </p>
       
-                <div className="flex justify-center mb-12">
-                  <div className="inline-flex bg-[#EAE4D5] dark:bg-[#1a0f0a] border border-[rgba(29,32,33,0.1)] dark:border-white/10 rounded-full p-1 shadow-inner">
-                    {['Pickup', 'Delivery', 'Dine-In', 'Catering'].map((mode, idx) => (
-                      <span
-                        key={mode}
-                        className={`px-6 py-2 rounded-full text-[10px] font-bold tracking-widest uppercase transition-colors ${
-                          idx === 0 ? 'bg-[#C8102E] text-white dark:bg-[#e6b95c] dark:text-[#0a0604] shadow-sm' : 'text-[#5F625F] dark:text-[#f5ebd7]/60'
-                        }`}
-                      >
-                        {mode}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-      
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <OrderModeTabs />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Madison Heights Card */}
                   <div className="bg-[#FFF9EC] dark:bg-[#1a0f0a] border border-[rgba(29,32,33,0.1)] dark:border-white/5 rounded-2xl overflow-hidden relative group shadow-[0_12px_30px_rgba(29,32,33,0.06)] dark:shadow-none hover:shadow-[0_20px_40px_rgba(29,32,33,0.12)] transition-all duration-300">
                     <div className="p-10 border-b border-[rgba(29,32,33,0.1)] dark:border-white/5">
@@ -173,7 +161,7 @@ export default async function ContactPage() {
               </section>
       
               {/* Contact Form Section */}
-              <section className="py-24 bg-[#F3EFE4] dark:bg-[#0a0604]">
+              <section id="get-in-touch" className="py-24 bg-[#F3EFE4] dark:bg-[#0a0604]">
                 <div className="container mx-auto px-2 md:px-12">
                   <div className="flex items-center justify-center gap-3 mb-6">
                     <div className="h-px w-8 bg-[#C99700] dark:bg-[#e6b95c]"></div>
