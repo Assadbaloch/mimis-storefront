@@ -1,5 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // Class-based, not the `media` default, so the reference design's own
+  // light/dark toggle works. The reference declared the same thing in Tailwind
+  // v4 syntax (`@custom-variant dark (&:where(.dark, .dark *))`); this is the
+  // v3 equivalent.
+  //
+  // Safe to switch on: `dark:` is used zero times outside the reference design,
+  // so nothing existing changes behaviour.
+  darkMode: 'class',
   // lib/ included because TIER_CLASS (lib/loyalty.js) carries utility class
   // names that appear nowhere else — without it Tailwind never generates them.
   content: ['./app/**/*.{js,jsx}', './components/**/*.{js,jsx}', './lib/**/*.{js,jsx}'],

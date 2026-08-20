@@ -97,6 +97,189 @@
   --font-body: var(--mimis-font-body);
 }
 
+/* ===========================================================================
+   BUILT-IN DESIGN 2 — "MiMi's Reference Design"
+   ===========================================================================
+   Everything below is scoped to [data-design="reference"], set on <html> by
+   app/layout.js. Design 1 lives in the :root block above and is not touched by
+   any of this — switching designs cannot alter it.
+
+   Two groups of variables:
+
+   1. The reference's own palette (--background, --card, --mimi-blue, ...),
+      ported verbatim from the reference's index.css. Its components read these.
+
+   2. A remap of the --mimis-* contract onto that palette. This is the important
+      one: /menu, /cart, /checkout, /rewards and /order-status are the existing
+      ordering system and are NOT reimplemented for this design. They already
+      build every colour, font and radius from --mimis-*, so remapping those
+      tokens is the whole of what makes them adopt this design. No change to
+      Clover, locations, loyalty or cart behaviour.
+=========================================================================== */
+[data-design='reference'] {
+  --background: #F3EFE4;
+  --background-warm: #FFF9EC;
+  --background-cream: #F3EFE4;
+  --background-surface-alt: #EAE4D5;
+  --background-gray: #EAE4D5;
+  --foreground: #1D2021;
+  --text-body: #3D4041;
+  --text-muted: #5F625F;
+
+  --card: #FFF9EC;
+  --card-foreground: #1D2021;
+  --card-border: rgba(29, 32, 33, 0.1);
+  --card-shadow: 0 10px 30px rgba(29, 32, 33, 0.06);
+  --card-shadow-hover: 0 18px 40px rgba(29, 32, 33, 0.12);
+
+  --mimi-blue: #174A91;
+  --mimi-blue-deep: #10396F;
+  --mimi-red: #C8102E;
+  --mimi-red-dark: #A80D27;
+  --mimi-gold: #C99700;
+  --mimi-gold-bright: #E0AE00;
+  --mimi-cream: #F3EFE4;
+  --mimi-surface: #FFF9EC;
+  --mimi-surface-alt: #EAE4D5;
+  --mimi-charcoal: #1D2021;
+
+  --primary-cta: #C8102E;
+  --primary-cta-hover: #A80D27;
+  --primary-cta-text: #FFFFFF;
+
+  --secondary-btn-bg: #174A91;
+  --secondary-btn-border: #174A91;
+  --secondary-btn-text: #FFFFFF;
+  --secondary-btn-hover-bg: #10396F;
+  --secondary-btn-hover-text: #FFFFFF;
+
+  --accent: #C99700;
+  --accent-foreground: #1D2021;
+
+  --border: rgba(29, 32, 33, 0.12);
+  --input: rgba(29, 32, 33, 0.12);
+  --ring: #C8102E;
+  --radius: 0.75rem;
+
+  --neon-green: #0b4221;
+
+  --nav-bg: rgba(243, 239, 228, 0.95);
+  --nav-border: rgba(29, 32, 33, 0.1);
+  --nav-text: #1D2021;
+  --nav-active: #C8102E;
+
+  --hero-bg: #F3EFE4;
+  --hero-text: #1D2021;
+
+  --footer-bg: #1D2021;
+  --footer-bg-gradient: #1D2021;
+  --footer-border-color: rgba(255, 255, 255, 0.1);
+  --footer-text: #F3EFE4;
+  --footer-accent: #C99700;
+
+  /* --- the existing shop pages adopt the design through these --- */
+  --mimis-bg: var(--background);
+  --mimis-surface: var(--card);
+  --mimis-surface-strong: var(--background-warm);
+  --mimis-text: var(--foreground);
+  --mimis-text-soft: var(--text-muted);
+  --mimis-accent: var(--primary-cta);
+  --mimis-accent-contrast: var(--primary-cta-text);
+  --mimis-highlight: var(--mimi-gold);
+  --mimis-highlight-contrast: var(--mimi-charcoal);
+  --mimis-line: var(--border);
+  --mimis-danger: var(--mimi-red-dark);
+  --mimis-radius: var(--radius);
+  --mimis-font-display: var(--font-fraunces), Georgia, 'Times New Roman', serif;
+  --mimis-font-body: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+[data-design='reference'].dark {
+  --background: #0a0604;
+  --background-warm: #140a06;
+  --background-cream: #1a0f0a;
+  --background-gray: #1f120c;
+  --foreground: #f5ebd7;
+  --text-body: rgba(245, 235, 215, 0.8);
+  --text-muted: rgba(245, 235, 215, 0.6);
+
+  --card: #1f120c;
+  --card-foreground: #f5ebd7;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-shadow: 0 20px 80px -20px rgba(230, 185, 92, 0.2);
+  --card-shadow-hover: 0 30px 100px -20px rgba(230, 185, 92, 0.35);
+
+  --primary-cta: #b41d24;
+  --primary-cta-hover: #9a181e;
+  --primary-cta-text: #FFFFFF;
+
+  --secondary-btn-bg: rgba(0, 0, 0, 0.4);
+  --secondary-btn-border: rgba(245, 235, 215, 0.4);
+  --secondary-btn-text: #f5ebd7;
+  --secondary-btn-hover-bg: rgba(255, 255, 255, 0.1);
+  --secondary-btn-hover-text: #f5ebd7;
+
+  --accent: #e6b95c;
+  --accent-foreground: #0a0604;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #b41d24;
+
+  --neon-green: #4ade80;
+
+  --nav-bg: rgba(26, 12, 8, 0.88);
+  --nav-border: rgba(255, 255, 255, 0.05);
+  --nav-text: #f5ebd7;
+  --nav-active: #e6b95c;
+
+  --hero-bg: #0a0604;
+  --hero-text: #f5ebd7;
+
+  --footer-bg: #1A120C;
+  --footer-text: #EAEAEA;
+  --footer-accent: #e6b95c;
+
+  /* Dark has no error colour of its own; --mimi-red-dark is unreadable on
+     #0a0604, so the shop pages get red-500 instead. */
+  --mimis-danger: #ef4444;
+  --mimis-highlight: var(--accent);
+  --mimis-highlight-contrast: var(--accent-foreground);
+}
+
+/* The reference sets a default border colour on every element and animates the
+   page background when the theme flips. Scoped so design 1 is unaffected. */
+[data-design='reference'] * { border-color: var(--border); }
+[data-design='reference'] body,
+body[data-design='reference'] {
+  transition: background-color .3s ease, color .3s ease;
+}
+
+/* Horizontal scrollbar on the reference's category tabs. */
+.menu-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) rgba(0, 0, 0, 0.05);
+  -webkit-overflow-scrolling: touch;
+}
+.menu-scrollbar::-webkit-scrollbar { height: 6px; -webkit-appearance: none; }
+.menu-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,.05); border-radius: 10px; margin: 0 16px; }
+.menu-scrollbar::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Legal-page typography. The reference used @tailwindcss/typography's `prose`
+   classes; written out here instead so the port adds no new dependency. */
+.mimi-legal { color: var(--text-body); line-height: 1.75; }
+.mimi-legal h2 { color: var(--foreground); font-family: var(--mimis-font-display); font-size: 1.5rem; font-weight: 700; margin: 2.5rem 0 1rem; }
+.mimi-legal h3 { color: var(--foreground); font-family: var(--mimis-font-display); font-size: 1.25rem; font-weight: 700; margin: 2rem 0 .75rem; }
+.mimi-legal p { margin-bottom: 1rem; }
+.mimi-legal ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1.5rem; }
+.mimi-legal ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 1.5rem; }
+.mimi-legal li { margin-bottom: .5rem; }
+.mimi-legal a { color: var(--primary-cta); text-decoration: underline; }
+.dark .mimi-legal a { color: var(--accent); }
+.mimi-legal strong { color: var(--foreground); font-weight: 700; }
+
 html, body {
   background-color: var(--mimis-bg);
   color: var(--mimis-text);
