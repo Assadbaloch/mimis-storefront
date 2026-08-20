@@ -5,6 +5,7 @@ import { getStoreLocations } from '@/lib/storeLocations';
 import { displayName } from '@/lib/format';
 import ReferenceHero from './ReferenceHero';
 import { ReferenceReviewCard, ReferencePressCarousel } from './ReferenceInteractive';
+import OrderAtLocationLink from './OrderAtLocationLink';
 
 // The reference home page, in Index.tsx order:
 //   Hero, TrustSection, MenuSection, HalalSection, LocationsSection,
@@ -241,12 +242,14 @@ export default async function ReferenceHome() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-4">
-                    <Link
-                      href="/menu"
-                      className="bg-[#C8102E] hover:bg-[#A80D27] text-white dark:bg-[#b41d24] dark:hover:bg-[#9a181e] rounded-full text-xs font-bold h-12 px-8 inline-flex items-center shadow-sm transition-all"
+                    {/* Sets the store before opening the menu -- the two
+                        restaurants have different Clover menus. */}
+                    <OrderAtLocationLink
+                      location={loc.key}
+                      className="bg-[#C8102E] hover:bg-[#A80D27] text-white dark:bg-[#b41d24] dark:hover:bg-[#9a181e] rounded-full text-xs font-bold h-12 px-8 inline-flex items-center shadow-sm transition-all cursor-pointer"
                     >
                       ORDER FROM {loc.name.toUpperCase()} &rarr;
-                    </Link>
+                    </OrderAtLocationLink>
                   </div>
                 </div>
               </div>

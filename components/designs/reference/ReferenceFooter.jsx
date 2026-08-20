@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getStoreLocations } from '@/lib/storeLocations';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
+import OrderAtLocationLink from './OrderAtLocationLink';
 
 // Ported from the reference's Footer.tsx.
 //
@@ -76,12 +77,14 @@ export default async function ReferenceFooter() {
                       {loc.phone}
                     </a>
                   )}
-                  <Link
-                    href="/menu"
-                    className="inline-block text-sm font-semibold transition-colors duration-300 text-[#F3EFE4] hover:text-[#C99700] dark:text-[#EAEAEA] dark:hover:text-[#D8A73C]"
+                  {/* Sits under a specific store's heading, so it selects that
+                      store rather than opening whichever menu was last viewed. */}
+                  <OrderAtLocationLink
+                    location={loc.key}
+                    className="inline-block text-sm font-semibold transition-colors duration-300 text-[#F3EFE4] hover:text-[#C99700] dark:text-[#EAEAEA] dark:hover:text-[#D8A73C] cursor-pointer"
                   >
                     Order Online &rarr;
-                  </Link>
+                  </OrderAtLocationLink>
                 </div>
               </div>
             ))}

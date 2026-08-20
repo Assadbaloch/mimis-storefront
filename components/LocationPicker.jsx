@@ -16,7 +16,9 @@ import { useCart } from '@/lib/cart';
 // Madison Heights' Clover account at checkout, which fails -- or worse, silently
 // charges the wrong price. So we confirm first, then clear.
 
-function useLocationSwitch() {
+// Exported so a second design can present its own picker without duplicating
+// the basket rule below -- which is the part that must never diverge.
+export function useLocationSwitch() {
   const { location, setLocation } = useLocation();
   const cart = useCart();
 

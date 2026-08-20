@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getActiveDesign } from '@/lib/design';
+import OrderAtLocationLink from '@/components/designs/reference/OrderAtLocationLink';
 
 // Contact page, ported from the reference design.
 //
@@ -31,7 +32,7 @@ export default async function ContactPage() {
                 
                 <p className="text-[#3D4041] dark:text-[#f5ebd7]/80 text-lg md:text-xl max-w-2xl mb-16 leading-relaxed font-medium">
                   Pick the location closest to you and start your order — pickup ready in 20<br />
-                  minutes, delivery within 5 miles. Or scroll down to drop us a message.
+                  minutes, delivery within 8-10 miles. Further out depends on availability. Or scroll down to drop us a message.
                 </p>
       
                 <div className="flex justify-center mb-12">
@@ -88,7 +89,7 @@ export default async function ContactPage() {
                       </div>
                       
                       <div className="flex flex-wrap gap-4">
-                        <Link href="/menu" className="inline-flex items-center justify-center bg-[#C8102E] hover:bg-[#A80D27] text-white dark:bg-[#b41d24] dark:hover:bg-[#9a181e] rounded-full px-6 py-5 text-xs font-bold tracking-wider uppercase shadow-md transition-all">Start Order &rarr;</Link>
+                        <OrderAtLocationLink location="Madison Heights" className="inline-flex items-center justify-center bg-[#C8102E] hover:bg-[#A80D27] text-white dark:bg-[#b41d24] dark:hover:bg-[#9a181e] rounded-full px-6 py-5 text-xs font-bold tracking-wider uppercase shadow-md transition-all cursor-pointer">Start Order &rarr;</OrderAtLocationLink>
                         <a href="tel:+12486774355" className="inline-flex items-center justify-center border-[rgba(29,32,33,0.2)] text-[#1D2021] dark:text-[#f5ebd7] dark:border-white/20 hover:bg-[#EAE4D5] hover:text-[#1D2021] dark:hover:bg-white/5 rounded-full px-6 py-5 text-xs font-bold tracking-wider uppercase bg-[#FFF9EC] dark:bg-transparent">Call</a>
                       </div>
                     </div>
@@ -132,7 +133,7 @@ export default async function ContactPage() {
                       </div>
                       
                       <div className="flex flex-wrap gap-4">
-                        <Link href="/menu" className="inline-flex items-center justify-center bg-[#C8102E] hover:bg-[#A80D27] text-white dark:bg-[#b41d24] dark:hover:bg-[#9a181e] rounded-full px-6 py-5 text-xs font-bold tracking-wider uppercase shadow-md transition-all">Start Order &rarr;</Link>
+                        <OrderAtLocationLink location="Warren" className="inline-flex items-center justify-center bg-[#C8102E] hover:bg-[#A80D27] text-white dark:bg-[#b41d24] dark:hover:bg-[#9a181e] rounded-full px-6 py-5 text-xs font-bold tracking-wider uppercase shadow-md transition-all cursor-pointer">Start Order &rarr;</OrderAtLocationLink>
                         <a href="tel:+15866197126" className="inline-flex items-center justify-center border-[rgba(29,32,33,0.2)] text-[#1D2021] dark:text-[#f5ebd7] dark:border-white/20 hover:bg-[#EAE4D5] hover:text-[#1D2021] dark:hover:bg-white/5 rounded-full px-6 py-5 text-xs font-bold tracking-wider uppercase bg-[#FFF9EC] dark:bg-transparent">Call</a>
                       </div>
                     </div>
@@ -156,7 +157,7 @@ export default async function ContactPage() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     {[
-                      { num: "01", title: "Pick your spot", desc: "Choose Madison Heights or Warren — both serve the full menu." },
+                      { num: "01", title: "Pick your spot", desc: "Choose Madison Heights or Warren — each kitchen has its own menu." },
                       { num: "02", title: "Build your order", desc: "Customize toppings, sizes, sauces. Add a deal for the family." },
                       { num: "03", title: "Apply rewards", desc: "Tap to redeem any available reward. Earn points on every $1." },
                       { num: "04", title: "Eat. Repeat.", desc: "Pickup in 20, delivery in 35. Hot, halal, ready when you are." }

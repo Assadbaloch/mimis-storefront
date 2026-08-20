@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useReferenceTheme } from './ReferenceTheme';
+import ReferenceLocationPicker from './ReferenceLocationPicker';
 
 // Ported from the reference's Header.tsx.
 //
@@ -90,7 +91,12 @@ export default function ReferenceHeader({ logoUrl }) {
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3">
+            {/* Not in the reference design. Added because the two restaurants
+                have separate Clover menus -- without this a customer on the
+                wrong store has no way to change it from the header. */}
+            <ReferenceLocationPicker />
+
             <button
               type="button"
               onClick={toggleTheme}
@@ -110,6 +116,7 @@ export default function ReferenceHeader({ logoUrl }) {
           </div>
 
           <div className="md:hidden flex items-center gap-2 relative z-50">
+            <ReferenceLocationPicker />
             <button
               type="button"
               onClick={toggleTheme}
