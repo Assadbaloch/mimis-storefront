@@ -99,7 +99,25 @@ export default function ThemesPage() {
     }
     const { error: err } = await supabase.from('themes')
       .update({ status: next, updated_at: new Date().toISOString() }).eq('id', theme.id);
-    if (err) setError(err.message);
+    if (err) { setError(err.message); return; }
+
+    // Making a theme live publishes its pages too.
+    //
+    // These are two separate flags in the schema, and leaving the page flag
+    // alone meant "Make live" activated the layout while every sub-page stayed
+    // draft — getThemePage() only returns published rows, so the header and
+    // footer applied site-wide while /contact, /reviews and the rest returned
+    // 404. The theme looked live and was half broken.
+    //
+    // A page-level draft only makes sense for a page being worked on inside an
+    // already-live theme, which is what the per-page toggle in the theme editor
+    // is for. It should not be the thing standing between a theme being
+    // activated and that theme actually working.
+    if (next === 'active') {
+      const { error: pErr } = await supabase.from('theme_pages')
+        .update({ status: 'published' }).eq('theme_id', theme.id);
+      if (pErr) { setError(pErr.message); return; }
+    }
     load();
   }
 
@@ -121,7 +139,11 @@ export default function ThemesPage() {
       await supabase.from('theme_pages').insert(pages.map((p) => ({
         theme_id: copy.id, slug: p.slug, title: p.title, html: p.html, css: p.css, js: p.js,
         standalone: p.standalone, seo_title: p.seo_title, seo_description: p.seo_description,
-        status: 'draft', sort_order: p.sort_order,
+        // Carry the original's page status. Forcing 'draft' here meant
+        // duplicating a working theme produced one whose pages all 404'd the
+        // moment it was made live — the copy is a draft theme already, which is
+        // what keeps it off the public site.
+        status: p.status, sort_order: p.sort_order,
       })));
     }
     setBusy(false); load();
