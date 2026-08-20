@@ -13,8 +13,25 @@ import DesignWizard from '@/components/admin/DesignWizard';
 // it into layout + pages. The pasted file is the single source of truth for a
 // theme — there is deliberately no manual page creation in the editor.
 
+// The designs compiled into the app. Kept here rather than in the database so
+// there is always a working design to fall back to, whatever state the themes
+// table is in.
+const BUILT_INS = [
+  {
+    id: 'original',
+    name: "Mimi's Original Design",
+    blurb: 'The design the storefront shipped with. Always available to switch back to.',
+  },
+  {
+    id: 'reference',
+    name: "MiMi's Reference Design",
+    blurb: 'Full-screen video hero, halal band, reward ladder. Menu, cart, checkout and rewards work exactly as they do now.',
+  },
+];
+
 export default function ThemesPage() {
   const [themes, setThemes] = useState([]);
+  const [design, setDesign] = useState('original');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -31,11 +48,35 @@ export default function ThemesPage() {
   useEffect(() => { load(); }, []);
 
   async function load() {
-    const { data, error: err } = await getSupabasePublicClient()
-      .from('themes').select('*').order('created_at', { ascending: false });
+    const supabase = getSupabasePublicClient();
+    const [{ data, error: err }, { data: settings }] = await Promise.all([
+      supabase.from('themes').select('*').order('created_at', { ascending: false }),
+      supabase.from('storefront_settings').select('active_design').eq('id', 1).maybeSingle(),
+    ]);
     if (err) setError(err.message);
     setThemes(data || []);
+    setDesign(settings?.active_design === 'reference' ? 'reference' : 'original');
     setLoading(false);
+  }
+
+  // Switching to a built-in design also stands down any active theme -- only
+  // one design can be live, and an active theme outranks this setting, so
+  // leaving one active would make the click appear to do nothing.
+  async function useBuiltIn(id) {
+    setBusy(true);
+    const supabase = getSupabasePublicClient();
+    try {
+      const { error: sErr } = await supabase
+        .from('storefront_settings').update({ active_design: id }).eq('id', 1);
+      if (sErr) throw sErr;
+      const { error: tErr } = await supabase
+        .from('themes').update({ status: 'draft' }).eq('status', 'active');
+      if (tErr) throw tErr;
+      await load();
+    } catch (e) {
+      setError(e.message);
+    }
+    setBusy(false);
   }
 
   const activeTheme = themes.find((t) => t.status === 'active') || null;
@@ -121,11 +162,8 @@ export default function ThemesPage() {
     load();
   }
 
-  async function revertToDefault() {
-    if (!confirm('Switch back to the original Mimi’s design? Your theme is kept and can be made live again at any time.')) return;
-    await getSupabasePublicClient().from('themes').update({ status: 'draft' }).eq('status', 'active');
-    load();
-  }
+  // Replaced by useBuiltIn(), which also records WHICH built-in design to show.
+  // Standing the theme down alone was enough when there was only one built-in.
 
   async function duplicate(theme) {
     setBusy(true);
@@ -272,19 +310,31 @@ export default function ThemesPage() {
         </div>
       )}
 
-      {/* ---- default (no theme) ---- */}
-      <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 mb-2 ${!activeTheme ? 'border-gold/50 bg-gold/[0.07]' : 'border-cream/12 bg-cream/[0.03]'}`}>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-cream font-semibold">Mimi&rsquo;s Original Design</span>
-            {!activeTheme && <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold/20 text-gold font-bold uppercase">Live</span>}
+      {/* ---- built-in designs ----
+           Two of them now. Neither can be edited or deleted: they ship with the
+           app rather than living in the database, which is what makes them a
+           reliable way back if an imported theme goes wrong. */}
+      {BUILT_INS.map((d) => {
+        const isLive = !activeTheme && design === d.id;
+        return (
+          <div
+            key={d.id}
+            className={`flex items-center gap-3 rounded-xl border px-4 py-3 mb-2 ${isLive ? 'border-gold/50 bg-gold/[0.07]' : 'border-cream/12 bg-cream/[0.03]'}`}
+          >
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-cream font-semibold">{d.name}</span>
+                {isLive && <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold/20 text-gold font-bold uppercase">Live</span>}
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cream/10 text-cream/50 font-bold uppercase">Built in</span>
+              </div>
+              <span className="text-cream/45 text-xs">{d.blurb}</span>
+            </div>
+            {isLive
+              ? <span className="text-cream/35 text-xs">Currently showing</span>
+              : <button onClick={() => useBuiltIn(d.id)} disabled={busy} className="text-xs text-gold hover:underline disabled:opacity-40">Make live</button>}
           </div>
-          <span className="text-cream/45 text-xs">The built-in design. Always available to switch back to.</span>
-        </div>
-        {activeTheme
-          ? <button onClick={revertToDefault} className="text-xs text-gold hover:underline">Make live</button>
-          : <span className="text-cream/35 text-xs">Currently showing</span>}
-      </div>
+        );
+      })}
 
       {/* ---- themes ---- */}
       {loading ? (
