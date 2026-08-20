@@ -9,6 +9,8 @@ import ThemePageBody from '@/components/ThemePageBody';
 import PageSections from '@/components/PageSections';
 import { getHomeSlots } from '@/lib/homeSlots';
 import { getStoreLocations } from '@/lib/storeLocations';
+import { getActiveDesign } from '@/lib/design';
+import ReferenceHome from '@/components/designs/reference/ReferenceHome';
 
 // Dynamic rather than `revalidate = 60`: every card below deep-links to
 // /menu/<clover_item_id>, and those ids are per-Clover-merchant. A cached
@@ -121,6 +123,11 @@ export default async function HomePage() {
   // customers land on first, which is the most visible page of all.
   const themeHome = await getThemePage('');
   if (themeHome) return <ThemePageBody page={themeHome} />;
+
+  // Built-in design 2. Checked after the theme so precedence is unchanged, and
+  // before any of the original design's work below so none of it runs need-
+  // lessly. The original design's code path is untouched.
+  if ((await getActiveDesign()) === 'reference') return <ReferenceHome />;
 
   const location = await getActiveLocation();
   const featured = await getFeaturedItems(location);

@@ -11,6 +11,10 @@ import { CartProvider } from '@/lib/cart';
 import { LocationProvider } from '@/lib/location';
 import { LocationGate } from '@/components/LocationPicker';
 import { getThemeShell } from '@/lib/theme';
+import { getActiveDesign, getLogoUrl, DEFAULT_DESIGN } from '@/lib/design';
+import ReferenceTheme from '@/components/designs/reference/ReferenceTheme';
+import ReferenceHeader from '@/components/designs/reference/ReferenceHeader';
+import ReferenceFooter from '@/components/designs/reference/ReferenceFooter';
 import { getEmbedContext } from '@/lib/themeContext';
 import { renderEmbeds } from '@/lib/embeds';
 import CartBridge from '@/components/CartBridge';
@@ -73,6 +77,14 @@ export default async function RootLayout({ children }) {
 
   const shell = isAdmin ? null : await getThemeShell();
 
+  // Which built-in design renders when no imported theme is active. An active
+  // theme still wins, so this changes nothing about existing behaviour; with no
+  // theme and the default setting it resolves to 'original', which is the
+  // design that shipped and is left exactly as it was.
+  const design = isAdmin || shell ? DEFAULT_DESIGN : await getActiveDesign();
+  const isReference = design === 'reference';
+  const logoUrl = isReference ? await getLogoUrl() : null;
+
   // Header/footer chrome can contain embeds too (logo, cart badge, phone),
   // so the layout halves go through the same renderer as page bodies.
   let before = '';
@@ -84,7 +96,13 @@ export default async function RootLayout({ children }) {
   }
 
   return (
-    <html lang="en" className={fraunces.variable}>
+    <html
+      lang="en"
+      className={fraunces.variable}
+      // Scopes the reference design's palette in globals.css. Absent for the
+      // original design, so its :root tokens are untouched.
+      {...(isReference ? { 'data-design': 'reference' } : {})}
+    >
       <body className={shell ? 'mimis-themed' : 'min-h-screen flex flex-col font-sans'}>
         <PwaRegister />
         <ScrollToTop />
@@ -146,6 +164,17 @@ export default async function RootLayout({ children }) {
               <div dangerouslySetInnerHTML={{ __html: after }} />
               <CartBridge />
             </>
+          ) : isReference ? (
+            /* Built-in design 2. The ordering pages below are the SAME
+               components as design 1 -- menu, cart, checkout, rewards and
+               order tracking are untouched. They adopt this design through the
+               --mimis-* remap in globals.css, which is the mechanism that
+               already existed for imported themes. */
+            <ReferenceTheme>
+              <ReferenceHeader logoUrl={logoUrl} />
+              <main className="flex-1 pt-[4.4rem] md:pt-[7rem]" data-mimis-content>{children}</main>
+              <ReferenceFooter />
+            </ReferenceTheme>
           ) : (
             <>
               <SiteHeader />
