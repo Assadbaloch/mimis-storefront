@@ -1,28 +1,31 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useLocation } from '@/lib/location';
+import { useLocationSwitch } from '@/components/LocationPicker';
 
-// "Order from <store>" — sets the active location, THEN opens the menu.
+// "Order from <store>" — selects the store, THEN opens the menu.
 //
-// The two restaurants carry different Clover menus, so /menu is location-
-// scoped: it renders whatever mimis-location says. A plain <Link href="/menu">
-// therefore showed the previously-selected store no matter which button was
+// The two restaurants carry different Clover menus, so /menu is location-scoped
+// and renders whatever the location cookie says. A plain <Link href="/menu">
+// therefore opened the previously-selected store no matter which button was
 // pressed, which is the opposite of what the button says it does.
 //
-// setLocation() is the existing context setter; it writes both the localStorage
-// copy (read by client components) and the cookie (read by the server-rendered
-// menu). router.refresh() is required because /menu is a Server Component --
-// without it Next can serve the already-rendered page for the old location.
+// Goes through useLocationSwitch rather than calling setLocation directly. That
+// hook owns the rule that changing store empties the basket: cart lines are
+// keyed by clover_item_id and the two restaurants are separate Clover merchant
+// accounts, so carrying a basket across sends ids the receiving account does not
+// recognise. It also issues the router.refresh() the server-rendered menu needs.
+// Calling setLocation here instead would have silently skipped both.
 
 export default function OrderAtLocationLink({ location, href = '/menu', className, children }) {
   const router = useRouter();
-  const { setLocation } = useLocation();
+  const switchTo = useLocationSwitch();
 
   function go(e) {
     e.preventDefault();
-    setLocation(location);
+    // Returns false when the customer declines emptying a non-empty basket --
+    // in that case stay put rather than navigating to the other store's menu.
+    if (!switchTo(location)) return;
     router.push(href);
-    router.refresh();
   }
 
   return (

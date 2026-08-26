@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLocation } from '@/lib/location';
 import { useCart } from '@/lib/cart';
 
@@ -21,6 +22,7 @@ import { useCart } from '@/lib/cart';
 export function useLocationSwitch() {
   const { location, setLocation } = useLocation();
   const cart = useCart();
+  const router = useRouter();
 
   return function switchTo(next) {
     if (next === location) return true;
@@ -33,6 +35,15 @@ export function useLocationSwitch() {
       cart.clear();
     }
     setLocation(next);
+
+    // REQUIRED, not a nicety. /menu and /menu/[item] are Server Components that
+    // read the location COOKIE (force-dynamic, see lib/locationServer.js).
+    // setLocation writes that cookie, but nothing re-renders the server tree, so
+    // without this the header switches instantly while the menu underneath keeps
+    // showing the previous restaurant until a manual reload -- and a customer
+    // could add items from a store the header says they are not ordering from,
+    // which sends the wrong Clover item ids to checkout.
+    router.refresh();
     return true;
   };
 }
@@ -126,7 +137,11 @@ export function LocationPicker({ className = '' }) {
 }
 
 export function LocationGate() {
-  const { locations, needsChoice, setLocation } = useLocation();
+  const { locations, needsChoice } = useLocation();
+  // Same path as the header picker, so the first choice also refreshes the
+  // server-rendered menu. The basket is necessarily empty on a first visit, so
+  // the confirm inside never fires here.
+  const switchTo = useLocationSwitch();
 
   if (!needsChoice) return null;
 
@@ -145,7 +160,7 @@ export function LocationGate() {
             <button
               key={loc.location}
               type="button"
-              onClick={() => setLocation(loc.location)}
+              onClick={() => switchTo(loc.location)}
               className="w-full text-left px-4 py-3.5 rounded-2xl border border-cream/10 hover:border-gold/50 hover:bg-cream/[0.05] transition-colors"
             >
               <span className="block text-sm font-semibold text-cream">{loc.display_name || loc.location}</span>
