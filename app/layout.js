@@ -29,7 +29,17 @@ const fraunces = Fraunces({
   display: 'swap',
 });
 
+// Belt and braces alongside the canonical redirect in middleware.js. The
+// redirect stops a duplicate host being reachable; this tells search engines
+// which URL is authoritative even if something is reached another way (a cached
+// link, a scraper, an email client following the old host). metadataBase also
+// makes every relative og:image and canonical resolve to the brand domain
+// rather than whichever host happened to serve the request.
+const CANONICAL_ORIGIN = process.env.CANONICAL_ORIGIN || 'https://www.mimispizzami.com';
+
 export const metadata = {
+  metadataBase: new URL(CANONICAL_ORIGIN),
+  alternates: { canonical: '/' },
   title: "Mimi's Pizza & Burger",
   description: 'Fresh, halal pizza & burgers made to order. Order online from Mimi\'s Pizza & Burger.',
   manifest: '/manifest.json',
