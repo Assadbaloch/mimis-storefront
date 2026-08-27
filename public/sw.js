@@ -4,8 +4,17 @@
 // push) lives in n8n via mimis.notification_rules — this file only renders
 // whatever payload it's given.
 
-const CACHE_NAME = 'mimis-shell-v1';
-const SHELL_ASSETS = ['/', '/menu', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
+// Bump this string on any change that must invalidate cached assets. activate()
+// deletes every cache whose name differs, so a static name meant the old cache
+// was never purged -- it only ever deleted OTHER versions, never itself.
+const CACHE_NAME = 'mimis-shell-v2';
+
+// Deliberately NO HTML here. '/' and '/menu' used to be precached, which meant a
+// stale copy of the homepage could be handed to a returning visitor after a
+// redesign or a domain move. Menus, prices and the active design all change
+// server-side, so HTML must always come from the network. Only genuinely static
+// files are precached, and those are what PWA install criteria actually need.
+const SHELL_ASSETS = ['/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -29,12 +38,12 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
 
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request).catch(() => caches.match(request).then((res) => res || caches.match('/')))
-    );
-    return;
-  }
+  // Navigations are network-only. Previously they fell back to a cached copy of
+  // the requested page, or failing that to a cached '/' -- so a visitor could be
+  // shown an old homepage in place of whatever they asked for, with no way to
+  // tell it was stale. A restaurant menu that is quietly out of date is worse
+  // than one that fails to load, because a wrong price gets acted on.
+  if (request.mode === 'navigate') return;
 
   event.respondWith(
     caches.match(request).then((cached) => cached || fetch(request).catch(() => cached))
