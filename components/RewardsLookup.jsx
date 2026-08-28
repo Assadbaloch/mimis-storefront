@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
+import { useLocation } from '@/lib/location';
 import TrendingBanner from '@/components/TrendingBanner';
 import {
   REDEMPTION_CODE_KEY,
@@ -24,6 +25,7 @@ import {
 // MemberRewardsPanel.jsx (the cart/checkout inline version of this same flow).
 
 export default function RewardsLookup() {
+  const { location } = useLocation();
   const [view, setView] = useState('checking'); // checking | phone_entry | loading | dashboard | enroll_offer | enrolling | error
   const [phoneInput, setPhoneInput] = useState('');
   const [customer, setCustomer] = useState(null);
@@ -183,6 +185,10 @@ export default function RewardsLookup() {
           full_name: enrollName,
           email: enrollEmail,
           phone_number: phoneInput,
+          // Without this the API falls back to "Madison Heights" for EVERY
+          // signup, which is why all 8 members were stamped Madison Heights
+          // and Warren looked like it had no loyalty programme at all.
+          location,
         }),
       });
       const data = await res.json();

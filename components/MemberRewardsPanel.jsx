@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
+import { useLocation } from '@/lib/location';
 import {
   REDEMPTION_CODE_KEY,
   MEMBER_PHONE_KEY,
@@ -26,6 +27,7 @@ import {
 // persistence either way, so a plain <MemberRewardsPanel /> with no prop
 // (as used on /cart) still works standalone.
 export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIdentified = () => {}, onDiscountChange = () => {} }) {
+  const { location } = useLocation();
   const [phase, setPhase] = useState('init'); // init | phone_entry | checking | join | member | error
   const [phoneInput, setPhoneInput] = useState('');
   const [customer, setCustomer] = useState(null);
@@ -181,7 +183,10 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
       const res = await fetch('/api/enroll', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ full_name: joinName, email: joinEmail, phone_number: phoneInput }),
+        // location matters: without it /api/enroll stamps every new member
+        // "Madison Heights", so Warren signups vanished from that location's
+        // member list.
+        body: JSON.stringify({ full_name: joinName, email: joinEmail, phone_number: phoneInput, location }),
       });
       const data = await res.json();
       if (!data.success) {

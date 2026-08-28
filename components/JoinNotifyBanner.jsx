@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { isPushSupported, getExistingSubscription, subscribeAndLink } from '@/lib/push';
 import { MEMBER_PHONE_KEY, normalizePhone, formatPhoneInput } from '@/lib/loyalty';
+import { useLocation } from '@/lib/location';
 
 const DISMISS_KEY = 'mimis-push-dismissed-general';
 
@@ -22,6 +23,7 @@ const DISMISS_KEY = 'mimis-push-dismissed-general';
 // straight to a one-tap "enable notifications" prompt instead of re-asking
 // for their phone.
 export default function JoinNotifyBanner() {
+  const { location } = useLocation();
   const pathname = usePathname();
   const [state, setState] = useState('checking'); // checking | join | returning | joining | subscribed | denied | unsupported | dismissed | error
   const [phoneInput, setPhoneInput] = useState('');
@@ -101,7 +103,9 @@ export default function JoinNotifyBanner() {
       const res = await fetch('/api/enroll', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ full_name: nameInput, phone_number: phone }),
+        // See the note in MemberRewardsPanel: omitting location silently
+        // enrols everyone at Madison Heights.
+        body: JSON.stringify({ full_name: nameInput, phone_number: phone, location }),
       });
       const data = await res.json();
       if (!data.success) {
