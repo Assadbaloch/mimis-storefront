@@ -182,7 +182,7 @@ export default function CheckoutPage() {
   // the effect above clears the stored copy, this stops it rendering even for
   // the single frame before that runs.
   if (checkoutResult && (items.length === 0 || checkoutResult.cart_sig === cartSignature(items))) {
-    const { order_number, order_total_cents, discount_cents, delivery_fee_cents, total_due_cents } = checkoutResult;
+    const { order_number, order_total_cents, discount_cents, delivery_fee_cents, tax_cents, total_due_cents } = checkoutResult;
     return (
       <div className="max-w-md mx-auto px-5 py-16">
         <h1 className="font-serif font-bold text-2xl text-app mb-1">Order #{order_number}</h1>
@@ -203,6 +203,19 @@ export default function CheckoutPage() {
             <div className="flex justify-between text-sm py-1">
               <span className="text-highlight">Reward discount</span>
               <span className="text-highlight">&minus;{formatPrice(discount_cents)}</span>
+            </div>
+          )}
+          {/* Sales tax. Shown AFTER the discount because that is the order the
+              server charges in: tax is calculated on the discounted food
+              subtotal, so listing it above the discount would imply it was
+              taxed on the full price. The number itself always comes from the
+              server -- never recomputed here -- because this figure and the
+              amount Clover charges have to be the same number, and payment
+              reconciliation matches them to the cent. */}
+          {tax_cents > 0 && (
+            <div className="flex justify-between text-sm py-1">
+              <span className="text-app-soft">Sales tax</span>
+              <span className="text-app-soft">{formatPrice(tax_cents)}</span>
             </div>
           )}
           <div className="flex justify-between pt-3 mt-2 border-t border-line">
@@ -337,6 +350,11 @@ export default function CheckoutPage() {
 
       const deliveryFee = data.delivery_fee_cents || 0;
       const subtotal = data.order_total_cents ?? totalCents;
+      // Never computed client-side. The server owns the rate (it is per
+      // location, in mimis.store_locations) and owns the rounding, and it is
+      // the server's figure that Clover charges -- a browser-side guess that
+      // differed by a cent would show the customer one price and bill another.
+      const tax = data.tax_cents || 0;
 
       // Show the real order math (subtotal, delivery fee, reward discount, total due) and
       // let the customer hit "Continue" themselves, rather than silently
@@ -348,7 +366,8 @@ export default function CheckoutPage() {
         order_total_cents: subtotal,
         discount_cents: discount,
         delivery_fee_cents: deliveryFee,
-        total_due_cents: data.total_due_cents ?? (subtotal + deliveryFee - discount),
+        tax_cents: tax,
+        total_due_cents: data.total_due_cents ?? (subtotal + deliveryFee + tax - discount),
         // Captured so a later edit to the basket can invalidate this review.
         cart_sig: cartSignature(items),
       };
