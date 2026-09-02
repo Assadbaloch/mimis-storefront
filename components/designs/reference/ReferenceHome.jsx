@@ -7,16 +7,22 @@ import ReferenceHero from './ReferenceHero';
 import { ReferenceReviewCard, ReferencePressCarousel } from './ReferenceInteractive';
 import OrderAtLocationLink from './OrderAtLocationLink';
 
-// The reference home page, in Index.tsx order:
-//   Hero, TrustSection, MenuSection, HalalSection, LocationsSection,
-//   ReviewsSection, FeaturedNewsSection, RewardsSection.
+// The reference home page. Section order:
+//   Hero, Trust, Popular this week, Press, Locations, Reviews, Halal, Rewards.
+//
+// 2026-08-31, owner request: Press ("Featured in the News") was moved up to sit
+// directly under Popular this week, swapping places with the Halal band, which
+// now sits between Reviews and Rewards. The reference's own Index.tsx had Halal
+// in the upper slot; the press coverage earns the position better.
+//
 // GallerySection exists in the reference but Index.tsx does not render it, so
 // it is absent here too.
 //
-// ONE substitution: MenuSection's four hardcoded pizzas (with fixed $18.99-type
-// prices) are replaced by live Clover items. Everything else -- copy, colours,
-// spacing, hover behaviour -- is ported as-is. Locations and hours come from
-// mimis.store_locations because that is the existing system of record.
+// Data substitutions from the reference: MenuSection's four hardcoded pizzas
+// (with fixed $18.99-type prices) are live Clover items, one per category (see
+// getFeatured). Locations and hours come from mimis.store_locations because
+// that is the existing system of record. Everything else -- copy, colours,
+// spacing, hover behaviour -- is ported as-is.
 
 const HERO_VIDEO =
   'https://igchqqyassrfpsliyjec.supabase.co/storage/v1/object/public/site-media/1787169541748-mimis_header.mp4';
@@ -64,22 +70,54 @@ const LADDER = [
   { pts: '500 pts', reward: 'Family Meal' },
 ];
 
-// Featured items, priced live from Clover. with-image only: the reference's
-// grid is photo-led, and Clover has whole categories with no photography.
+// "Popular this week" -- ONE item per category, owner-controlled.
+//
+// Previously this took the first four `featured` items regardless of category,
+// which put three Appetizers in a four-card row and showed Yummy Fries twice:
+// Clover holds near-duplicate entries ("7. Yummy Fries" and "Yummy Fries") and
+// both were ticked. One card per category makes that impossible.
+//
+// Manual where it has been set, automatic where it has not. A category shows
+// whichever item is ticked Featured in Admin -> Menu; until one is ticked it
+// falls back to that category's first item with a photo, so the row is never
+// patchy and the owner can override any card at any time by ticking a
+// different item. Photo required either way -- this grid is photo-led and a
+// missing image reads as a broken card.
+//
+// Capped at CATEGORY_LIMIT: with 21 categories at Madison Heights, one card
+// each would be five rows deep and stop being a highlights strip.
+const CATEGORY_LIMIT = 8;
+
 async function getFeatured(location) {
   const supabase = getSupabasePublicClient();
   const { data } = await supabase
     .from('menu_items')
     // description_override is the only description column on menu_items --
     // there is no plain `description`; Clover's own text is not synced.
-    .select('clover_item_id, name, image_url, badge_text, description_override')
+    .select('clover_item_id, name, image_url, badge_text, description_override, category, featured, sort_order')
     .eq('available', true)
     .eq('location', location)
-    .eq('featured', true)
     .not('image_url', 'is', null)
-    .order('sort_order', { ascending: true })
-    .limit(4);
-  return data || [];
+    // featured first WITHIN each category, so the owner's pick wins the slot;
+    // sort_order then decides both the fallback and the category ordering.
+    .order('featured', { ascending: false })
+    .order('sort_order', { ascending: true });
+
+  if (!data?.length) return [];
+
+  const byCategory = new Map();
+  for (const item of data) {
+    const key = (item.category || '').trim() || 'Uncategorized';
+    // First hit wins: the ordering above guarantees that is the featured item
+    // when one exists, otherwise the first photographed item in the category.
+    if (!byCategory.has(key)) byCategory.set(key, item);
+  }
+
+  // Categories carrying an owner-picked item lead, so deliberate choices are
+  // the ones that survive the cap.
+  return [...byCategory.values()]
+    .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0))
+    .slice(0, CATEGORY_LIMIT);
 }
 
 export default async function ReferenceHome() {
@@ -165,34 +203,23 @@ export default async function ReferenceHome() {
         </section>
       )}
 
-      {/* ----------------------------- HALAL ---------------------------- */}
-      <section className="pt-32 pb-24 bg-[#174A91] dark:bg-gradient-to-b dark:from-[#0a0604] dark:via-[#114022] dark:to-[#0a0604] relative overflow-hidden">
-        <div className="container mx-auto px-8 md:px-16 lg:px-24 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/30 bg-white/10 dark:border-[#4ade80] dark:bg-transparent mb-8">
-                <span className="w-2 h-2 rounded-full bg-[#4ade80]" />
-                <span className="text-white dark:text-[#4ade80] text-[10px] font-bold tracking-widest uppercase">100% ZABIHA HALAL • حلال</span>
-              </div>
-              <h2 className="text-4xl md:text-6xl font-serif font-bold text-white dark:text-[#f5ebd7] mb-6 leading-tight tracking-tight">
-                Halal isn&rsquo;t a label. <br />
-                It&rsquo;s the <span className="italic text-[#E0AE00] dark:text-[#e6b95c]">whole kitchen.</span>
-              </h2>
-              <h3 className="text-2xl md:text-3xl font-bold font-serif text-[#E0AE00] dark:text-[#e6b95c] mb-4">Certified By HFSAA.</h3>
-              <p className="text-base text-[#FFF9EC]/90 dark:text-[#f5ebd7]/90 mb-10 leading-relaxed max-w-lg font-medium">
-                Every cut of beef, chicken, and pepperoni at MiMi&rsquo;s is certified 100% Zabiha Halal &mdash; verified at the source, separated from non-halal handling, and prepared in a kitchen built for families who don&rsquo;t compromise on faith or flavor.
-              </p>
+      {/* ----------------------------- PRESS ---------------------------- */}
+      <section className="py-32 bg-[#10396F] dark:bg-gradient-to-b dark:from-[#0a0604] dark:via-[#1a0f0a] dark:to-[#0a0604] overflow-hidden border-y border-[rgba(255,255,255,0.1)] dark:border-white/5">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24">
+          <div className="flex flex-col items-center text-center mb-16">
+            <div className="flex items-center gap-4 text-[10px] tracking-widest text-[#E0AE00] dark:text-[#e6b95c] font-bold uppercase mb-8">
+              <div className="w-8 h-px bg-[#E0AE00] dark:bg-[#e6b95c]" />
+              <span>IN THE PRESS</span>
+              <div className="w-8 h-px bg-[#E0AE00] dark:bg-[#e6b95c]" />
             </div>
-            <div className="relative w-full aspect-square md:aspect-[4/5] lg:aspect-square flex items-center justify-center">
-              <div className="absolute inset-0 bg-white/10 dark:bg-[#114022] blur-[80px] rounded-full opacity-80 scale-110" />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/hfsaa-badge.png"
-                alt="HFSAA Certified Halal"
-                className="absolute inset-0 w-full h-full object-contain p-8 md:p-16 z-10 drop-shadow-md"
-              />
-            </div>
+            <h2 className="text-5xl md:text-7xl font-serif font-bold text-white dark:text-[#f5ebd7] leading-tight tracking-tight mb-6">
+              Featured in the <span className="italic text-[#E0AE00] dark:text-[#e6b95c]">News</span>
+            </h2>
+            <p className="text-lg text-[#FFF9EC]/90 dark:text-[#f5ebd7]/80 max-w-2xl font-serif">
+              We&rsquo;re proud to have been featured on Live in the D! Watch our story and see why Mimi&rsquo;s Pizza is making headlines in Metro Detroit.
+            </p>
           </div>
+          <ReferencePressCarousel slides={PRESS_SLIDES} />
         </div>
       </section>
 
@@ -286,23 +313,34 @@ export default async function ReferenceHome() {
         </div>
       </section>
 
-      {/* ----------------------------- PRESS ---------------------------- */}
-      <section className="py-32 bg-[#10396F] dark:bg-gradient-to-b dark:from-[#0a0604] dark:via-[#1a0f0a] dark:to-[#0a0604] overflow-hidden border-y border-[rgba(255,255,255,0.1)] dark:border-white/5">
-        <div className="container mx-auto px-8 md:px-16 lg:px-24">
-          <div className="flex flex-col items-center text-center mb-16">
-            <div className="flex items-center gap-4 text-[10px] tracking-widest text-[#E0AE00] dark:text-[#e6b95c] font-bold uppercase mb-8">
-              <div className="w-8 h-px bg-[#E0AE00] dark:bg-[#e6b95c]" />
-              <span>IN THE PRESS</span>
-              <div className="w-8 h-px bg-[#E0AE00] dark:bg-[#e6b95c]" />
+      {/* ----------------------------- HALAL ---------------------------- */}
+      <section className="pt-32 pb-24 bg-[#174A91] dark:bg-gradient-to-b dark:from-[#0a0604] dark:via-[#114022] dark:to-[#0a0604] relative overflow-hidden">
+        <div className="container mx-auto px-8 md:px-16 lg:px-24 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/30 bg-white/10 dark:border-[#4ade80] dark:bg-transparent mb-8">
+                <span className="w-2 h-2 rounded-full bg-[#4ade80]" />
+                <span className="text-white dark:text-[#4ade80] text-[10px] font-bold tracking-widest uppercase">100% ZABIHA HALAL • حلال</span>
+              </div>
+              <h2 className="text-4xl md:text-6xl font-serif font-bold text-white dark:text-[#f5ebd7] mb-6 leading-tight tracking-tight">
+                Halal isn&rsquo;t a label. <br />
+                It&rsquo;s the <span className="italic text-[#E0AE00] dark:text-[#e6b95c]">whole kitchen.</span>
+              </h2>
+              <h3 className="text-2xl md:text-3xl font-bold font-serif text-[#E0AE00] dark:text-[#e6b95c] mb-4">Certified By HFSAA.</h3>
+              <p className="text-base text-[#FFF9EC]/90 dark:text-[#f5ebd7]/90 mb-10 leading-relaxed max-w-lg font-medium">
+                Every cut of beef, chicken, and pepperoni at MiMi&rsquo;s is certified 100% Zabiha Halal &mdash; verified at the source, separated from non-halal handling, and prepared in a kitchen built for families who don&rsquo;t compromise on faith or flavor.
+              </p>
             </div>
-            <h2 className="text-5xl md:text-7xl font-serif font-bold text-white dark:text-[#f5ebd7] leading-tight tracking-tight mb-6">
-              Featured in the <span className="italic text-[#E0AE00] dark:text-[#e6b95c]">News</span>
-            </h2>
-            <p className="text-lg text-[#FFF9EC]/90 dark:text-[#f5ebd7]/80 max-w-2xl font-serif">
-              We&rsquo;re proud to have been featured on Live in the D! Watch our story and see why Mimi&rsquo;s Pizza is making headlines in Metro Detroit.
-            </p>
+            <div className="relative w-full aspect-square md:aspect-[4/5] lg:aspect-square flex items-center justify-center">
+              <div className="absolute inset-0 bg-white/10 dark:bg-[#114022] blur-[80px] rounded-full opacity-80 scale-110" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/hfsaa-badge.png"
+                alt="HFSAA Certified Halal"
+                className="absolute inset-0 w-full h-full object-contain p-8 md:p-16 z-10 drop-shadow-md"
+              />
+            </div>
           </div>
-          <ReferencePressCarousel slides={PRESS_SLIDES} />
         </div>
       </section>
 
