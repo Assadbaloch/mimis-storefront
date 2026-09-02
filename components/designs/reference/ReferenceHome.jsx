@@ -70,54 +70,35 @@ const LADDER = [
   { pts: '500 pts', reward: 'Family Meal' },
 ];
 
-// "Popular this week" -- ONE item per category, owner-controlled.
+// "Popular this week" -- the actual best seller of each category.
 //
-// Previously this took the first four `featured` items regardless of category,
-// which put three Appetizers in a four-card row and showed Yummy Fries twice:
-// Clover holds near-duplicate entries ("7. Yummy Fries" and "Yummy Fries") and
-// both were ticked. One card per category makes that impossible.
+// Ranked by units sold over a trailing window, not by the `featured` tickbox.
+// A tickbox is not popularity: it showed whatever had last been ticked, and it
+// went stale the moment tastes moved. This updates itself as orders come in.
 //
-// Manual where it has been set, automatic where it has not. A category shows
-// whichever item is ticked Featured in Admin -> Menu; until one is ticked it
-// falls back to that category's first item with a photo, so the row is never
-// patchy and the owner can override any card at any time by ticking a
-// different item. Photo required either way -- this grid is photo-led and a
-// missing image reads as a broken card.
+// De-duplication happens in the function, by PRODUCT rather than by category.
+// Clover carries several rows for one product -- Warren had "6. Yummy Fries"
+// under Uncategorized and "7. Yummy Fries" under Appetizers -- so collapsing by
+// category still showed the same item twice. Normalising the name pools their
+// sales and emits one card.
 //
-// Capped at CATEGORY_LIMIT: with 21 categories at Madison Heights, one card
-// each would be five rows deep and stop being a highlights strip.
+// See mimis.popular_by_category. Kept in SQL so the ranking is one indexed
+// aggregate rather than pulling every line item into the request.
+const POPULAR_WINDOW_DAYS = 30;
 const CATEGORY_LIMIT = 8;
 
 async function getFeatured(location) {
   const supabase = getSupabasePublicClient();
-  const { data } = await supabase
-    .from('menu_items')
-    // description_override is the only description column on menu_items --
-    // there is no plain `description`; Clover's own text is not synced.
-    .select('clover_item_id, name, image_url, badge_text, description_override, category, featured, sort_order')
-    .eq('available', true)
-    .eq('location', location)
-    .not('image_url', 'is', null)
-    // featured first WITHIN each category, so the owner's pick wins the slot;
-    // sort_order then decides both the fallback and the category ordering.
-    .order('featured', { ascending: false })
-    .order('sort_order', { ascending: true });
-
-  if (!data?.length) return [];
-
-  const byCategory = new Map();
-  for (const item of data) {
-    const key = (item.category || '').trim() || 'Uncategorized';
-    // First hit wins: the ordering above guarantees that is the featured item
-    // when one exists, otherwise the first photographed item in the category.
-    if (!byCategory.has(key)) byCategory.set(key, item);
+  const { data, error } = await supabase.rpc('popular_by_category', {
+    p_location: location,
+    p_days: POPULAR_WINDOW_DAYS,
+    p_limit: CATEGORY_LIMIT,
+  });
+  if (error) {
+    console.error('popular_by_category', error.message);
+    return [];
   }
-
-  // Categories carrying an owner-picked item lead, so deliberate choices are
-  // the ones that survive the cap.
-  return [...byCategory.values()]
-    .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0))
-    .slice(0, CATEGORY_LIMIT);
+  return data || [];
 }
 
 export default async function ReferenceHome() {
