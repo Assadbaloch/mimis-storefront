@@ -51,13 +51,18 @@ export default function CartBar() {
   // z-[95] is chosen, not arbitrary: above the theme's own floating CTA (80),
   // so this can never end up buried underneath it, but below the product modal
   // (100), so opening an item still covers the bar rather than fighting it.
+  // The right edge stops short of --mimis-chat-reserve on both breakpoints. The
+  // LeadConnector chat launcher is pinned to the bottom-right corner inside a
+  // shadow root and cannot be repositioned from our stylesheet (see
+  // components/ChatWidget.jsx for what was tried), so this bar yields to it
+  // rather than letting a chat bubble sit on top of "View Cart".
   return (
     <Link
       href="/cart"
       aria-label={`View cart, ${count} item${count === 1 ? '' : 's'}, ${formatPrice(totalCents)}`}
-      className={`fixed inset-x-3 bottom-3 z-[95] flex items-center justify-between gap-3 rounded-full
+      className={`fixed left-3 right-[var(--mimis-chat-reserve)] bottom-3 z-[95] flex items-center justify-between gap-3 rounded-full
         bg-accent text-on-accent shadow-2xl shadow-black/40 pl-5 pr-3 py-3
-        md:inset-x-auto md:right-5 md:min-w-[320px] animate-fade-in
+        md:left-auto md:right-[var(--mimis-chat-reserve)] md:min-w-[320px] animate-fade-in
         ${bumping ? 'animate-pulse-once' : ''}`}
       style={{ bottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
     >

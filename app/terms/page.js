@@ -33,7 +33,7 @@ export default async function TermsPage() {
         
                   <div className="mimi-legal">
                     <p>
-                      Welcome to MiMi’s Pizza & Burger. By using our website, placing orders, or participating in MiMi’s Online Rewards, you agree to the following Terms of Service.
+                      Welcome to MiMi’s Pizza & Burger, operated by <strong>Khidma Brothers LLC d/b/a MiMi’s Pizza &amp; Burger</strong>. By using our website, placing orders, or participating in MiMi’s Online Rewards, you agree to the following Terms of Service.
                     </p>
         
                     <h2 className="text-2xl mt-10 mb-4 font-bold">1. Online Ordering</h2>
@@ -77,7 +77,7 @@ export default async function TermsPage() {
         
                     <h2 className="text-2xl mt-10 mb-4 font-bold">4. SMS Communications & Consent</h2>
                     <p>
-                      By providing your phone number, you consent to receive text communications from MiMi’s Pizza & Burger, including:
+                      By providing your phone number, you consent to receive text communications from <strong>Khidma Brothers LLC d/b/a MiMi’s Pizza &amp; Burger</strong>, including:
                     </p>
                     <ul className="list-disc pl-6 space-y-2 mb-6 text-[#3D4041] dark:text-[#f5ebd7]/80">
                       <li>Order notifications</li>
@@ -103,7 +103,9 @@ export default async function TermsPage() {
         
                     <h2 className="text-2xl mt-10 mb-4 font-bold">7. Contact Information</h2>
                     <p>
-                      For questions regarding these Terms, contact: <Link href="/contact" className="text-[#C8102E] dark:text-[#e6b95c] hover:underline font-semibold">MiMi’s Pizza & Burger (Contact Page)</Link>.
+                      For questions regarding these Terms, contact <strong>Khidma Brothers LLC d/b/a MiMi’s Pizza &amp; Burger</strong> at{' '}
+                      <a href="mailto:info@mimispizzami.com" className="text-[#C8102E] dark:text-[#e6b95c] hover:underline font-semibold">info@mimispizzami.com</a>
+                      {' '}or via our <Link href="/contact" className="text-[#C8102E] dark:text-[#e6b95c] hover:underline font-semibold">contact page</Link>.
                     </p>
                   </div>
                 </div>

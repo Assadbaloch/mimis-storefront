@@ -18,6 +18,14 @@ async function getLogo() {
   return data?.logo_url || null;
 }
 
+const CONTACT_EMAIL = 'info@mimispizzami.com';
+
+// Legal operating entity. Declared here, on /privacy and on /terms so all three
+// agree -- A2P 10DLC vetting cross-checks the registered brand against what the
+// website says, and a site that only ever says "Mimi's Pizza & Burger" cannot
+// substantiate a campaign registered to Khidma Brothers LLC.
+const LEGAL_ENTITY = 'Khidma Brothers LLC d/b/a Mimi’s Pizza & Burger';
+
 const EXPLORE = [
   { label: 'Menu', href: '/menu' },
   { label: 'Locations', href: '/contact' },
@@ -104,6 +112,20 @@ export default async function ReferenceFooter() {
                 </li>
               ))}
             </ul>
+
+            {/* Contact email. Sits under EXPLORE rather than beside a single
+                restaurant's phone number, because it reaches the business
+                rather than one kitchen -- and because A2P/SMS registration
+                reviewers look for a working contact route on the public site. */}
+            <h4 className="text-[10px] tracking-widest text-[#C99700] dark:text-[#D8A73C] font-bold uppercase mt-8 mb-4">
+              GET IN TOUCH
+            </h4>
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="text-sm break-all transition-colors duration-300 text-[#F3EFE4]/80 hover:text-[#C99700] dark:text-[#EAEAEA]/80 dark:hover:text-[#D8A73C]"
+            >
+              {CONTACT_EMAIL}
+            </a>
           </div>
 
         </div>
@@ -111,6 +133,14 @@ export default async function ReferenceFooter() {
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-[#F3EFE4]/50 dark:text-[#EAEAEA]/50">
             &copy; {new Date().getFullYear()} MiMi&rsquo;s Pizza &amp; Burger. All rights reserved.
+          </p>
+          {/* The operating entity, stated plainly. Required for A2P 10DLC:
+              the brand registered with the carriers is Khidma Brothers LLC,
+              and the name customers see is Mimi's Pizza & Burger, so the site
+              has to connect the two or the campaign gets rejected for a
+              brand/website mismatch. */}
+          <p className="text-xs text-[#F3EFE4]/40 dark:text-[#EAEAEA]/40 text-center md:text-right">
+            {LEGAL_ENTITY}
           </p>
         </div>
       </div>

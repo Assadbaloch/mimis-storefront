@@ -525,3 +525,28 @@ h1, h2, h3, p, li, a, span {
     transition: none !important;
   }
 }
+
+/* ── Chat widget clearance ─────────────────────────────────────────────────
+   The LeadConnector chat launcher is a 58px puck pinned to the bottom-right at
+   a 20px inset. It lives inside a shadow root behind a cross-origin stylesheet
+   that outranks anything we inject -- overriding its position was attempted and
+   does not hold (see components/ChatWidget.jsx for what was tried and why it
+   was abandoned).
+
+   So we treat that corner as occupied and keep our own floating UI out of it.
+   This is the width of the no-go zone: the launcher's 20px inset, its 58px
+   body, and a 10px breathing gap.
+
+   Consumed by CartBar and JoinNotifyBanner. One value, one place to change it
+   if the widget is ever resized or repositioned in the GoHighLevel settings. */
+:root {
+  --mimis-chat-reserve: 5.5rem;
+}
+
+/* The cart bar is fixed, so without this it overlaps the last row of menu cards
+   and the top of the footer. CartBar's own comment says it "reserves space at
+   the bottom of the document" -- the class was toggled but no rule ever
+   implemented it. */
+body.has-cart-bar {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}

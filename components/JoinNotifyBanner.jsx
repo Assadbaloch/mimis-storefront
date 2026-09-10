@@ -124,8 +124,15 @@ export default function JoinNotifyBanner() {
 
   // Floats over BOTH the default design and themed pages, so it uses the
   // semantic tokens (opaque surface so page content never bleeds through).
+  //
+  // The right edge stops short of --mimis-chat-reserve so this never lands on
+  // the LeadConnector chat launcher, which is pinned to the bottom-right corner
+  // and cannot be moved from our stylesheet (see components/ChatWidget.jsx).
+  // On mobile it also sits above the launcher's 58px puck rather than beside
+  // it, because at phone widths there isn't room for both across.
   const shellClass =
-    'fixed inset-x-3 bottom-[4.75rem] md:inset-x-auto md:right-5 md:bottom-5 md:max-w-sm z-30 ' +
+    'fixed left-3 right-[var(--mimis-chat-reserve)] bottom-[7rem] ' +
+    'md:left-auto md:right-[var(--mimis-chat-reserve)] md:bottom-5 md:max-w-sm z-30 ' +
     'rounded-app border border-line bg-surface-strong shadow-2xl shadow-black/40 p-5';
 
   if (state === 'subscribed') {

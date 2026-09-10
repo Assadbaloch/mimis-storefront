@@ -32,8 +32,15 @@ export default async function PrivacyPage() {
                   <p className="text-[#5F625F] dark:text-[#f5ebd7]/60 text-sm mb-12">Effective Date: 5/27/2026</p>
         
                   <div className="mimi-legal">
+                    {/* The operating entity is named in the opening sentence,
+                        deliberately, rather than buried in a contact section at
+                        the bottom. A2P 10DLC vetting cross-checks the brand on
+                        the campaign (Khidma Brothers LLC) against the website
+                        that campaign points at, and a policy that only ever
+                        says "MiMi's Pizza & Burger" cannot substantiate it --
+                        which is a rejection, not a query. */}
                     <p>
-                      Welcome to MiMi’s Pizza & Burger (“MiMi’s,” “we,” “our,” or “us”). We value your privacy and are committed to protecting your information while providing a seamless online ordering and rewards experience.
+                      Welcome to MiMi’s Pizza & Burger, operated by <strong>Khidma Brothers LLC d/b/a MiMi’s Pizza &amp; Burger</strong> (“MiMi’s,” “we,” “our,” or “us”). We value your privacy and are committed to protecting your information while providing a seamless online ordering and rewards experience.
                     </p>
         
                     <h2 className="text-2xl mt-10 mb-4 font-bold">1. Information We Collect</h2>
@@ -86,8 +93,11 @@ export default async function PrivacyPage() {
                     <p>This information helps us personalize offers and improve your rewards experience.</p>
         
                     <h2 className="text-2xl mt-10 mb-4 font-bold">5. SMS Communications</h2>
+                    {/* This is the paragraph a carrier reviewer reads to decide
+                        whether the registered brand matches the site, so the
+                        entity is named here too rather than only in the intro. */}
                     <p>
-                      By providing your phone number, you agree to receive SMS messages from MiMi’s Pizza & Burger, including:
+                      By providing your phone number, you agree to receive SMS messages from <strong>Khidma Brothers LLC d/b/a MiMi’s Pizza &amp; Burger</strong>, including:
                     </p>
                     <ul className="list-disc pl-6 space-y-2 mb-6 text-[#3D4041] dark:text-[#f5ebd7]/80">
                       <li>Order notifications</li>
@@ -117,8 +127,13 @@ export default async function PrivacyPage() {
                     </p>
         
                     <h2 className="text-2xl mt-10 mb-4 font-bold">9. Contact Us</h2>
+                    {/* A reachable email, not only a contact-page link. Carrier
+                        vetting for SMS expects a direct contact route on the
+                        policy itself, and a link to another page is not one. */}
                     <p>
-                      For questions about this Privacy Policy, contact: <Link href="/contact" className="text-[#C8102E] dark:text-[#e6b95c] hover:underline font-semibold">MiMi’s Pizza & Burger (Contact Page)</Link>.
+                      For questions about this Privacy Policy, contact <strong>Khidma Brothers LLC d/b/a MiMi’s Pizza &amp; Burger</strong> at{' '}
+                      <a href="mailto:info@mimispizzami.com" className="text-[#C8102E] dark:text-[#e6b95c] hover:underline font-semibold">info@mimispizzami.com</a>
+                      {' '}or via our <Link href="/contact" className="text-[#C8102E] dark:text-[#e6b95c] hover:underline font-semibold">contact page</Link>.
                     </p>
                   </div>
                 </div>

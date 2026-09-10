@@ -20,6 +20,7 @@ import { renderEmbeds } from '@/lib/embeds';
 import CartBridge from '@/components/CartBridge';
 import ScrollToTop from '@/components/ScrollToTop';
 import CartBar from '@/components/CartBar';
+import ChatWidget from '@/components/ChatWidget';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -199,6 +200,10 @@ export default async function RootLayout({ children }) {
           <CartBar />
           <JoinNotifyBanner />
           <InstallAppBanner />
+          {/* Customer-facing only. The admin screens are the owner's back
+              office -- a sales chat bubble floating over the menu editor is
+              noise, and it would cover the same bottom-right controls there. */}
+          {!isAdmin && <ChatWidget />}
           {/* Rendered for BOTH shells: a themed site has no SiteHeader, so this
               first-visit prompt is the only place the customer is asked which
               restaurant they're ordering from. */}
