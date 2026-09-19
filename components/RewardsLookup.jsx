@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
+import { lookupMember } from '@/lib/customer';
 import { useLocation } from '@/lib/location';
 import TrendingBanner from '@/components/TrendingBanner';
 import {
@@ -62,12 +63,7 @@ export default function RewardsLookup() {
     setErrorMsg('');
     setView('loading');
 
-    const supabase = getSupabasePublicClient();
-    const { data: customerRow, error: customerErr } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('phone_number', phone)
-      .maybeSingle();
+    const { member, error: customerErr } = await lookupMember(phone);
 
     if (customerErr) {
       setErrorMsg('Could not look up your rewards right now. Please try again.');
@@ -75,31 +71,27 @@ export default function RewardsLookup() {
       return;
     }
 
-    if (!customerRow) {
+    if (!member) {
       setView('enroll_offer');
       return;
     }
 
     window.localStorage.setItem(MEMBER_PHONE_KEY, phone);
-    await loadDashboard(customerRow);
+    await loadDashboard(member);
   }
 
-  async function loadDashboard(customerRow) {
+  // member = { customer, transactions } from lookupMember (rewards_lookup RPC).
+  async function loadDashboard(member) {
+    const customerRow = member.customer;
     const supabase = getSupabasePublicClient();
-    const [configRes, rewardsRes, txRes] = await Promise.all([
+    const [configRes, rewardsRes] = await Promise.all([
       config ? Promise.resolve({ data: config }) : supabase.from('loyalty_config').select('*').limit(1).maybeSingle(),
       supabase.from('loyalty_rewards').select('*').eq('active', true).order('points_required', { ascending: true }),
-      supabase
-        .from('transactions')
-        .select('*')
-        .eq('customer_id', customerRow.id)
-        .order('created_at', { ascending: false })
-        .limit(5),
     ]);
 
     if (configRes.data) setConfig(configRes.data);
     setRewards(rewardsRes.data || []);
-    setTransactions(txRes.data || []);
+    setTransactions((member.transactions || []).slice(0, 5));
     setCustomer(customerRow);
     setView('dashboard');
     refreshActiveRedemptions(customerRow.phone_number);
@@ -201,15 +193,10 @@ export default function RewardsLookup() {
       const phone = normalizePhone(phoneInput);
       window.localStorage.setItem(MEMBER_PHONE_KEY, phone);
 
-      const supabase = getSupabasePublicClient();
-      const { data: customerRow } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('phone_number', phone)
-        .maybeSingle();
+      const { member } = await lookupMember(phone);
 
-      if (customerRow) {
-        await loadDashboard(customerRow);
+      if (member) {
+        await loadDashboard(member);
       } else {
         setView('phone_entry');
       }

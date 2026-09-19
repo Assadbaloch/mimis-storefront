@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
+import { lookupMember } from '@/lib/customer';
 import { useLocation } from '@/lib/location';
 import {
   REDEMPTION_CODE_KEY,
@@ -97,12 +98,7 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
     setErrorMsg('');
     setPhase('checking');
 
-    const supabase = getSupabasePublicClient();
-    const { data: customerRow, error } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('phone_number', phone)
-      .maybeSingle();
+    const { member, error } = await lookupMember(phone);
 
     if (error) {
       setErrorMsg('Could not check your rewards right now.');
@@ -110,13 +106,13 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
       return;
     }
 
-    if (!customerRow) {
+    if (!member) {
       setPhase('join');
       return;
     }
 
     window.localStorage.setItem(MEMBER_PHONE_KEY, phone);
-    await loadMember(customerRow);
+    await loadMember(member.customer);
   }
 
   async function loadMember(customerRow) {
@@ -196,9 +192,8 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
       }
       const phone = normalizePhone(phoneInput);
       window.localStorage.setItem(MEMBER_PHONE_KEY, phone);
-      const supabase = getSupabasePublicClient();
-      const { data: customerRow } = await supabase.from('customers').select('*').eq('phone_number', phone).maybeSingle();
-      if (customerRow) await loadMember(customerRow);
+      const { member } = await lookupMember(phone);
+      if (member) await loadMember(member.customer);
     } catch {
       setErrorMsg('Could not reach the rewards system. Please try again shortly.');
     } finally {
