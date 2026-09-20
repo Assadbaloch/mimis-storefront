@@ -33,7 +33,6 @@ export const BANNER_STYLES = ['minimal', 'pill', 'outline', 'coupon', 'soft', 's
 
 const DISMISS_KEY = 'mimis_promo_dismissed_v1';
 const DISMISS_DAYS = 3;
-const FLOAT_DELAY_MS = 2500;
 const ROTATE_MS = 8000;
 
 // Browser storage can be missing or throw (private mode, blocked site data);
@@ -160,19 +159,18 @@ function FloatingPromo({ items, onDismiss }) {
   const [shown, setShown] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
-  // Appears only once the visitor has scrolled past the hero, so it never sits
-  // on top of the hero's headline or its Order / Menu buttons. Short pages
-  // (nothing to scroll past) show it after a pause instead.
+  // Appears ONLY once the visitor has scrolled past the hero (80% of the
+  // screen height), so it never sits on the hero's headline or its Order /
+  // Menu buttons. No timer: a page loaded in the background measures 0 high,
+  // and a "short page, show after a pause" fallback fired on top of the hero.
   useEffect(() => {
-    const show = () => setShown(true);
-    const threshold = () => window.innerHeight * 0.8;
-    const onScroll = () => { if (window.scrollY > threshold()) show(); };
-    const t = setTimeout(() => {
-      if (document.documentElement.scrollHeight <= window.innerHeight * 1.2) show();
-    }, FLOAT_DELAY_MS);
+    const onScroll = () => {
+      const h = window.innerHeight;
+      if (h > 0 && window.scrollY > h * 0.8) setShown(true);
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
-    return () => { clearTimeout(t); window.removeEventListener('scroll', onScroll); };
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   const close = useCallback(() => {
