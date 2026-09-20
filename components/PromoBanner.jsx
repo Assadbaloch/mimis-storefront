@@ -35,21 +35,26 @@ export default function PromoBanner({ placement, className = '' }) {
   const image = banner.image_url && /^https:\/\//i.test(banner.image_url) ? banner.image_url : null;
 
   return (
-    <div className={`max-w-6xl mx-auto px-5 md:px-8 my-6 ${className}`}>
-      <div className="flex flex-col sm:flex-row items-stretch overflow-hidden rounded-app border border-highlight-line bg-highlight-wash">
-        {image && (
+    <div className={`max-w-6xl mx-auto px-5 md:px-8 my-4 ${className}`}>
+      <div className="flex items-center gap-3 rounded-app border border-highlight-line bg-highlight-wash px-4 py-2.5">
+        {image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={image} alt="" className="w-full sm:w-48 h-32 sm:h-auto object-cover" loading="lazy" />
+          <img src={image} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" loading="lazy" />
+        ) : (
+          <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-highlight" />
         )}
-        <div className="flex flex-1 flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4">
-          <div className="min-w-0">
-            <p className="font-serif font-bold text-lg text-app">{banner.title}</p>
-            {banner.body && <p className="text-app-soft text-sm mt-1">{banner.body}</p>}
-          </div>
-          {banner.cta && href && (
-            <Link href={href} className="btn-primary shrink-0 justify-center">{banner.cta}</Link>
-          )}
-        </div>
+        <p className="min-w-0 flex-1 text-sm leading-snug text-app">
+          <span className="font-semibold">{banner.title}</span>
+          {banner.body && <span className="text-app-soft"> · {banner.body}</span>}
+        </p>
+        {banner.cta && href && (
+          <Link
+            href={href}
+            className="shrink-0 text-sm font-semibold text-app underline decoration-highlight decoration-2 underline-offset-4 hover:opacity-80"
+          >
+            {banner.cta} <span aria-hidden="true">→</span>
+          </Link>
+        )}
       </div>
     </div>
   );
