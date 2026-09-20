@@ -108,9 +108,9 @@ export default async function ReferenceHome() {
 
   return (
     <>
-      {/* The hero is pulled up under the transparent header (-mt), so a banner
-          placed before it is painted over. It goes inside the hero instead. */}
-      <ReferenceHero videoUrl={HERO_VIDEO} promo={<PromoBanner placement="home" bare />} />
+      <ReferenceHero videoUrl={HERO_VIDEO} />
+      {/* Home offers float over the page (fixed position), so where this sits in the tree does not matter. */}
+      <PromoBanner placement="home" />
 
       {/* ---------------------------- TRUST ---------------------------- */}
       <section className="py-24 bg-[#C8102E] dark:bg-gradient-to-b dark:from-[#0a0604] dark:via-[#1a0f0a] dark:to-[#0a0604] border-y border-white/10 dark:border-white/5">

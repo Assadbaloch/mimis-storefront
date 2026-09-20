@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useCart } from '@/lib/cart';
 import { useLocation } from '@/lib/location';
 import { LocationPicker } from '@/components/LocationPicker';
+import PromoBar from '@/components/PromoBar';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { displayCategory, categorySortIndex } from '@/lib/format';
 
@@ -182,6 +183,9 @@ export default function SiteHeader() {
           <Link href="/menu" className="btn-primary hidden sm:inline-flex">Start Order</Link>
         </div>
       </div>
+
+      {/* Owner-managed offers bar, directly under the header bar. */}
+      <PromoBar />
 
       {drawerOpen && (
         <div className="fixed inset-0 z-[100] md:hidden" role="dialog" aria-modal="true" onClick={() => setDrawerOpen(false)}>

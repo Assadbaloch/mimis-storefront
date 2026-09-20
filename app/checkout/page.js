@@ -66,6 +66,10 @@ export default function CheckoutPage() {
   const [redirectNotice, setRedirectNotice] = useState('');
   const [promoCode, setPromoCode] = useState('');
   const [promoCodesActive, setPromoCodesActive] = useState(false);
+  // Live preview of the promotion this phone number qualifies for, shown on
+  // this first step. Read-only (mimis.preview_order_discount); the amount
+  // actually charged is decided again by the server when the order is placed.
+  const [promoPreview, setPromoPreview] = useState(null);
   // Show the promo-code field only while a live code-based promotion exists
   // for this store. The RPC returns true/false only -- never the codes.
   useEffect(() => {
@@ -172,7 +176,45 @@ export default function CheckoutPage() {
   // phone number and is the actual source of truth for discount_cents,
   // shown on the checkoutResult screen below. This just keeps the
   // pre-submit total from looking wrong while a reward is selected.
-  const dueCents = Math.max(totalCents - discountCents, 0);
+  // Promotion vs points reward: unless the promotion allows stacking, the
+  // bigger of the two applies -- the same rule the server uses.
+  const promoCents = promoPreview?.amount_cents || 0;
+  const promoStacks = !!promoPreview?.stacks_with_rewards;
+  const discountLinesPreview = [];
+  if (promoCents > 0 && (promoStacks || promoCents > discountCents)) {
+    discountLinesPreview.push({ label: promoPreview.label || 'Promotion', amount_cents: promoCents });
+  }
+  if (discountCents > 0 && (promoStacks || discountCents >= promoCents)) {
+    discountLinesPreview.push({ label: 'Reward discount', amount_cents: discountCents });
+  }
+  const shownDiscountCents = Math.min(
+    discountLinesPreview.reduce((sum, l) => sum + l.amount_cents, 0),
+    Math.max(totalCents - 1, 0),
+  );
+  const rewardBeaten = discountCents > 0 && promoCents > discountCents && !promoStacks;
+  const dueCents = Math.max(totalCents - shownDiscountCents, 0);
+  const taxRateBps = promoPreview?.tax_rate_bps ?? null;
+  const previewTaxCents = taxRateBps === null ? null : Math.round((dueCents * taxRateBps) / 10000);
+  const payCents = previewTaxCents === null ? dueCents : dueCents + previewTaxCents;
+
+  const phoneDigits = form.phone_number.replace(/\D/g, '');
+  useEffect(() => {
+    if (phoneDigits.length < 10 || totalCents <= 0) { setPromoPreview(null); return undefined; }
+    let cancelled = false;
+    const t = setTimeout(() => {
+      getSupabasePublicClient()
+        .rpc('preview_order_discount', {
+          p_phone: phoneDigits, p_location: location, p_order_type: orderType,
+          p_food_subtotal_cents: totalCents, p_promo_code: promoCode.trim() || null,
+        })
+        .then(({ data, error }) => {
+          if (cancelled) return;
+          if (error) { console.error('preview_order_discount', error.message); setPromoPreview(null); return; }
+          setPromoPreview(data && typeof data === 'object' ? data : null);
+        });
+    }, 350);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [phoneDigits, location, orderType, totalCents, promoCode]);
 
   // MemberRewardsPanel owns localStorage persistence for the active code --
   // this just mirrors its current value so handleSubmit can send it, and so
@@ -449,7 +491,7 @@ export default function CheckoutPage() {
         ))}
         <div className="flex justify-between pt-3 mt-2 border-t border-line">
           <span className="text-app font-semibold">Subtotal</span>
-          <span className={`font-serif font-semibold text-lg ${discountCents > 0 ? 'text-app-soft line-through' : 'text-highlight'}`}>
+          <span className={`font-serif font-semibold text-lg ${shownDiscountCents > 0 ? 'text-app-soft line-through' : 'text-highlight'}`}>
             {formatPrice(totalCents)}
           </span>
         </div>
@@ -459,17 +501,33 @@ export default function CheckoutPage() {
             <span className="text-app-faint">calculated at checkout</span>
           </div>
         )}
-        {discountCents > 0 && (
-          <>
-            <div className="flex justify-between text-sm py-1">
-              <span className="text-highlight">Reward discount</span>
-              <span className="text-highlight">&minus;{formatPrice(discountCents)}</span>
-            </div>
-            <div className="flex justify-between pt-2 mt-1 border-t border-line">
-              <span className="text-app font-semibold">Total due</span>
-              <span className="text-highlight font-serif font-semibold text-lg">{formatPrice(dueCents)}</span>
-            </div>
-          </>
+        {discountLinesPreview.map((l, i) => (
+          <div key={i} className="flex justify-between text-sm py-1 animate-fade-in">
+            <span className="text-highlight font-semibold">{l.label}</span>
+            <span className="text-highlight font-semibold">&minus;{formatPrice(l.amount_cents)}</span>
+          </div>
+        ))}
+        {previewTaxCents !== null && previewTaxCents > 0 && (
+          <div className="flex justify-between text-sm py-1">
+            <span className="text-app-soft">Sales tax</span>
+            <span className="text-app-soft">{formatPrice(previewTaxCents)}</span>
+          </div>
+        )}
+        {(shownDiscountCents > 0 || previewTaxCents !== null) && (
+          <div className="flex justify-between pt-2 mt-1 border-t border-line">
+            <span className="text-app font-semibold">Total due{orderType === 'delivery' ? ' (before delivery)' : ''}</span>
+            <span className="text-highlight font-serif font-semibold text-lg">{formatPrice(payCents)}</span>
+          </div>
+        )}
+        {promoCents > 0 && (
+          <p className="mt-2 text-xs text-app-soft">
+            {rewardBeaten
+              ? 'Your offer is bigger than your reward, so the offer applies and your reward is saved for next time.'
+              : 'Applied automatically when you place the order.'}
+          </p>
+        )}
+        {phoneDigits.length < 10 && (
+          <p className="mt-2 text-xs text-app-faint">Enter your phone number below to see any offer you qualify for.</p>
         )}
       </div>
 
@@ -539,8 +597,8 @@ export default function CheckoutPage() {
           {submitting
             ? 'Starting checkout…'
             : orderType === 'delivery'
-              ? `Continue — ${formatPrice(dueCents)} + delivery`
-              : `Pay ${formatPrice(dueCents)} with Clover`}
+              ? `Continue — ${formatPrice(payCents)} + delivery`
+              : `Pay ${formatPrice(payCents)} with Clover`}
         </button>
         <p className="text-app-faint text-xs text-center">You&rsquo;ll be redirected to Clover&rsquo;s secure checkout to complete payment.</p>
       </form>

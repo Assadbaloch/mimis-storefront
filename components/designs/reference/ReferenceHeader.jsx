@@ -1,4 +1,5 @@
 'use client';
+import PromoBar from '@/components/PromoBar';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -137,6 +138,9 @@ export default function ReferenceHeader({ logoUrl }) {
           </div>
         </div>
       </div>
+
+      {/* Owner-managed offers bar, directly under the header bar. */}
+      <PromoBar />
 
       <div
         className={`fixed inset-0 bg-[#F3EFE4] dark:bg-[#0a0604] z-40 transition-transform duration-300 ease-in-out md:hidden flex flex-col pt-32 px-6 ${

@@ -1,19 +1,27 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { useLocation } from '@/lib/location';
 
-// Owner-managed promotion banner (dashboard → Promotions). Nothing about any
-// specific offer lives in code: title, text, button, image, style, end-date
+// Owner-managed promotion banners (dashboard → Promotions). Nothing about any
+// specific offer lives in code: title, text, button, image, design, end-date
 // display, placements, dates, hours and store all come from mimis.promotions
-// through the public live_promotion_banners() RPC, which only returns a banner
-// while its promotion is live AND promotions are switched on at checkout. The
+// through the public live_promotion_banners() RPC, which only returns banners
+// while the promotion is live AND promotions are switched on at checkout. The
 // banner advertises; the discount itself is decided only by checkout on the
 // server.
 //
-// placement: 'home' | 'menu' | 'cart' | 'checkout'
-// bare:      render without the page-width container (e.g. inside the hero)
+// placement 'bar'   → components/PromoBar.jsx (scrolling bar under the header).
+// placement 'home'  → a floating card that slides in once the visitor scrolls
+//                     past the hero, bottom-left on desktop, under the
+//                     header on phones — clear of the cart bar, the rewards
+//                     card and the chat launcher, which own the bottom-right.
+// placement 'menu' | 'cart' | 'checkout' → inline strip in the page flow.
+//
+// Every banner has a close button. A closed offer stays hidden on this device
+// for DISMISS_DAYS (per offer, everywhere). With several live offers, each
+// visit uses the owner's order setting (random or priority); inline strips rotate.
 
 // Where the button goes. Only the home page has somewhere useful to send the
 // customer (the menu). On the menu they are already there, and on cart /
@@ -23,7 +31,28 @@ const CTA_HREF = { home: '/menu', menu: null, cart: null, checkout: null };
 
 export const BANNER_STYLES = ['minimal', 'pill', 'outline', 'coupon', 'soft', 'solid', 'dark', 'spotlight'];
 
-// "Ends Fri, Oct 31, 11:59 PM" in store time, exactly as set in the dashboard.
+const DISMISS_KEY = 'mimis_promo_dismissed_v1';
+const DISMISS_DAYS = 3;
+const FLOAT_DELAY_MS = 2500;
+const ROTATE_MS = 8000;
+
+// Browser storage can be missing or throw (private mode, blocked site data);
+// banners must still work, they just won't remember a close.
+function readDismissed() {
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(DISMISS_KEY) || '{}');
+    const cutoff = Date.now() - DISMISS_DAYS * 86400000;
+    return Object.fromEntries(Object.entries(raw).filter(([, t]) => Number(t) > cutoff));
+  } catch { return {}; }
+}
+function saveDismissed(id) {
+  try {
+    const cur = readDismissed(); cur[id] = Date.now();
+    window.localStorage.setItem(DISMISS_KEY, JSON.stringify(cur));
+  } catch { /* not remembered; closed for this page view only */ }
+}
+
+// "Ends Sat, Oct 31, 11:59 PM" in store time, exactly as set in the dashboard.
 function endsLabel(iso) {
   if (!iso) return null;
   const d = new Date(iso);
@@ -34,9 +63,38 @@ function endsLabel(iso) {
   });
 }
 
-export default function PromoBanner({ placement, className = '', bare = false }) {
+// Owner setting (dashboard → Promotions → Banner settings): 'priority' keeps the
+// server's order (highest priority first); 'random' shuffles once per page view
+// so every live offer gets seen.
+export function orderItems(items, rows) {
+  const mode = rows[0]?.banner_order === 'priority' ? 'priority' : 'random';
+  if (mode === 'priority' || items.length < 2) return items;
+  const a = items.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+export { readDismissed, saveDismissed, endsLabel };
+
+function toView(row, placement) {
+  const href = CTA_HREF[placement];
+  return {
+    id: row.promotion_id,
+    style: BANNER_STYLES.includes(row.style) ? row.style : 'minimal',
+    title: row.title,
+    body: row.body,
+    cta: row.cta && href ? { href, label: row.cta } : null,
+    image: row.image_url && /^https:\/\//i.test(row.image_url) ? row.image_url : null,
+    ends: row.show_end_date === false ? null : endsLabel(row.ends_at),
+  };
+}
+
+export default function PromoBanner({ placement, className = '' }) {
   const { location } = useLocation();
-  const [banner, setBanner] = useState(null);
+  const [rows, setRows] = useState([]);
+  const [dismissed, setDismissed] = useState({});
+
+  useEffect(() => { setDismissed(readDismissed()); }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,24 +102,158 @@ export default function PromoBanner({ placement, className = '', bare = false })
       .rpc('live_promotion_banners', { p_location: location, p_placement: placement })
       .then(({ data, error }) => {
         if (cancelled) return;
-        if (error) { console.error('live_promotion_banners', error.message); setBanner(null); return; }
-        setBanner(Array.isArray(data) && data.length ? data[0] : null);
+        if (error) { console.error('live_promotion_banners', error.message); setRows([]); return; }
+        setRows(Array.isArray(data) ? data : []);
       });
     return () => { cancelled = true; };
   }, [location, placement]);
 
-  if (!banner) return null;
+  const dismiss = useCallback((id) => {
+    saveDismissed(id);
+    setDismissed((d) => ({ ...d, [id]: Date.now() }));
+  }, []);
 
-  const style = BANNER_STYLES.includes(banner.style) ? banner.style : 'minimal';
-  const href = CTA_HREF[placement];
-  const cta = banner.cta && href ? { href, label: banner.cta } : null;
-  const image = banner.image_url && /^https:\/\//i.test(banner.image_url) ? banner.image_url : null;
-  const ends = banner.show_end_date === false ? null : endsLabel(banner.ends_at);
-  const b = { title: banner.title, body: banner.body, cta, image, ends };
+  const items = orderItems(rows.filter((r) => !dismissed[r.promotion_id]).map((r) => toView(r, placement)), rows);
+  if (!items.length) return null;
+  if (placement === 'home') return <FloatingPromo items={items} onDismiss={dismiss} />;
+  return <InlinePromo items={items} onDismiss={dismiss} className={className} />;
+}
 
-  const inner = <Styled style={style} b={b} />;
-  if (bare) return <div className={`w-full ${className}`}>{inner}</div>;
-  return <div className={`max-w-6xl mx-auto px-5 md:px-8 my-4 ${className}`}>{inner}</div>;
+// ---- inline strip (menu / cart / checkout) --------------------------------
+function InlinePromo({ items, onDismiss, className }) {
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const count = items.length;
+
+  useEffect(() => {
+    if (count < 2 || paused) return undefined;
+    const t = setInterval(() => setIdx((i) => (i + 1) % count), ROTATE_MS);
+    return () => clearInterval(t);
+  }, [count, paused]);
+
+  const b = items[idx % count];
+  return (
+    <div
+      className={`max-w-6xl mx-auto px-5 md:px-8 my-4 ${className}`}
+      onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}
+    >
+      <div key={b.id} className="relative animate-fade-in [&>*:first-child]:pr-11">
+        <Styled style={b.style} b={b} />
+        <CloseButton onClick={() => onDismiss(b.id)} tone={TONE[b.style]} className="absolute right-2 top-1/2 -translate-y-1/2" />
+      </div>
+      {count > 1 && (
+        <div className="mt-2 flex justify-center gap-1.5" aria-hidden="true">
+          {items.map((x, i) => (
+            <span key={x.id} className={`h-1.5 rounded-full transition-all ${i === idx % count ? 'w-4 bg-highlight' : 'w-1.5 bg-app-tint'}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---- floating card (home) -------------------------------------------------
+function FloatingPromo({ items, onDismiss }) {
+  // One offer per visit: the first after ordering (random or by priority).
+  const [b] = useState(() => items[0]);
+  const [shown, setShown] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+
+  // Appears only once the visitor has scrolled past the hero, so it never sits
+  // on top of the hero's headline or its Order / Menu buttons. Short pages
+  // (nothing to scroll past) show it after a pause instead.
+  useEffect(() => {
+    const show = () => setShown(true);
+    const threshold = () => window.innerHeight * 0.8;
+    const onScroll = () => { if (window.scrollY > threshold()) show(); };
+    const t = setTimeout(() => {
+      if (document.documentElement.scrollHeight <= window.innerHeight * 1.2) show();
+    }, FLOAT_DELAY_MS);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => { clearTimeout(t); window.removeEventListener('scroll', onScroll); };
+  }, []);
+
+  const close = useCallback(() => {
+    setLeaving(true);
+    setTimeout(() => onDismiss(b.id), 250);
+  }, [b.id, onDismiss]);
+
+  useEffect(() => {
+    if (!shown) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [shown, close]);
+
+  const visible = shown && !leaving;
+  const pal = FLOAT_PALETTE[b.style] || FLOAT_PALETTE.minimal;
+
+  return (
+    <aside
+      aria-label="Offer"
+      aria-hidden={!visible}
+      className={`fixed z-[90] left-3 right-3 md:right-auto md:left-5 md:w-[22rem]
+        top-[calc(5rem+var(--promo-bar-h,0px)+env(safe-area-inset-top))] md:top-auto md:bottom-5
+        transition-all duration-300 ease-out motion-reduce:transition-none
+        ${visible ? 'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 -translate-y-3 md:translate-y-3'}`}
+    >
+      <div style={pal.border} className={`relative overflow-hidden rounded-app-lg shadow-2xl shadow-black/30 ${pal.box}`}>
+        {b.image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={b.image} alt="" className="h-28 w-full object-cover" loading="lazy" />
+        )}
+        <div className="flex flex-col gap-1.5 p-5 pr-12">
+          {b.ends && <span className={`text-[11px] font-bold uppercase tracking-wider ${pal.ends}`}>{b.ends}</span>}
+          <p className="font-serif text-xl font-bold leading-tight">{b.title}</p>
+          {b.body && <p className={`text-sm ${pal.soft}`}>{b.body}</p>}
+          {b.cta && (
+            <div className="pt-2">
+              <Link href={b.cta.href} onClick={() => onDismiss(b.id)} className={`inline-flex items-center rounded-full px-5 py-2 text-sm font-bold hover:opacity-90 ${pal.btn}`}>
+                {b.cta.label} <span aria-hidden="true" className="ml-1">→</span>
+              </Link>
+            </div>
+          )}
+        </div>
+        <CloseButton onClick={close} tone={b.image ? 'image' : TONE[b.style]} className="absolute right-2.5 top-2.5" />
+      </div>
+    </aside>
+  );
+}
+
+// Colours per design for the floating card. Borders are inline (see HL below).
+const FLOAT_PALETTE = {
+  minimal:   { box: 'bg-surface text-app border', border: { borderColor: 'color-mix(in srgb, var(--mimis-highlight) 40%, transparent)' }, soft: 'text-app-soft', ends: 'text-highlight', btn: 'bg-accent text-on-accent' },
+  pill:      { box: 'bg-surface text-app', border: {}, soft: 'text-app-soft', ends: 'text-highlight', btn: 'bg-accent text-on-accent' },
+  outline:   { box: 'bg-surface text-app border border-l-4', border: { borderColor: 'var(--mimis-line)', borderLeftColor: 'var(--mimis-highlight)' }, soft: 'text-app-soft', ends: 'text-highlight', btn: 'bg-accent text-on-accent' },
+  coupon:    { box: 'bg-surface text-app border-2 border-dashed', border: { borderColor: 'var(--mimis-highlight)' }, soft: 'text-app-soft', ends: 'text-highlight', btn: 'bg-accent text-on-accent' },
+  soft:      { box: 'bg-surface text-app border', border: { borderColor: 'color-mix(in srgb, var(--mimis-highlight) 40%, transparent)' }, soft: 'text-app-soft', ends: 'text-highlight', btn: 'bg-accent text-on-accent' },
+  solid:     { box: 'bg-accent text-on-accent', border: {}, soft: 'opacity-90', ends: 'opacity-90', btn: 'bg-on-accent text-accent' },
+  dark:      { box: 'bg-app text-surface', border: {}, soft: 'opacity-80', ends: 'text-highlight', btn: 'bg-highlight text-on-highlight' },
+  spotlight: { box: 'bg-accent text-on-accent', border: {}, soft: 'opacity-90', ends: 'opacity-90', btn: 'bg-white text-[#1D2021]' },
+};
+
+// Colour of the close button on each design's background.
+const TONE = { solid: 'onAccent', spotlight: 'onAccent', dark: 'onDark' };
+const TONE_CLASS = {
+  undefined: 'text-app-soft hover:bg-app-wash hover:text-app',
+  onAccent: 'text-on-accent hover:bg-white/15',
+  onDark: 'text-surface hover:bg-white/10',
+  image: 'bg-black/45 text-white hover:bg-black/60',
+};
+
+function CloseButton({ onClick, tone, className = '' }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Close offer"
+      className={`grid h-8 w-8 place-items-center rounded-full text-lg leading-none transition-colors ${TONE_CLASS[tone] || TONE_CLASS.undefined} ${className}`}
+    >
+      <span aria-hidden="true">×</span>
+    </button>
+  );
 }
 
 function Styled({ style, b }) {

@@ -550,3 +550,11 @@ h1, h2, h3, p, li, a, span {
 body.has-cart-bar {
   padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
 }
+
+/* Offers bar (components/PromoBar.jsx): the track holds the offers twice and
+   slides by exactly half, so the loop is seamless. Pauses on hover/focus; no
+   motion for visitors who asked for reduced motion. */
+@keyframes promoMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.promo-marquee { animation: promoMarquee 30s linear infinite; will-change: transform; }
+.promo-marquee:hover, .promo-marquee:focus-within { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .promo-marquee { animation: none; } }

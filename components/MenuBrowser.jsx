@@ -214,7 +214,7 @@ export default function MenuBrowser({ groups }) {
     <>
       {/* Mobile / tablet: one slim sticky row — search + current category +
           menu button. Everything else lives in the sheet below. */}
-      <div ref={mobileBarRef} className="lg:hidden sticky top-20 z-40 bg-surface-strong backdrop-blur-md border-b border-line px-5 md:px-8 py-3">
+      <div ref={mobileBarRef} className="lg:hidden sticky top-[calc(5rem+var(--promo-bar-h,0px))] z-40 bg-surface-strong backdrop-blur-md border-b border-line px-5 md:px-8 py-3">
         <div className="flex items-center gap-2.5">
           <div className="flex-1 min-w-0">{searchBox}</div>
           <button
@@ -290,7 +290,7 @@ export default function MenuBrowser({ groups }) {
       <div className="max-w-7xl mx-auto px-5 md:px-8 lg:grid lg:grid-cols-[240px,1fr] lg:gap-10 lg:items-start">
         {/* Desktop: sticky category sidebar — search on top, every section one
             click away, active section highlighted by the shared scroll-spy. */}
-        <aside className="hidden lg:block sticky top-24 max-h-[calc(100vh-7.5rem)] overflow-y-auto no-scrollbar py-8 pr-1">
+        <aside className="hidden lg:block sticky top-[calc(6rem+var(--promo-bar-h,0px))] max-h-[calc(100vh-7.5rem-var(--promo-bar-h,0px))] overflow-y-auto no-scrollbar py-8 pr-1">
           <div className="mb-5">{searchBox}</div>
           <p className="section-label mb-3">Categories</p>
           <nav aria-label="Menu categories" className="space-y-1">
