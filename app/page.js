@@ -11,6 +11,7 @@ import { getHomeSlots } from '@/lib/homeSlots';
 import { getStoreLocations } from '@/lib/storeLocations';
 import { getActiveDesign } from '@/lib/design';
 import ReferenceHome from '@/components/designs/reference/ReferenceHome';
+import PromoBanner from '@/components/PromoBanner';
 
 // Dynamic rather than `revalidate = 60`: every card below deep-links to
 // /menu/<clover_item_id>, and those ids are per-Clover-merchant. A cached
@@ -127,7 +128,7 @@ export default async function HomePage() {
   // Built-in design 2. Checked after the theme so precedence is unchanged, and
   // before any of the original design's work below so none of it runs need-
   // lessly. The original design's code path is untouched.
-  if ((await getActiveDesign()) === 'reference') return <ReferenceHome />;
+  if ((await getActiveDesign()) === 'reference') return (<><PromoBanner placement="home" /><ReferenceHome /></>);
 
   const location = await getActiveLocation();
   const featured = await getFeaturedItems(location);
@@ -155,17 +156,21 @@ export default async function HomePage() {
       ['featured_items', 'product_category', 'product_showcase'].includes(s.type));
     const menuItems = needsMenu ? await getAllMenuItems(location) : featured;
     return (
+      <>
+      <PromoBanner placement="home" />
       <PageSections
         sections={slots.all}
         menuItems={menuItems}
         storeLocations={storeLocations}
         homeData={homeData}
       />
+      </>
     );
   }
 
   return (
     <>
+      <PromoBanner placement="home" />
       {/* HERO */}
       <section className="relative px-5 md:px-8 pt-20 pb-24 md:pt-28 md:pb-32 overflow-hidden">
         {heroMedia ? (

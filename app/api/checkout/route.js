@@ -82,6 +82,7 @@ export async function POST(request) {
         location: body.location || 'Madison Heights',
         notes: body.notes || '',
         redemption_code: body.redemption_code || '',
+        promo_code: typeof body.promo_code === 'string' ? body.promo_code.trim().slice(0, 40) : '',
         delivery_address: body.order_type === 'delivery' ? body.delivery_address : undefined,
         items: body.items,
       }),

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import PromoBanner from '@/components/PromoBanner';
 import Link from 'next/link';
 import { useCart } from '@/lib/cart';
 import { formatPrice } from '@/lib/format';
@@ -26,6 +27,7 @@ export default function CartPage() {
   return (
     <div className="max-w-2xl mx-auto px-5 py-16 pb-40 md:pb-28">
       <h1 className="font-serif font-bold text-3xl md:text-4xl text-app mb-8">Your Order</h1>
+      <PromoBanner placement="cart" className="!px-0 !mx-0 !mt-0" />
       <div className="space-y-4">
         {items.map((item) => (
           <div key={item._key} className="flex items-center gap-4 border-b border-line pb-4 animate-fade-in">

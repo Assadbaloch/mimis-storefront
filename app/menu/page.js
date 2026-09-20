@@ -4,6 +4,7 @@ import { getActiveLocation } from '@/lib/locationServer';
 import { displayCategory, categorySortIndex } from '@/lib/format';
 import MenuBrowser from '@/components/MenuBrowser';
 import MenuRewardBanner from '@/components/MenuRewardBanner';
+import PromoBanner from '@/components/PromoBanner';
 
 // Was `revalidate = 60` (one cached page for everyone). The menu now differs
 // per restaurant, so a single shared cache entry would serve one store's menu
@@ -61,6 +62,7 @@ export default async function MenuPage() {
         </p>
       </section>
       <MenuRewardBanner />
+      <PromoBanner placement="menu" />
       {groups.length > 0 ? (
         <Suspense fallback={null}>
           <MenuBrowser groups={groups} />

@@ -7,6 +7,8 @@ import { formatPrice } from '@/lib/format';
 import { REDEMPTION_CODE_KEY, MEMBER_PHONE_KEY, formatPhoneInput } from '@/lib/loyalty';
 import { readContact, saveContact, clearContact, fetchMemberContact, fillBlanks } from '@/lib/customer';
 import MemberRewardsPanel from '@/components/MemberRewardsPanel';
+import PromoBanner from '@/components/PromoBanner';
+import { getSupabasePublicClient } from '@/lib/supabaseClient';
 
 // Session-scoped (not localStorage): this mirrors a live, ~15-minute Clover
 // checkout session, not something that should survive past the browser tab
@@ -62,6 +64,19 @@ export default function CheckoutPage() {
   const [rewardCode, setRewardCode] = useState(null);
   const [discountCents, setDiscountCents] = useState(0);
   const [redirectNotice, setRedirectNotice] = useState('');
+  const [promoCode, setPromoCode] = useState('');
+  const [promoCodesActive, setPromoCodesActive] = useState(false);
+  // Show the promo-code field only while a live code-based promotion exists
+  // for this store. The RPC returns true/false only -- never the codes.
+  useEffect(() => {
+    let cancelled = false;
+    getSupabasePublicClient().rpc('promo_codes_active', { p_location: location }).then(({ data, error }) => {
+      if (cancelled) return;
+      if (error) console.error('promo_codes_active', error.message);
+      setPromoCodesActive(data === true);
+    });
+    return () => { cancelled = true; };
+  }, [location]);
   // Initialized lazily from sessionStorage so a refresh (or the browser
   // restoring a backgrounded tab) lands back on the real order review
   // instead of the "Nothing to check out" screen -- the order already
@@ -183,6 +198,9 @@ export default function CheckoutPage() {
   // the single frame before that runs.
   if (checkoutResult && (items.length === 0 || checkoutResult.cart_sig === cartSignature(items))) {
     const { order_number, order_total_cents, discount_cents, delivery_fee_cents, tax_cents, total_due_cents } = checkoutResult;
+    const discountLines = Array.isArray(checkoutResult.discount_lines) && checkoutResult.discount_lines.length
+      ? checkoutResult.discount_lines
+      : (discount_cents > 0 ? [{ label: 'Reward discount', amount_cents: discount_cents }] : []);
     return (
       <div className="max-w-md mx-auto px-5 py-16">
         <h1 className="font-serif font-bold text-2xl text-app mb-1">Order #{order_number}</h1>
@@ -199,12 +217,15 @@ export default function CheckoutPage() {
               <span className="text-app-soft">{formatPrice(delivery_fee_cents)}</span>
             </div>
           )}
-          {discount_cents > 0 && (
-            <div className="flex justify-between text-sm py-1">
-              <span className="text-highlight">Reward discount</span>
-              <span className="text-highlight">&minus;{formatPrice(discount_cents)}</span>
+          {/* One line per discount the SERVER applied (promotion and/or
+              reward) -- labels and amounts come from the checkout response,
+              never computed here. */}
+          {discountLines.map((l, i) => (
+            <div key={i} className="flex justify-between text-sm py-1">
+              <span className="text-highlight">{l.label === 'Reward' ? 'Reward discount' : l.label}</span>
+              <span className="text-highlight">&minus;{formatPrice(l.amount_cents)}</span>
             </div>
-          )}
+          ))}
           {/* Sales tax. Shown AFTER the discount because that is the order the
               server charges in: tax is calculated on the discounted food
               subtotal, so listing it above the discount would imply it was
@@ -303,6 +324,7 @@ export default function CheckoutPage() {
           // store the basket was actually built from.
           location,
           redemption_code: rewardCode || undefined,
+          promo_code: promoCode.trim() || undefined,
           delivery_address,
           items: items.map((i) => ({
             name: i.name,
@@ -337,11 +359,17 @@ export default function CheckoutPage() {
       // confirmed instead (see OrderStatusView).
 
       const discount = data.discount_cents || 0;
-      if (rewardCode && discount > 0) {
+      const lines = Array.isArray(data.discount_lines) ? data.discount_lines : null;
+      const rewardApplied = lines ? lines.some((l) => l.source === 'reward') : discount > 0;
+      const promoApplied = lines ? lines.some((l) => l.source === 'promotion') : false;
+      if (rewardCode && !rewardApplied && promoApplied) {
+        // A bigger promotion won; the reward stays in their account for next time.
+        setRedirectNotice('A bigger promotion was applied instead of your reward — your reward is saved for next time.');
+      } else if (rewardCode && rewardApplied) {
         // Valid for this phone number and applied server-side -- clear it so
         // it can’t show up as "still pending" on the next order.
         window.localStorage.removeItem(REDEMPTION_CODE_KEY);
-      } else if (rewardCode && discount === 0) {
+      } else if (rewardCode && !rewardApplied) {
         // Code didn’t match this phone number (or is expired/already used)
         // -- left pending so they can retry after fixing the phone, but the
         // order still goes through at full price rather than blocking.
@@ -365,6 +393,7 @@ export default function CheckoutPage() {
         order_number: data.order_number,
         order_total_cents: subtotal,
         discount_cents: discount,
+        discount_lines: lines || undefined,
         delivery_fee_cents: deliveryFee,
         tax_cents: tax,
         total_due_cents: data.total_due_cents ?? (subtotal + deliveryFee + tax - discount),
@@ -452,6 +481,8 @@ export default function CheckoutPage() {
         />
       </div>
 
+      <PromoBanner placement="checkout" className="!px-0 !mx-0" />
+
       <form onSubmit={handleSubmit} className="space-y-4">
         {prefilled && (
           <div className="flex items-center justify-between gap-3 rounded-app-sm border border-line bg-surface px-4 py-2.5">
@@ -481,6 +512,17 @@ export default function CheckoutPage() {
         )}
 
         <textarea placeholder="Order notes (optional)" value={form.notes} onChange={update('notes')} className="input w-full" rows={3} />
+        {promoCodesActive && (
+          <input
+            placeholder="Promo code (optional)"
+            value={promoCode}
+            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+            className="input w-full uppercase"
+            autoComplete="off"
+            maxLength={40}
+            aria-label="Promo code"
+          />
+        )}
         {rewardCode && (
           <p className="text-app-faint text-xs">
             Reward <span className="text-highlight">{rewardCode}</span>{' '}
