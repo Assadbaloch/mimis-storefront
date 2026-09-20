@@ -25,7 +25,12 @@ export function useLocationSwitch() {
   const router = useRouter();
 
   return function switchTo(next) {
-    if (next === location) return true;
+    // Picking the store that is already the default must still RECORD the
+    // choice. Returning early here left `chosen` false, so the first-visit
+    // "Which store?" gate never closed for anyone who picked Madison Heights
+    // (the default) -- they were locked out of the site. Same store = no
+    // basket change and no server refresh needed; just remember it.
+    if (next === location) { setLocation(next); return true; }
     if (cart.count > 0) {
       const ok = window.confirm(
         `Switching to ${next} will empty your basket.\n\n` +
