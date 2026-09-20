@@ -4,6 +4,7 @@ import { getActiveLocation } from '@/lib/locationServer';
 import { getStoreLocations } from '@/lib/storeLocations';
 import { displayName } from '@/lib/format';
 import ReferenceHero from './ReferenceHero';
+import PromoBanner from '@/components/PromoBanner';
 import { ReferenceReviewCard, ReferencePressCarousel } from './ReferenceInteractive';
 import OrderAtLocationLink from './OrderAtLocationLink';
 
@@ -107,7 +108,9 @@ export default async function ReferenceHome() {
 
   return (
     <>
-      <ReferenceHero videoUrl={HERO_VIDEO} />
+      {/* The hero is pulled up under the transparent header (-mt), so a banner
+          placed before it is painted over. It goes inside the hero instead. */}
+      <ReferenceHero videoUrl={HERO_VIDEO} promo={<PromoBanner placement="home" bare />} />
 
       {/* ---------------------------- TRUST ---------------------------- */}
       <section className="py-24 bg-[#C8102E] dark:bg-gradient-to-b dark:from-[#0a0604] dark:via-[#1a0f0a] dark:to-[#0a0604] border-y border-white/10 dark:border-white/5">

@@ -9,7 +9,7 @@ import { useReferenceTheme } from './ReferenceTheme';
 // refuses a programmatic play() until the element is muted AND the page has
 // been interacted with, so the first call routinely fails silently.
 
-export default function ReferenceHero({ videoUrl }) {
+export default function ReferenceHero({ videoUrl, promo = null }) {
   const videoRef = useRef(null);
   const { theme } = useReferenceTheme();
   const isLight = theme !== 'dark';
@@ -94,6 +94,7 @@ export default function ReferenceHero({ videoUrl }) {
             className="w-full relative mx-auto md:mx-0 h-full flex flex-col justify-center items-center md:items-start text-center md:text-left"
             style={{ maxWidth: 'min(90vw, 820px)' }}
           >
+            {promo && <div className="w-full mb-6 md:mb-8 text-left">{promo}</div>}
             <h1
               className="font-serif font-bold text-[#1D2021] dark:text-[#f5ebd7] leading-[1.0] tracking-tight w-full mb-8 md:mb-10"
               style={{ fontSize: 'clamp(2.4rem, 8vw, 6.5rem)' }}

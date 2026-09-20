@@ -128,7 +128,7 @@ export default async function HomePage() {
   // Built-in design 2. Checked after the theme so precedence is unchanged, and
   // before any of the original design's work below so none of it runs need-
   // lessly. The original design's code path is untouched.
-  if ((await getActiveDesign()) === 'reference') return (<><PromoBanner placement="home" /><ReferenceHome /></>);
+  if ((await getActiveDesign()) === 'reference') return <ReferenceHome />; // home banner renders inside the hero (see ReferenceHome)
 
   const location = await getActiveLocation();
   const featured = await getFeaturedItems(location);
