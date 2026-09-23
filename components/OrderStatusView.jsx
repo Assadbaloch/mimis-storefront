@@ -411,8 +411,37 @@ export default function OrderStatusView({ heading, requireActive = false }) {
             <span className="text-app-soft">{formatPrice(item.unit_price_cents * item.quantity)}</span>
           </div>
         ))}
+        {/* Online orders: the database returns the breakdown and, as
+            order_total_cents, the amount actually charged (food + delivery +
+            tax - discount). The items above are menu prices before discount. */}
+        {order.subtotal_cents != null && (
+          <div className="pt-3 mt-2 border-t border-line space-y-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-app-soft">Subtotal</span>
+              <span className="text-app-soft">{formatPrice(order.subtotal_cents)}</span>
+            </div>
+            {order.discount_cents > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-app-soft">{order.discount_label || 'Discount'}</span>
+                <span className="text-app-soft">&minus;{formatPrice(order.discount_cents)}</span>
+              </div>
+            )}
+            {order.delivery_fee_cents > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-app-soft">Delivery fee</span>
+                <span className="text-app-soft">{formatPrice(order.delivery_fee_cents)}</span>
+              </div>
+            )}
+            {order.tax_cents > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-app-soft">Sales tax</span>
+                <span className="text-app-soft">{formatPrice(order.tax_cents)}</span>
+              </div>
+            )}
+          </div>
+        )}
         <div className="flex justify-between pt-3 mt-2 border-t border-line">
-          <span className="text-app font-semibold">Total</span>
+          <span className="text-app font-semibold">{order.payment_status === 'paid' ? 'Total paid' : 'Total'}</span>
           <span className="text-highlight font-serif font-semibold text-lg">{formatPrice(order.order_total_cents)}</span>
         </div>
       </div>
