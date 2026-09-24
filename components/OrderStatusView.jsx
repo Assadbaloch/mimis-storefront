@@ -1,4 +1,5 @@
 'use client';
+import LineOptions from '@/components/LineOptions';
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -406,8 +407,11 @@ export default function OrderStatusView({ heading, requireActive = false }) {
       {/* Order items */}
       <div className="rounded-app border border-line bg-surface p-5">
         {(order.items || []).map((item, i) => (
-          <div key={i} className="flex justify-between text-sm py-1.5">
-            <span className="text-app-soft">{item.quantity}&times; {item.item_name}</span>
+          <div key={i} className="flex justify-between gap-3 text-sm py-1.5">
+            <span className="text-app-soft">
+              {item.quantity}&times; {item.item_name}
+              <LineOptions modifiers={item.modifiers} />
+            </span>
             <span className="text-app-soft">{formatPrice(item.unit_price_cents * item.quantity)}</span>
           </div>
         ))}

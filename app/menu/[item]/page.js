@@ -21,14 +21,23 @@ async function getItem(cloverItemId) {
   const location = await getActiveLocation();
   const { data: item, error } = await supabase
     .from('menu_items')
-    .select('id, product_id, clover_item_id, name, category, price_cents, image_url, video_url, badge_text, description_override')
+    .select('id, product_id, clover_item_id, name, category, price_cents, image_url, video_url, badge_text, description_override, modifiers')
     .eq('clover_item_id', cloverItemId)
     .eq('available', true)
     .eq('location', location)
-    .gt('price_cents', 0)
     .maybeSingle();
 
   if (error || !item) return null;
+  // A $0 item (priced by a Clover size choice) has a page only while the
+  // options sheet is on -- otherwise it could not be ordered at its real price.
+  if (item.price_cents <= 0) {
+    const { data: settings } = await supabase
+      .from('online_ordering_settings').select('options_enabled').eq('id', 1).maybeSingle();
+    const sized = (item.modifiers || []).some(
+      (g) => /size|quantity/i.test(g?.group_name || '') && (g.modifiers || []).some((o) => Number(o.price_cents) > 0)
+    );
+    if (settings?.options_enabled !== true || !sized) return null;
+  }
 
   const [{ data: media }, { data: related }] = await Promise.all([
     // Gallery lives on the canonical product, so both restaurants show the
@@ -100,7 +109,7 @@ export default async function ProductPage({ params }) {
         <div>
           <p className="section-label mb-2">{displayCategory(item.category)}</p>
           <h1 className="font-serif font-bold text-3xl md:text-[2.25rem] text-app leading-tight">{name}</h1>
-          <p className="text-highlight font-serif font-semibold text-2xl mt-2">{formatPrice(item.price_cents)}</p>
+          <p className="text-highlight font-serif font-semibold text-2xl mt-2">{item.price_cents > 0 ? formatPrice(item.price_cents) : `from ${formatPrice(Math.min(...(item.modifiers || []).filter((g) => /size|quantity/i.test(g?.group_name || '')).flatMap((g) => (g.modifiers || []).map((o) => Number(o.price_cents) || 0)).filter((p) => p > 0)))}`}</p>
 
           {description ? (
             <p className="text-app-soft text-base leading-relaxed mt-4">{description}</p>

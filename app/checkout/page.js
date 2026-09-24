@@ -1,4 +1,5 @@
 'use client';
+import LineOptions from '@/components/LineOptions';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/lib/cart';
@@ -368,7 +369,12 @@ export default function CheckoutPage() {
           redemption_code: rewardCode || undefined,
           promo_code: promoCode.trim() || undefined,
           delivery_address,
+          // The server prices every order from the menu (price_online_items):
+          // what it needs is the Clover item id and the chosen option ids.
+          // name/price_cents stay for the transition only.
           items: items.map((i) => ({
+            clover_item_id: i.clover_item_id,
+            options: Array.isArray(i.options) ? i.options : (i.modifiers || []).map((m) => m.clover_modifier_id).filter(Boolean),
             name: i.name,
             price_cents: i.price_cents,
             quantity: i.quantity,
@@ -484,9 +490,12 @@ export default function CheckoutPage() {
 
       <div className="rounded-app border border-line bg-surface p-5 mb-6">
         {items.map((i) => (
-          <div key={i._key} className="flex justify-between text-sm py-1.5">
-            <span className="text-app-soft">{i.quantity}&times; {i.name}</span>
-            <span className="text-app-soft">{formatPrice(i.price_cents * i.quantity)}</span>
+          <div key={i._key} className="flex justify-between gap-3 text-sm py-1.5">
+            <span className="text-app-soft">
+              {i.quantity}&times; {i.name}
+              <LineOptions modifiers={i.modifiers} />
+            </span>
+            <span className="text-app-soft whitespace-nowrap">{formatPrice(i.price_cents * i.quantity)}</span>
           </div>
         ))}
         <div className="flex justify-between pt-3 mt-2 border-t border-line">

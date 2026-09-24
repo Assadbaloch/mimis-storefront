@@ -4,6 +4,7 @@ import { formatPrice, displayName } from '@/lib/format';
 import { useCart, cartKeyFor } from '@/lib/cart';
 import { useEffect, useState } from 'react';
 import ProductModal from '@/components/ProductModal';
+import { needsChoice, fromPrice } from '@/lib/options';
 
 // autoOpen: true when this card is the deep-link target of a `/menu?item=<clover_item_id>`
 // URL (e.g. from the rewards-page trending banner) -- opens the product modal
@@ -28,6 +29,9 @@ export default function MenuItemCard({ item, large = false, autoOpen = false }) 
 
   function handleAdd(e) {
     e.stopPropagation();
+    // An item priced entirely by a size choice (wings, fries) can't be added
+    // plain -- open the sheet so the customer picks, exactly like the register.
+    if (needsChoice(item)) { setShowModal(true); return; }
     addItem({
       clover_item_id: item.clover_item_id,
       name,
@@ -88,7 +92,7 @@ export default function MenuItemCard({ item, large = false, autoOpen = false }) 
         <div className="p-4 flex flex-col gap-1.5 flex-1">
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-serif font-semibold text-app text-[15px] leading-snug">{name}</h3>
-            <span className="text-highlight font-serif font-semibold text-[15px] whitespace-nowrap">{formatPrice(item.price_cents)}</span>
+            <span className="text-highlight font-serif font-semibold text-[15px] whitespace-nowrap">{item.price_cents > 0 ? formatPrice(item.price_cents) : `from ${formatPrice(fromPrice(item))}`}</span>
           </div>
           {description && <p className="text-app-soft text-xs leading-relaxed line-clamp-2">{description}</p>}
           {quantity === 0 ? (

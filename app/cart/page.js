@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useCart } from '@/lib/cart';
 import { formatPrice } from '@/lib/format';
 import MemberRewardsPanel from '@/components/MemberRewardsPanel';
+import LineOptions from '@/components/LineOptions';
 
 export default function CartPage() {
   const { items, totalCents, updateQuantity, removeItem } = useCart();
@@ -33,6 +34,7 @@ export default function CartPage() {
           <div key={item._key} className="flex items-center gap-4 border-b border-line pb-4 animate-fade-in">
             <div className="flex-1">
               <p className="font-serif font-semibold text-app">{item.name}</p>
+              <LineOptions modifiers={item.modifiers} />
               {item.special_instructions && (
                 <p className="text-app-faint text-xs mt-0.5">{item.special_instructions}</p>
               )}

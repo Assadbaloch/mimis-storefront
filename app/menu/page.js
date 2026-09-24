@@ -14,17 +14,37 @@ export const dynamic = 'force-dynamic';
 
 async function getMenu(location) {
   const supabase = getSupabasePublicClient();
-  const { data, error } = await supabase
+  // Items whose whole price is a Clover size choice (wings, fries: $0 base)
+  // are listed only when the options sheet is switched on, because only then
+  // can the customer pick the size the register would charge for.
+  const { data: settings } = await supabase
+    .from('online_ordering_settings').select('options_enabled').eq('id', 1).maybeSingle();
+  const optionsEnabled = settings?.options_enabled === true;
+
+  const { data: rows, error } = await supabase
     .from('menu_items')
-    .select('id, product_id, clover_item_id, name, category, price_cents, image_url, video_url, badge_text, description_override, sort_order')
+    .select('id, product_id, clover_item_id, name, category, price_cents, image_url, video_url, badge_text, description_override, sort_order, modifiers')
     .eq('available', true)
     .eq('location', location)
-    .gt('price_cents', 0)
     .order('sort_order', { ascending: true });
 
   if (error) {
     console.error('getMenu', error.message);
     return [];
+  }
+  // Option data stays on the server: the grid only needs "does it need a size
+  // choice" and "from $X". The sheet loads the full options when opened, so
+  // the menu page stays as light as before.
+  const data = [];
+  for (const row of rows || []) {
+    const { modifiers, ...item } = row;
+    const sizeGroups = (Array.isArray(modifiers) ? modifiers : []).filter(
+      (g) => /size|quantity/i.test(g?.group_name || '') && (g.modifiers || []).some((o) => Number(o.price_cents) > 0)
+    );
+    if (item.price_cents > 0) { data.push(item); continue; }
+    if (!optionsEnabled || !sizeGroups.length) continue;
+    const prices = sizeGroups.flatMap((g) => g.modifiers.map((o) => Number(o.price_cents) || 0)).filter((p) => p > 0);
+    data.push({ ...item, needs_choice: true, from_price_cents: Math.min(...prices) });
   }
 
   const byCategory = new Map();

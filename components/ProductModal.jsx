@@ -3,14 +3,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { formatPrice, displayName } from '@/lib/format';
-import { useCart } from '@/lib/cart';
 import Gallery from '@/components/Gallery';
+import ProductDetailActions from '@/components/ProductDetailActions';
+import { fromPrice } from '@/lib/options';
 
 export default function ProductModal({ item, onClose }) {
-  const { addItem } = useCart();
-  const [quantity, setQuantity] = useState(1);
-  const [specialInstructions, setSpecialInstructions] = useState('');
-  const [added, setAdded] = useState(false);
   const [media, setMedia] = useState(item.media || null);
   const name = displayName(item.name);
   const description = item.description_override || null;
@@ -49,23 +46,6 @@ export default function ProductModal({ item, onClose }) {
     };
   }, [item.product_id, item.media]);
 
-  function handleAdd() {
-    addItem({
-      clover_item_id: item.clover_item_id,
-      name,
-      price_cents: item.price_cents,
-      quantity,
-      modifiers: [],
-      special_instructions: specialInstructions.trim(),
-      image_url: item.image_url,
-    });
-    setAdded(true);
-    setTimeout(() => {
-      setAdded(false);
-      onClose();
-    }, 700);
-  }
-
   return (
     <div
       className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in"
@@ -94,7 +74,7 @@ export default function ProductModal({ item, onClose }) {
         <div className="px-5 md:px-6 pb-5 md:pb-6 pt-1">
           <div className="flex items-start justify-between gap-3">
             <h2 className="font-serif font-bold text-2xl text-app leading-snug">{name}</h2>
-            <span className="text-highlight font-serif font-semibold text-xl whitespace-nowrap">{formatPrice(item.price_cents)}</span>
+            <span className="text-highlight font-serif font-semibold text-xl whitespace-nowrap">{item.price_cents > 0 ? formatPrice(item.price_cents) : `from ${formatPrice(fromPrice(item))}`}</span>
           </div>
 
           {description ? (
@@ -112,43 +92,7 @@ export default function ProductModal({ item, onClose }) {
             <span aria-hidden="true">→</span>
           </Link>
 
-          <label className="block mt-5">
-            <span className="text-app-soft text-xs uppercase tracking-wide font-bold">Special instructions (optional)</span>
-            <textarea
-              value={specialInstructions}
-              onChange={(e) => setSpecialInstructions(e.target.value)}
-              placeholder="e.g. extra crispy, no onions..."
-              rows={2}
-              className="input w-full mt-2 !text-sm"
-            />
-          </label>
-
-          <div className="flex items-center justify-between mt-6">
-            <div className="flex items-center gap-3 rounded-full border border-line px-2 py-1.5">
-              <button
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                aria-label="Decrease quantity"
-                className="w-8 h-8 rounded-full flex items-center justify-center text-app-soft hover:bg-app-wash transition-colors text-lg"
-              >
-                −
-              </button>
-              <span className="w-6 text-center font-semibold text-app">{quantity}</span>
-              <button
-                onClick={() => setQuantity((q) => q + 1)}
-                aria-label="Increase quantity"
-                className="w-8 h-8 rounded-full flex items-center justify-center text-app-soft hover:bg-app-wash transition-colors text-lg"
-              >
-                +
-              </button>
-            </div>
-
-            <button
-              onClick={handleAdd}
-              className={`btn-primary !px-6 ${added ? 'animate-pulse-once' : ''}`}
-            >
-              {added ? 'Added ✓' : `Add ${quantity > 1 ? quantity + ' ' : ''}to Cart · ${formatPrice(item.price_cents * quantity)}`}
-            </button>
-          </div>
+          <ProductDetailActions item={item} name={name} compact onAdded={onClose} />
         </div>
       </div>
     </div>
