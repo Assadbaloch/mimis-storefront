@@ -84,32 +84,40 @@ export default async function ProductPage({ params }) {
   const name = displayName(item.name);
   const description = item.description_override || null;
 
+  const priceLabel = item.price_cents > 0
+    ? formatPrice(item.price_cents)
+    : `from ${formatPrice(Math.min(...(item.modifiers || []).filter((g) => /size|quantity/i.test(g?.group_name || '')).flatMap((g) => (g.modifiers || []).map((o) => Number(o.price_cents) || 0)).filter((p) => p > 0)))}`;
+
+  // Two columns on desktop: a large photo that stays in view (sticky) while the
+  // options column scrolls. On a phone: photo, then details, with the add bar
+  // pinned to the bottom of the screen (ProductDetailActions variant "page").
   return (
-    <div className="max-w-3xl mx-auto px-5 md:px-8 py-10 md:py-14">
+    <div className="max-w-6xl mx-auto px-5 md:px-8 pt-6 pb-10 md:py-12">
       <Link
         href="/menu"
-        className="inline-flex items-center gap-1.5 text-app-soft hover:text-highlight text-xs font-bold uppercase tracking-wide transition-colors mb-6"
+        className="inline-flex items-center gap-1.5 text-app-soft hover:text-highlight text-xs font-bold uppercase tracking-wide transition-colors mb-5 md:mb-8"
       >
         <span aria-hidden="true">←</span> Back to Menu
       </Link>
 
-      <div className="grid md:grid-cols-[1.1fr,1fr] gap-8 md:gap-10">
-        <div className="rounded-app-lg overflow-hidden border border-line">
+      <div className="grid md:grid-cols-2 gap-6 md:gap-12 items-start">
+        <div className="md:sticky md:top-24 rounded-app-lg overflow-hidden border" style={{ borderColor: 'var(--mimis-line)' }}>
           <Gallery
             media={item.media}
             fallbackImage={item.image_url}
             fallbackVideo={item.video_url}
             name={name}
             badgeText={item.badge_text}
-            aspect="aspect-square md:aspect-[4/3]"
+            aspect="aspect-[4/3] md:aspect-square"
+            sizes="(max-width: 768px) 100vw, 580px"
             lightboxEnabled
           />
         </div>
 
-        <div>
+        <div className="min-w-0 flex flex-col">
           <p className="section-label mb-2">{displayCategory(item.category)}</p>
-          <h1 className="font-serif font-bold text-3xl md:text-[2.25rem] text-app leading-tight">{name}</h1>
-          <p className="text-highlight font-serif font-semibold text-2xl mt-2">{item.price_cents > 0 ? formatPrice(item.price_cents) : `from ${formatPrice(Math.min(...(item.modifiers || []).filter((g) => /size|quantity/i.test(g?.group_name || '')).flatMap((g) => (g.modifiers || []).map((o) => Number(o.price_cents) || 0)).filter((p) => p > 0)))}`}</p>
+          <h1 className="font-serif font-bold text-3xl md:text-[2.5rem] text-app leading-tight">{name}</h1>
+          <p className="text-highlight font-serif font-semibold text-2xl mt-2">{priceLabel}</p>
 
           {description ? (
             <p className="text-app-soft text-base leading-relaxed mt-4">{description}</p>
@@ -117,9 +125,7 @@ export default async function ProductPage({ params }) {
             <p className="text-app-faint text-base leading-relaxed mt-4 italic">Hand-prepared fresh to order.</p>
           )}
 
-          <div className="mt-6">
-            <ProductDetailActions item={item} name={name} />
-          </div>
+          <ProductDetailActions item={item} name={name} variant="page" />
         </div>
       </div>
 

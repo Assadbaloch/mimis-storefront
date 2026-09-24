@@ -558,3 +558,18 @@ body.has-cart-bar {
 .promo-marquee { animation: promoMarquee 30s linear infinite; will-change: transform; }
 .promo-marquee:hover, .promo-marquee:focus-within { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .promo-marquee { animation: none; } }
+
+/* Item sheet open: hide the LeadConnector chat bubble. It is fixed at
+   z-index 99999999 in the bottom-right corner and would sit on the sheet's
+   add-to-cart bar. Hiding the host element works where restyling its shadow
+   DOM did not (see ChatWidget.jsx). Comes back the moment the sheet closes. */
+body.mimis-sheet-open chat-widget,
+body.mimis-sheet-open #lc_text-widget,
+body.mimis-sheet-open #lc_text-widget--btn { display: none !important; }
+/* Item page on a phone: the add bar is pinned to the bottom of the screen, where
+   the bubble sits. Desktop keeps the bubble (the add bar is not pinned there). */
+@media (max-width: 767px) {
+  body.mimis-item-page chat-widget,
+  body.mimis-item-page #lc_text-widget,
+  body.mimis-item-page #lc_text-widget--btn { display: none !important; }
+}

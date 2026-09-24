@@ -12,7 +12,10 @@ import Image from 'next/image';
 // Controls that sit ON TOP of photos/videos use the neutral scrim + white,
 // not theme tokens -- they need to be legible over arbitrary imagery, which
 // no theme palette can guarantee.
-export default function Gallery({ media, fallbackImage, fallbackVideo, name, badgeText, aspect = 'aspect-[4/3]', lightboxEnabled = false }) {
+// `className` goes on the outer wrapper; with className="h-full flex flex-col"
+// and aspect="flex-1 min-h-0" the gallery fills a fixed-height panel (the item
+// sheet's photo half on desktop).
+export default function Gallery({ media, fallbackImage, fallbackVideo, name, badgeText, aspect = 'aspect-[4/3]', lightboxEnabled = false, className = '', sizes = '(max-width: 768px) 100vw, 640px' }) {
   const slides = media?.length
     ? media
     : [
@@ -51,14 +54,14 @@ export default function Gallery({ media, fallbackImage, fallbackVideo, name, bad
 
   if (!slides.length) {
     return (
-      <div className={`relative ${aspect} bg-gradient-to-br from-app-wash to-black/40 flex items-center justify-center`}>
+      <div className={`relative ${aspect} ${className} bg-gradient-to-br from-app-wash to-black/40 flex items-center justify-center`}>
         <span className="font-serif italic text-highlight opacity-30 text-4xl">Mimi&rsquo;s</span>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className={className}>
       <div
         className={`relative ${aspect} bg-gradient-to-br from-app-wash to-black/40 overflow-hidden select-none touch-pan-y ${lightboxEnabled ? 'cursor-zoom-in' : ''}`}
         onPointerDown={handleDown}
@@ -84,7 +87,7 @@ export default function Gallery({ media, fallbackImage, fallbackVideo, name, bad
             alt={name || ''}
             fill
             className="object-cover pointer-events-none animate-fade-in"
-            sizes="(max-width: 768px) 100vw, 640px"
+            sizes={sizes}
             priority={safeIndex === 0}
           />
         )}

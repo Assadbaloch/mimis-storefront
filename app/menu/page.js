@@ -41,10 +41,15 @@ async function getMenu(location) {
     const sizeGroups = (Array.isArray(modifiers) ? modifiers : []).filter(
       (g) => /size|quantity/i.test(g?.group_name || '') && (g.modifiers || []).some((o) => Number(o.price_cents) > 0)
     );
-    if (item.price_cents > 0) { data.push(item); continue; }
+    // How many option groups the sheet will show, so it can hold exactly that
+    // much space while the options load (no jump, no placeholder for a drink).
+    const option_groups = optionsEnabled
+      ? (Array.isArray(modifiers) ? modifiers : []).filter((g) => (g?.modifiers || []).length > 0).length
+      : 0;
+    if (item.price_cents > 0) { data.push({ ...item, option_groups }); continue; }
     if (!optionsEnabled || !sizeGroups.length) continue;
     const prices = sizeGroups.flatMap((g) => g.modifiers.map((o) => Number(o.price_cents) || 0)).filter((p) => p > 0);
-    data.push({ ...item, needs_choice: true, from_price_cents: Math.min(...prices) });
+    data.push({ ...item, option_groups, needs_choice: true, from_price_cents: Math.min(...prices) });
   }
 
   const byCategory = new Map();
