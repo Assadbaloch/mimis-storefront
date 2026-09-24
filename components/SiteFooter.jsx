@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getStoreLocations } from '@/lib/storeLocations';
+import AstrixBadge from '@/components/AstrixBadge';
 
 // Server component: the store list is read from mimis.store_locations rather
 // than hardcoded here. The previous local LOCATIONS array was a third copy of
@@ -49,8 +50,10 @@ export default async function SiteFooter() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-cream/10 py-5 text-center text-xs text-cream/40">
-        &copy; {new Date().getFullYear()} Mimi&rsquo;s Pizza &amp; Burger. All rights reserved.
+      <div className="border-t border-cream/10 py-5 px-5 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-3 text-center text-xs text-cream/40">
+        <span className="md:text-left">&copy; {new Date().getFullYear()} Mimi&rsquo;s Pizza &amp; Burger. All rights reserved.</span>
+        <span className="flex justify-center"><AstrixBadge /></span>
+        <span aria-hidden="true" />
       </div>
     </footer>
   );

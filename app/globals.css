@@ -573,3 +573,49 @@ body.mimis-sheet-open #lc_text-widget--btn { display: none !important; }
   body.mimis-item-page #lc_text-widget,
   body.mimis-item-page #lc_text-widget--btn { display: none !important; }
 }
+
+/* ── Astrix "Powered by" badge (approved 2026-09-25: Subtle, fine-tuned) ─────────
+   One spark circles the border; as it reaches the logo the star eases one petal
+   round (5 laps = one full turn, so it never jumps back) and a soft ring blooms
+   from the logo. Hover lifts it and warms the spark. Pure CSS; the browser only
+   animates it on screen; "reduce motion" shows it still. The logo sits on a
+   neutral slate disc so its white AND dark-purple petals both show. */
+@property --ax-ang{syntax:'<angle>';inherits:true;initial-value:0deg}
+@property --ax-spark{syntax:'<number>';inherits:true;initial-value:1}
+.ax-badge{--ax-bg1:#26292b;--ax-bg2:#1f2224;--ax-fg:rgba(243,239,228,.62);--ax-strong:#fff;--ax-base:rgba(106,59,235,.26);--ax-mid:rgba(106,59,235,.38);--ax-lap:7.5s;
+  position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:11px;white-space:nowrap;
+  padding:6px 18px 6px 6px;border-radius:999px;font-size:12.5px;line-height:1.2;letter-spacing:.01em;color:var(--ax-fg);text-decoration:none;cursor:pointer;
+  font-family:-apple-system,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+  border:1.5px solid transparent !important;
+  background:conic-gradient(from var(--ax-ang),var(--ax-base) 0 52%,var(--ax-mid) 64%,rgba(255,204,147,calc(.7*var(--ax-spark))) 78%,rgba(255,176,81,calc(.95*var(--ax-spark))) 85%,rgba(255,204,147,calc(.8*var(--ax-spark))) 88%,rgba(106,59,235,calc(.75*var(--ax-spark))) 92%,var(--ax-base) 97%) border-box;
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 10px 26px -18px rgba(106,59,235,.55);
+  animation:ax-ang var(--ax-lap) linear infinite;
+  transition:transform .6s cubic-bezier(.2,.8,.2,1),box-shadow .6s cubic-bezier(.2,.8,.2,1),--ax-spark .6s}
+/* halo that travels with the spark (blurred copy of the border gradient). The
+   pill's fill is drawn by ::after ON TOP of this halo, so the glow shows only
+   outside the pill and never hazes the text. */
+.ax-badge::before{content:"";position:absolute;inset:-1.5px;border-radius:inherit;z-index:-1;pointer-events:none;filter:blur(7px);opacity:calc(.55*var(--ax-spark));
+  background:conic-gradient(from var(--ax-ang),transparent 0 76%,rgba(255,176,81,.9) 85%,rgba(106,59,235,.7) 91%,transparent 97%)}
+.ax-badge::after{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,var(--ax-bg1),var(--ax-bg2))}
+.ax-badge b{color:var(--ax-strong);font-weight:680;letter-spacing:.002em}
+.ax-tile{position:relative;width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:radial-gradient(circle at 35% 28%,#A3A9B3,#7C828C 72%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25),inset 0 0 0 1px rgba(255,255,255,.1),0 1px 3px rgba(0,0,0,.35)}
+.ax-tile::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;animation:ax-ring var(--ax-lap) cubic-bezier(.2,.7,.2,1) infinite}
+.ax-star{width:19px;height:19px;background:url(/astrix-mark.png) center/contain no-repeat;animation:ax-turn calc(var(--ax-lap) * 5) linear infinite;will-change:transform}
+.ax-badge:hover{transform:translateY(-2px);--ax-spark:1.35;box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 16px 32px -16px rgba(106,59,235,.7)}
+.ax-badge:active{transform:translateY(0) scale(.985)}
+.ax-badge:focus-visible{outline:2px solid #6A3BEB;outline-offset:3px}
+.ax-light .ax-badge{--ax-bg1:#fff;--ax-bg2:#FBFAF7;--ax-fg:#6B6E6B;--ax-strong:#1D2021;--ax-base:rgba(106,59,235,.17);--ax-mid:rgba(106,59,235,.3);
+  box-shadow:0 1px 0 #fff inset,0 10px 22px -18px rgba(106,59,235,.45)}
+.ax-light .ax-badge::before{opacity:calc(.35*var(--ax-spark))}
+/* compact size + calmer pace for the work screens (kitchen, dashboard, admin) */
+.ax-badge.ax-sm{--ax-lap:10s;gap:8px;padding:4px 13px 4px 4px;font-size:11px}
+.ax-sm .ax-tile{width:22px;height:22px}
+.ax-sm .ax-star{width:15px;height:15px}
+@keyframes ax-ang{to{--ax-ang:360deg}}
+@keyframes ax-turn{0%{transform:rotate(0deg) scale(1)}15.60%{transform:rotate(0deg) scale(1);animation-timing-function:cubic-bezier(.45,0,.2,1)}17.80%{transform:rotate(40deg) scale(1.07);animation-timing-function:cubic-bezier(.2,0,.2,1)}20.00%{transform:rotate(72deg) scale(1)}35.60%{transform:rotate(72deg) scale(1);animation-timing-function:cubic-bezier(.45,0,.2,1)}37.80%{transform:rotate(112deg) scale(1.07);animation-timing-function:cubic-bezier(.2,0,.2,1)}40.00%{transform:rotate(144deg) scale(1)}55.60%{transform:rotate(144deg) scale(1);animation-timing-function:cubic-bezier(.45,0,.2,1)}57.80%{transform:rotate(184deg) scale(1.07);animation-timing-function:cubic-bezier(.2,0,.2,1)}60.00%{transform:rotate(216deg) scale(1)}75.60%{transform:rotate(216deg) scale(1);animation-timing-function:cubic-bezier(.45,0,.2,1)}77.80%{transform:rotate(256deg) scale(1.07);animation-timing-function:cubic-bezier(.2,0,.2,1)}80.00%{transform:rotate(288deg) scale(1)}95.60%{transform:rotate(288deg) scale(1);animation-timing-function:cubic-bezier(.45,0,.2,1)}97.80%{transform:rotate(328deg) scale(1.07);animation-timing-function:cubic-bezier(.2,0,.2,1)}100.00%{transform:rotate(360deg) scale(1)}100%{transform:rotate(360deg) scale(1)}}
+@keyframes ax-ring{0%,81%{box-shadow:0 0 0 0 rgba(255,176,81,0)}86%{box-shadow:0 0 0 1.5px rgba(255,176,81,.3),0 0 10px 0 rgba(255,176,81,.18)}100%{box-shadow:0 0 0 9px rgba(255,176,81,0),0 0 14px 4px rgba(255,176,81,0)}}
+@media (prefers-reduced-motion:reduce){.ax-badge,.ax-badge *,.ax-badge::before,.ax-tile::after{animation:none!important;transition:none!important}}
+

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getStoreLocations } from '@/lib/storeLocations';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import OrderAtLocationLink from './OrderAtLocationLink';
+import AstrixBadge from '@/components/AstrixBadge';
 
 // Ported from the reference's Footer.tsx.
 //
@@ -130,8 +131,11 @@ export default async function ReferenceFooter() {
 
         </div>
 
-        <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-[#F3EFE4]/50 dark:text-[#EAEAEA]/50">
+        {/* Three columns on desktop -- copyright | Astrix credit | legal entity --
+            so the credit sits in the middle of the bar without crowding either
+            side; stacked and centred on phones. */}
+        <div className="pt-8 border-t border-white/10 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-4 text-center">
+          <p className="text-xs text-[#F3EFE4]/50 dark:text-[#EAEAEA]/50 md:text-left">
             &copy; {new Date().getFullYear()} MiMi&rsquo;s Pizza &amp; Burger. All rights reserved.
           </p>
           {/* The operating entity, stated plainly. Required for A2P 10DLC:
@@ -139,6 +143,9 @@ export default async function ReferenceFooter() {
               and the name customers see is Mimi's Pizza & Burger, so the site
               has to connect the two or the campaign gets rejected for a
               brand/website mismatch. */}
+          <div className="flex justify-center md:order-none order-last">
+            <AstrixBadge />
+          </div>
           <p className="text-xs text-[#F3EFE4]/40 dark:text-[#EAEAEA]/40 text-center md:text-right">
             {LEGAL_ENTITY}
           </p>
