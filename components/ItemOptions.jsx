@@ -39,7 +39,8 @@ export default function ItemOptions({ item, selected, onChange }) {
                   }`}
                 >
                   {o.name}
-                  {o.price_cents > 0 && <span className={on ? 'opacity-90' : 'text-app-faint'}> +{formatPrice(o.price_cents)}</span>}
+                  {/* A required size on a $0 item IS the price (4pc $6.99), so no "+". */}
+                  {o.price_cents > 0 && <span className={on ? 'opacity-90' : 'text-app-faint'}> {g.required ? '' : '+'}{formatPrice(o.price_cents)}</span>}
                 </button>
               );
             })}
