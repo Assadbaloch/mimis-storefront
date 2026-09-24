@@ -1,6 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import Image from 'next/image';
+import { cleanBadge } from '@/lib/format';
 
 // Shared swipeable media gallery -- used by both the quick-add ProductModal
 // and the full /menu/[item] product page. `media` is the ordered
@@ -15,7 +16,8 @@ import Image from 'next/image';
 // `className` goes on the outer wrapper; with className="h-full flex flex-col"
 // and aspect="flex-1 min-h-0" the gallery fills a fixed-height panel (the item
 // sheet's photo half on desktop).
-export default function Gallery({ media, fallbackImage, fallbackVideo, name, badgeText, aspect = 'aspect-[4/3]', lightboxEnabled = false, className = '', sizes = '(max-width: 768px) 100vw, 640px' }) {
+export default function Gallery({ media, fallbackImage, fallbackVideo, name, badgeText: rawBadge, aspect = 'aspect-[4/3]', lightboxEnabled = false, className = '', sizes = '(max-width: 768px) 100vw, 640px' }) {
+  const badgeText = cleanBadge(rawBadge);
   const slides = media?.length
     ? media
     : [

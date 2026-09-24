@@ -1,6 +1,6 @@
 'use client';
 import Image from 'next/image';
-import { formatPrice, displayName } from '@/lib/format';
+import { formatPrice, displayName, cleanBadge } from '@/lib/format';
 import { useCart, cartKeyFor } from '@/lib/cart';
 import { useEffect, useState } from 'react';
 import ProductModal from '@/components/ProductModal';
@@ -83,9 +83,9 @@ export default function MenuItemCard({ item, large = false, autoOpen = false }) 
               <span className="font-serif italic text-highlight opacity-30 text-3xl">Mimi&rsquo;s</span>
             </div>
           )}
-          {item.badge_text && (
+          {cleanBadge(item.badge_text) && (
             <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wide text-highlight border border-highlight-line rounded-full px-2.5 py-1 bg-scrim">
-              {item.badge_text}
+              {cleanBadge(item.badge_text)}
             </span>
           )}
         </div>

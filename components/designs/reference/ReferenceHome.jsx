@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { getActiveLocation } from '@/lib/locationServer';
 import { getStoreLocations } from '@/lib/storeLocations';
-import { displayName } from '@/lib/format';
+import { displayName, cleanBadge } from '@/lib/format';
 import ReferenceHero from './ReferenceHero';
 import PromoBanner from '@/components/PromoBanner';
 import { ReferenceReviewCard, ReferencePressCarousel } from './ReferenceInteractive';
@@ -164,9 +164,9 @@ export default async function ReferenceHome() {
                       className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 dark:from-[#1f120c] via-transparent to-transparent opacity-80" />
-                    {item.badge_text && (
+                    {cleanBadge(item.badge_text) && (
                       <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase tracking-wider shadow-sm bg-[#C8102E]">
-                        {item.badge_text}
+                        {cleanBadge(item.badge_text)}
                       </div>
                     )}
                   </div>

@@ -11,7 +11,8 @@
 import { useRef, useState } from 'react';
 import Image from 'next/image';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
-import { formatPrice, displayName } from '@/lib/format';
+import { formatPrice, displayName, cleanBadge, BADGE_MAX } from '@/lib/format';
+import { photoTooSmall } from '@/lib/imageCheck';
 
 // Picks the cover image/video that the storefront grid reads directly off
 // menu_items (image_url/video_url) -- first image and first video in gallery
@@ -76,7 +77,8 @@ export default function AdminItemEditor({ item }) {
       .update({
         description_override: fields.description_override || null,
         featured: fields.featured,
-        badge_text: fields.badge_text || null,
+        // Never store a link as a badge (see cleanBadge in lib/format.js).
+        badge_text: cleanBadge(fields.badge_text) || null,
         sort_order: Number(fields.sort_order) || 0,
         image_url: fields.image_url || null,
         video_url: fields.video_url || null,
@@ -105,6 +107,11 @@ export default function AdminItemEditor({ item }) {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      const tooSmall = await photoTooSmall(file);
+      if (tooSmall) {
+        setError(tooSmall);
+        continue;
+      }
       setUploadProgress(`Uploading ${i + 1} of ${files.length}…`);
       const ext = file.name.split('.').pop();
       const path = `${item.clover_item_id}-${Date.now()}-${i}.${ext}`;
@@ -239,8 +246,10 @@ export default function AdminItemEditor({ item }) {
             <input
               placeholder="Badge, e.g. HOT"
               value={fields.badge_text}
+              maxLength={BADGE_MAX}
               onChange={(e) => set('badge_text', e.target.value)}
               className="input flex-1 !text-xs"
+              title="A short label shown on the photo, e.g. HOT or NEW. Links are not allowed."
             />
             <input
               type="number"
