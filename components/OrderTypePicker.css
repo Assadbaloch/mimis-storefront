@@ -1,0 +1,62 @@
+/* Pickup / Delivery picker on /checkout (components/OrderTypePicker.jsx).
+   Loaded only with that component. Pictures are inline SVG: no image files.
+   Motion runs once when a choice is made (transform/opacity/fill only) and is
+   switched off for customers who ask for reduced motion. */
+.otp{position:relative;margin:0 0 2rem}
+.otp .mx-q{font-weight:600;font-size:15px;margin-bottom:10px;color:var(--mimis-text)}
+.otp .mx-tiles{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.otp .mx-tile{position:relative;z-index:1;display:flex;flex-direction:column;text-align:left;padding:0;border-radius:14px;border:1.5px solid var(--mimis-line);background:var(--mimis-surface);color:var(--mimis-text);overflow:hidden;cursor:pointer;transition:border-color .15s,box-shadow .15s,opacity .2s,transform .15s}
+.otp .mx-tile[data-m=pickup]{--mc:var(--mx-blue)}
+.otp .mx-tile[data-m=delivery]{--mc:var(--mx-red)}
+.otp .mx-tile:hover{border-color:var(--mc)}
+.otp .mx-tile:active{transform:scale(.985)}
+.otp .mx-tile:focus-visible{outline:3px solid var(--mc);outline-offset:2px}
+.otp .mx-art{display:block;line-height:0}
+.otp .mx-art svg{display:block;width:100%;height:auto}
+.otp .mx-meta{display:block;padding:10px 12px 12px}
+.otp .mx-t{display:block;font-weight:700;font-size:16px;transition:color .18s}
+.otp .mx-s{display:block;font-size:12.5px;color:var(--mimis-text-soft);margin-top:2px}
+.otp .mx-tick{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.92);border:1.5px solid rgba(29,32,33,.25);display:grid;place-items:center;transition:background .18s,border-color .18s}
+.otp .mx-tick svg{opacity:0;transition:opacity .15s}
+.otp .mx-tile.on{border-color:var(--mc);box-shadow:0 0 0 1px var(--mc),0 0 0 5px color-mix(in srgb,var(--mc) 20%,transparent)}
+.otp .mx-tile.on .mx-t{color:var(--mc)}
+.otp .mx-tile.on .mx-tick{background:var(--mc);border-color:var(--mc)}
+.otp .mx-tile.on .mx-tick svg{opacity:1}
+.otp.chosen .mx-tile:not(.on){opacity:.75}
+/* scenes */
+.otp{--mx-blue:#174A91;--mx-red:#C8102E;--sky:#F4E9D4;--sky2:#FBF6EC;--ground:#E6DBC4;--road:#D6CCB9}
+html.dark .otp{--mx-blue:#86AEEF;--mx-red:#F2596F;--sky:#3A2618;--sky2:#1E130D;--ground:#4A3526;--road:#3B2B20}
+.otp .mx-ground{fill:var(--ground)}
+.otp .mx-road{fill:var(--road)}
+.otp .pk-spill{opacity:0;transition:opacity .25s .1s}
+.otp .mx-tile.on .pk-spill{opacity:1}
+.otp .pk-open rect{stroke:#8A8C8A;transition:stroke .2s}
+.otp .pk-open text{fill:#8A8C8A;transition:fill .2s}
+.otp .mx-tile.on .pk-open rect{stroke:#FF3D55}
+.otp .mx-tile.on .pk-open text{fill:#FF3D55}
+.otp .pk-in{transition:fill .2s}
+.otp .mx-tile.on .pk-in{fill:#FFCF6B}
+.otp .dv-lamp{transition:fill .3s 1s}
+.otp .mx-tile.on .dv-lamp{fill:#FFD978}
+.otp .dv-lampglow{opacity:0;transition:opacity .4s 1s}
+.otp .mx-tile.on .dv-lampglow{opacity:.5}
+.otp .dv-beam{opacity:0}
+.otp .mx-tile[data-m=delivery].on .dv-beam{animation:otpFade 1.1s ease-out}
+.otp .mx-win{transition:fill .2s}
+.otp .mx-tile.on .mx-win{fill:#FFD978}
+.otp .mx-door{transform-box:fill-box;transform-origin:left center;transition:transform .32s cubic-bezier(.2,.7,.2,1)}
+.otp .mx-tile[data-m=pickup]:hover .mx-door{transform:scaleX(.8)}
+.otp .mx-tile[data-m=pickup].on .mx-door{transform:scaleX(.22)}
+.otp .mx-box{opacity:0;transform:translateY(2px);transition:opacity .2s .08s,transform .25s .08s cubic-bezier(.2,.7,.2,1)}
+.otp .mx-tile.on .mx-box{opacity:1;transform:none}
+.otp .mx-van{transition:transform 1s cubic-bezier(.3,.9,.25,1.08)}
+.otp .mx-tile[data-m=delivery]:hover .mx-van{transform:translateX(4px)}
+.otp .mx-tile[data-m=delivery].on .mx-van{transform:translateX(40px)}
+.otp .mx-wheel{transform-box:fill-box;transform-origin:center}
+.otp .mx-tile[data-m=delivery].on .mx-wheel{animation:otpSpin .33s linear 3}
+@keyframes otpSpin{to{transform:rotate(360deg)}}
+.otp .mx-speed{opacity:0}
+.otp .mx-tile[data-m=delivery].on .mx-speed{animation:otpFade 1s ease-out}
+@keyframes otpFade{0%,60%{opacity:.85}100%{opacity:0}}
+.otp .mx-tile{font:inherit}
+@media (prefers-reduced-motion: reduce){.otp *,.otp *::before,.otp *::after{animation:none!important;transition:none!important}}

@@ -9,6 +9,7 @@ import { REDEMPTION_CODE_KEY, MEMBER_PHONE_KEY, formatPhoneInput } from '@/lib/l
 import { readContact, saveContact, clearContact, fetchMemberContact, fillBlanks } from '@/lib/customer';
 import MemberRewardsPanel from '@/components/MemberRewardsPanel';
 import PromoBanner from '@/components/PromoBanner';
+import OrderTypePicker from '@/components/OrderTypePicker';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 
 // Session-scoped (not localStorage): this mirrors a live, ~15-minute Clover
@@ -55,7 +56,9 @@ function clearStoredReview() {
 export default function CheckoutPage() {
   const { items, totalCents } = useCart();
   const { location, current: currentStore } = useLocation();
-  const [orderType, setOrderType] = useState('pickup');
+  // '' until the customer picks Pickup or Delivery -- nothing is pre-selected
+  // (owner decision 2026-09-25: a pre-selected pickup was ordered by mistake).
+  const [orderType, setOrderType] = useState('');
   const [form, setForm] = useState({
     first_name: '', last_name: '', phone_number: '', email: '', notes: '',
     address_line1: '', address_line2: '', city: '', state: '', postal_code: '',
@@ -112,7 +115,6 @@ export default function CheckoutPage() {
 
     if (saved) {
       setForm((f) => fillBlanks(f, saved));
-      if (saved.order_type === 'delivery') setOrderType('delivery');
       known = saved.phone_number;
       setPrefilled(true);
     }
@@ -205,7 +207,7 @@ export default function CheckoutPage() {
     const t = setTimeout(() => {
       getSupabasePublicClient()
         .rpc('preview_order_discount', {
-          p_phone: phoneDigits, p_location: location, p_order_type: orderType,
+          p_phone: phoneDigits, p_location: location, p_order_type: orderType || 'pickup',
           p_food_subtotal_cents: totalCents, p_promo_code: promoCode.trim() || null,
         })
         .then(({ data, error }) => {
@@ -327,6 +329,10 @@ export default function CheckoutPage() {
     // silently producing a $0 delivery fee later (what "89865342183" did).
     const phoneDigits = form.phone_number.replace(/\D/g, '');
     const validPhone = phoneDigits.length === 10 || (phoneDigits.length === 11 && phoneDigits[0] === '1');
+    if (orderType !== 'pickup' && orderType !== 'delivery') {
+      setError('Please choose Pickup or Delivery.');
+      return;
+    }
     if (!phoneDigits) {
       setError('Phone number is required.');
       return;
@@ -468,25 +474,12 @@ export default function CheckoutPage() {
       <p className="text-app-soft mb-6">
         {orderType === 'delivery'
           ? `Delivered from our ${currentStore?.display_name || location} location.`
-          : `Pickup from ${currentStore?.display_name || location}${currentStore?.display_address ? ` — ${currentStore.display_address}` : ''}.`}
+          : orderType === 'pickup'
+            ? `Pickup from ${currentStore?.display_name || location}${currentStore?.display_address ? ` — ${currentStore.display_address}` : ''}.`
+            : `Ordering from ${currentStore?.display_name || location}.`}
       </p>
 
-      <div className="grid grid-cols-2 gap-2 mb-8">
-        <button
-          type="button"
-          onClick={() => setOrderType('pickup')}
-          className={`rounded-app-sm border py-3 text-sm font-semibold transition ${orderType === 'pickup' ? 'border-highlight bg-highlight-wash text-highlight' : 'border-line text-app-soft'}`}
-        >
-          Pickup
-        </button>
-        <button
-          type="button"
-          onClick={() => setOrderType('delivery')}
-          className={`rounded-app-sm border py-3 text-sm font-semibold transition ${orderType === 'delivery' ? 'border-highlight bg-highlight-wash text-highlight' : 'border-line text-app-soft'}`}
-        >
-          Delivery
-        </button>
-      </div>
+      <OrderTypePicker value={orderType} onChange={setOrderType} />
 
       <div className="rounded-app border border-line bg-surface p-5 mb-6">
         {items.map((i) => (
@@ -602,12 +595,14 @@ export default function CheckoutPage() {
         {error && <p className="text-danger text-sm">{error}</p>}
         {redirectNotice && <p className="text-highlight text-sm">{redirectNotice}</p>}
 
-        <button type="submit" disabled={submitting} className="btn-primary w-full justify-center !flex disabled:opacity-50">
+        <button type="submit" disabled={submitting || !orderType} className="btn-primary w-full justify-center !flex disabled:opacity-50">
           {submitting
             ? 'Starting checkout…'
-            : orderType === 'delivery'
-              ? `Continue — ${formatPrice(payCents)} + delivery`
-              : `Pay ${formatPrice(payCents)} with Clover`}
+            : !orderType
+              ? 'Choose Pickup or Delivery above'
+              : orderType === 'delivery'
+                ? `Continue — ${formatPrice(payCents)} + delivery`
+                : `Pay ${formatPrice(payCents)} with Clover`}
         </button>
         <p className="text-app-faint text-xs text-center">You&rsquo;ll be redirected to Clover&rsquo;s secure checkout to complete payment.</p>
       </form>
