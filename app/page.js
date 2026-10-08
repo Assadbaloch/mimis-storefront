@@ -12,12 +12,15 @@ import { getStoreLocations } from '@/lib/storeLocations';
 import { getActiveDesign } from '@/lib/design';
 import ReferenceHome from '@/components/designs/reference/ReferenceHome';
 import PromoBanner from '@/components/PromoBanner';
+import JsonLd from '@/components/seo/JsonLd';
+import { getSeoStores, siteJsonLd } from '@/lib/seo';
 
 // Dynamic rather than `revalidate = 60`: every card below deep-links to
 // /menu/<clover_item_id>, and those ids are per-Clover-merchant. A cached
 // homepage built from one store's items would hand the other store's
 // customers links that 404 on arrival.
 export const dynamic = 'force-dynamic';
+export const metadata = { alternates: { canonical: '/' } };
 
 async function getFeaturedItems(location) {
   const supabase = getSupabasePublicClient();
@@ -118,17 +121,30 @@ async function getCategoryShowcase(location) {
   return showcase;
 }
 
+// Structured data for the home page (search engines / AI assistants):
+// the organisation and both restaurants. Invisible to customers.
+// Never allowed to break the home page: any problem just leaves it out.
+async function HomeJsonLd() {
+  try {
+    const stores = await getSeoStores();
+    return stores.length ? <JsonLd data={siteJsonLd(stores)} /> : null;
+  } catch (_e) {
+    return null;
+  }
+}
+
 export default async function HomePage() {
+  const jsonLd = await HomeJsonLd();
   // A theme's home page (slug '') takes over "/" when a theme is active.
   // Without this, an activated theme would style every route except the one
   // customers land on first, which is the most visible page of all.
   const themeHome = await getThemePage('');
-  if (themeHome) return <ThemePageBody page={themeHome} />;
+  if (themeHome) return <>{jsonLd}<ThemePageBody page={themeHome} /></>;
 
   // Built-in design 2. Checked after the theme so precedence is unchanged, and
   // before any of the original design's work below so none of it runs need-
   // lessly. The original design's code path is untouched.
-  if ((await getActiveDesign()) === 'reference') return <ReferenceHome />; // home banner renders inside the hero (see ReferenceHome)
+  if ((await getActiveDesign()) === 'reference') return <>{jsonLd}<ReferenceHome /></>; // home banner renders inside the hero (see ReferenceHome)
 
   const location = await getActiveLocation();
   const featured = await getFeaturedItems(location);
@@ -157,6 +173,7 @@ export default async function HomePage() {
     const menuItems = needsMenu ? await getAllMenuItems(location) : featured;
     return (
       <>
+      {jsonLd}
       <PromoBanner placement="home" />
       <PageSections
         sections={slots.all}
@@ -170,6 +187,7 @@ export default async function HomePage() {
 
   return (
     <>
+      {jsonLd}
       <PromoBanner placement="home" />
       {/* HERO */}
       <section className="relative px-5 md:px-8 pt-20 pb-24 md:pt-28 md:pb-32 overflow-hidden">

@@ -77,6 +77,7 @@ export async function generateMetadata({ params }) {
     return {
       title: themePage.seo_title || `${themePage.title} | Mimi's Pizza & Burger`,
       description: themePage.seo_description || undefined,
+      alternates: { canonical: `/${slug}` },
     };
   }
 
@@ -86,6 +87,7 @@ export async function generateMetadata({ params }) {
   return {
     title: page.seo_title || `${page.title} | Mimi's Pizza & Burger`,
     description: page.seo_description || undefined,
+    alternates: { canonical: `/${slug}` },
   };
 }
 

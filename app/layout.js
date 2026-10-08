@@ -40,9 +40,19 @@ const CANONICAL_ORIGIN = process.env.CANONICAL_ORIGIN || 'https://www.mimispizza
 
 export const metadata = {
   metadataBase: new URL(CANONICAL_ORIGIN),
-  alternates: { canonical: '/' },
-  title: "Mimi's Pizza & Burger",
-  description: 'Fresh, halal pizza & burgers made to order. Order online from Mimi\'s Pizza & Burger.',
+  // No site-wide canonical here (2026-10-09): a canonical of '/' on the root
+  // layout was inherited by every page, telling search engines that the menu,
+  // item and info pages were all copies of the home page. Each page now sets
+  // its own canonical.
+  title: "Mimi's Pizza & Burgers | Halal Pizza & Burgers in Madison Heights & Warren, MI",
+  description: '100% Zabiha Halal pizza, burgers, wings and more in Madison Heights and Warren, Michigan. Order online for pickup or delivery from Mimi\'s Pizza & Burgers.',
+  openGraph: {
+    siteName: "Mimi's Pizza & Burgers",
+    type: 'website',
+    locale: 'en_US',
+    images: [{ url: '/icons/icon-512.png', width: 512, height: 512, alt: "Mimi's Pizza & Burgers" }],
+  },
+  twitter: { card: 'summary' },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

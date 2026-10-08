@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: "Privacy Policy | Mimi's Pizza & Burger",
+  alternates: { canonical: '/privacy' },
 };
 
 export default async function PrivacyPage() {

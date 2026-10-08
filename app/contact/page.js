@@ -12,7 +12,7 @@ import OrderModeTabs from '@/components/designs/reference/OrderModeTabs';
 // exactly as the reference had it.
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: "Contact | Mimi's Pizza & Burger" };
+export const metadata = { title: "Contact | Mimi's Pizza & Burger", alternates: { canonical: '/contact' } };
 
 export default async function ContactPage() {
   if ((await getActiveDesign()) !== 'reference') notFound();

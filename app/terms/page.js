@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: "Terms of Service | Mimi's Pizza & Burger",
+  alternates: { canonical: '/terms' },
 };
 
 export default async function TermsPage() {

@@ -6,7 +6,7 @@ import ReviewsContent from '@/components/designs/reference/ReviewsContent';
 // reviews page and no link to one.
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: "Reviews | Mimi's Pizza & Burger" };
+export const metadata = { title: "Reviews | Mimi's Pizza & Burger", alternates: { canonical: '/reviews' } };
 
 export default async function ReviewsPage() {
   if ((await getActiveDesign()) !== 'reference') notFound();

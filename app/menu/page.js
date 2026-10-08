@@ -11,6 +11,11 @@ import PromoBanner from '@/components/PromoBanner';
 // to the other store's customers. Reading the location cookie makes this
 // route dynamic; per-request rendering is the correct trade here.
 export const dynamic = 'force-dynamic';
+export const metadata = {
+  title: "Menu | Mimi's Pizza & Burgers",
+  description: "Order 100% Zabiha Halal pizza, burgers, wings and more online from Mimi's Pizza & Burgers in Madison Heights or Warren, MI, for pickup or delivery.",
+  alternates: { canonical: '/menu' },
+};
 
 async function getMenu(location) {
   const supabase = getSupabasePublicClient();

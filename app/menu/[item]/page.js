@@ -68,6 +68,7 @@ export async function generateMetadata({ params }) {
   const name = displayName(item.name);
   return {
     title: `${name} — Mimi's Pizza & Burger`,
+    alternates: { canonical: `/menu/${encodeURIComponent(params.item)}` },
     description: item.description_override || `Order ${name} fresh, halal, and made to order at Mimi's Pizza & Burger.`,
     openGraph: {
       title: name,
