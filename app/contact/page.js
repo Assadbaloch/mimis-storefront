@@ -114,6 +114,11 @@ export default async function ContactPage() {
                             <div className="text-[#1D2021] dark:text-[#f5ebd7] font-bold text-sm">(586) 619-7126</div>
                           </div>
                           <div>
+                            <div className="text-[9px] font-bold tracking-widest text-[#C99700] dark:text-[#e6b95c] uppercase mb-2">Order by phone (pickup)</div>
+                            <a href="tel:+15864801201" className="text-[#1D2021] dark:text-[#f5ebd7] font-bold text-sm hover:underline">(586) 480-1201</a>
+                            <div className="text-[#5F625F] dark:text-[#f5ebd7]/70 text-xs mt-1">Pickup orders only &mdash; our AI assistant takes your order.<br />Want delivery? Order online here at mimispizzami.com.</div>
+                          </div>
+                          <div>
                             <div className="text-[9px] font-bold tracking-widest text-[#C99700] dark:text-[#e6b95c] uppercase mb-2">Wait</div>
                             <div className="text-[#0b4221] dark:text-[#10b981] font-bold text-sm">~ 20 min</div>
                           </div>
@@ -203,6 +208,7 @@ export default async function ContactPage() {
                             <div>
                               <div className="text-[9px] font-bold tracking-widest text-[#C99700] dark:text-[#e6b95c] uppercase mb-1">Warren</div>
                               <div className="text-[#1D2021] dark:text-[#f5ebd7] font-bold">(586) 619-7126</div>
+                              <div className="text-[#5F625F] dark:text-[#f5ebd7]/70 text-sm mt-1">Order by phone for pickup: <a href="tel:+15864801201" className="font-bold hover:underline">(586) 480-1201</a> <span className="text-xs">(AI assistant). For delivery, order online.</span></div>
                             </div>
                           </div>
                         </div>
