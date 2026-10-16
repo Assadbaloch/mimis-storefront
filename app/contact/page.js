@@ -110,9 +110,8 @@ export default async function ContactPage() {
                         </div>
                         <div className="space-y-6">
                           <div>
-                            <div className="text-[9px] font-bold tracking-widest text-[#C99700] dark:text-[#e6b95c] uppercase mb-2">Order by phone (pickup)</div>
-                            <a href="tel:+15864801201" className="text-[#1D2021] dark:text-[#f5ebd7] font-bold text-sm hover:underline">(586) 480-1201</a>
-                            <div className="text-[#5F625F] dark:text-[#f5ebd7]/70 text-xs mt-1">Pickup orders only.<br />Want delivery? Order online here at mimispizzami.com.</div>
+                            <div className="text-[9px] font-bold tracking-widest text-[#C99700] dark:text-[#e6b95c] uppercase mb-2">Phone</div>
+                            <div className="text-[#1D2021] dark:text-[#f5ebd7] font-bold text-sm">(586) 619-7126</div>
                           </div>
                           <div>
                             <div className="text-[9px] font-bold tracking-widest text-[#C99700] dark:text-[#e6b95c] uppercase mb-2">Wait</div>
@@ -123,7 +122,7 @@ export default async function ContactPage() {
                       
                       <div className="flex flex-wrap gap-4">
                         <OrderAtLocationLink location="Warren" className="inline-flex items-center justify-center bg-[#C8102E] hover:bg-[#A80D27] text-white dark:bg-[#b41d24] dark:hover:bg-[#9a181e] rounded-full px-6 py-5 text-xs font-bold tracking-wider uppercase shadow-md transition-all cursor-pointer">Start Order &rarr;</OrderAtLocationLink>
-                        <a href="tel:+15864801201" className="inline-flex items-center justify-center border-[rgba(29,32,33,0.2)] text-[#1D2021] dark:text-[#f5ebd7] dark:border-white/20 hover:bg-[#EAE4D5] hover:text-[#1D2021] dark:hover:bg-white/5 rounded-full px-6 py-5 text-xs font-bold tracking-wider uppercase bg-[#FFF9EC] dark:bg-transparent">Call</a>
+                        <a href="tel:+15866197126" className="inline-flex items-center justify-center border-[rgba(29,32,33,0.2)] text-[#1D2021] dark:text-[#f5ebd7] dark:border-white/20 hover:bg-[#EAE4D5] hover:text-[#1D2021] dark:hover:bg-white/5 rounded-full px-6 py-5 text-xs font-bold tracking-wider uppercase bg-[#FFF9EC] dark:bg-transparent">Call</a>
                       </div>
                     </div>
                   </div>
