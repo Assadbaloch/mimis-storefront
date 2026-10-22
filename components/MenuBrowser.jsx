@@ -13,7 +13,6 @@ import { displayName } from '@/lib/format';
 //     phone screen and still hid most categories off the right edge.
 // Both share the same `active` scroll-spy state and the same select handler.
 export default function MenuBrowser({ groups }) {
-  const [sheetOpen, setSheetOpen] = useState(false);
   const searchParams = useSearchParams();
   // Deep-link target -- e.g. /menu?item=<clover_item_id> from the rewards-page
   // trending banner ("direct the customer to the product itself"). Scrolls to
@@ -23,6 +22,8 @@ export default function MenuBrowser({ groups }) {
   // dropdown/accordion. Scrolls straight to that category's section on arrival.
   const targetCategory = searchParams.get('category');
   const [active, setActive] = useState(groups[0]?.key);
+  // After a store switch the sections change; an old key falls back to the first.
+  const activeKey = groups.some((g) => g.key === active) ? active : groups[0]?.key;
   const [query, setQuery] = useState('');
   const sectionRefs = useRef({});
   // Track the *last* item/category actually scrolled to (not just "have we
@@ -32,6 +33,7 @@ export default function MenuBrowser({ groups }) {
   const lastScrolledItemId = useRef(null);
   const lastScrolledCategory = useRef(null);
   const mobileBarRef = useRef(null);
+  const chipsRef = useRef(null);
   // While a programmatic scroll is in flight the scroll-spy must not fight it:
   // passing over intervening sections would otherwise rewrite `active` and the
   // highlight would land somewhere other than what was tapped.
@@ -50,8 +52,11 @@ export default function MenuBrowser({ groups }) {
       if (!el) return;
       // offsetHeight is 0 when the bar is display:none (desktop), which is
       // correct there -- the sidebar is sticky but doesn't overlay content.
+      // Everything that stays on screen above the section once scrolled: the
+      // fixed header plus (phones) the sticky search/category bar.
+      const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--mimis-header-h')) || 80;
       const barH = mobileBarRef.current?.offsetHeight || 0;
-      const top = window.scrollY + el.getBoundingClientRect().top - barH - 14;
+      const top = window.scrollY + el.getBoundingClientRect().top - headerH - barH - 12;
       window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
     };
     // Re-run after layout settles: images finishing load shift section offsets,
@@ -68,12 +73,22 @@ export default function MenuBrowser({ groups }) {
   const trimmedQuery = query.trim().toLowerCase();
   const searchResults = useMemo(() => {
     if (!trimmedQuery) return null;
+    // Every word must appear somewhere in the dish: its name, description,
+    // section or sizes ("bbq pizza", "wings", "large pepperoni"). A plural
+    // also matches the singular ("wings" -> "wing"). Only the menu itself is
+    // searched; nothing is added to it.
+    const words = trimmedQuery.split(/\s+/).filter(Boolean);
     const results = [];
     for (const group of groups) {
       for (const item of group.items) {
-        const name = displayName(item.name).toLowerCase();
-        const desc = (item.description_override || '').toLowerCase();
-        if (name.includes(trimmedQuery) || desc.includes(trimmedQuery)) results.push(item);
+        const hay = [
+          displayName(item.name),
+          item.description_override || '',
+          group.label,
+          ...(item.variants || []).map((v) => `${v.size_label} ${displayName(v.name)}`),
+        ].join(' ').toLowerCase();
+        const hit = words.every((w) => hay.includes(w) || (w.length > 3 && w.endsWith('s') && hay.includes(w.slice(0, -1))));
+        if (hit) results.push(item);
       }
     }
     return results;
@@ -87,7 +102,9 @@ export default function MenuBrowser({ groups }) {
           if (entry.isIntersecting) setActive(entry.target.dataset.key);
         });
       },
-      { rootMargin: '-200px 0px -70% 0px', threshold: 0 }
+      // The band just under the header + sticky bar: the section crossing it
+      // is the one being read. (A 4px band on short phones missed sections.)
+      { rootMargin: '-220px 0px -45% 0px', threshold: 0 }
     );
     Object.values(sectionRefs.current).forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
@@ -95,7 +112,7 @@ export default function MenuBrowser({ groups }) {
 
   useEffect(() => {
     if (!targetItemId || lastScrolledItemId.current === targetItemId) return;
-    const group = groups.find((g) => g.items.some((i) => i.clover_item_id === targetItemId));
+    const group = groups.find((g) => g.items.some((i) => isTarget(i, targetItemId)));
     if (!group) return;
     lastScrolledItemId.current = targetItemId;
     scrollToGroup(group.key);
@@ -115,24 +132,20 @@ export default function MenuBrowser({ groups }) {
   // section handles that without any extra state.
   function handleSelect(key) {
     if (searchResults) setQuery('');
-    setSheetOpen(false);
     scrollToGroup(key);
   }
 
-  // Body scroll lock + Escape to dismiss, matching the product modal's behaviour.
+  // Keep the active chip in view in the chip row (horizontal only -- never
+  // scrolls the page).
   useEffect(() => {
-    if (!sheetOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e) => e.key === 'Escape' && setSheetOpen(false);
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [sheetOpen]);
+    const row = chipsRef.current;
+    if (!row || !activeKey) return;
+    const chip = [...row.querySelectorAll('button')].find((b) => b.dataset.key === activeKey);
+    if (!chip) return;
+    const left = chip.offsetLeft - row.clientWidth / 2 + chip.offsetWidth / 2;
+    row.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+  }, [activeKey]);
 
-  const activeLabel = groups.find((g) => g.key === active)?.label || 'Menu';
 
   const searchBox = (
     <div className="relative">
@@ -172,7 +185,7 @@ export default function MenuBrowser({ groups }) {
       {searchResults?.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
           {searchResults.map((item) => (
-            <MenuItemCard key={item.clover_item_id} item={item} />
+            <MenuItemCard key={item.group_key || item.clover_item_id} item={item} />
           ))}
         </div>
       ) : (
@@ -199,9 +212,10 @@ export default function MenuBrowser({ groups }) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
             {group.items.map((item) => (
               <MenuItemCard
-                key={item.clover_item_id}
+                key={item.group_key || item.clover_item_id}
                 item={item}
-                autoOpen={item.clover_item_id === targetItemId}
+                autoOpen={isTarget(item, targetItemId)}
+                initialVariantId={item.variants && isTarget(item, targetItemId) ? targetItemId : null}
               />
             ))}
           </div>
@@ -212,90 +226,56 @@ export default function MenuBrowser({ groups }) {
 
   return (
     <>
-      {/* Mobile / tablet: one slim sticky row — search + current category +
-          menu button. Everything else lives in the sheet below. */}
-      <div ref={mobileBarRef} className="lg:hidden sticky top-[calc(5rem+var(--promo-bar-h,0px))] z-40 bg-surface-strong backdrop-blur-md border-b border-line px-5 md:px-8 py-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex-1 min-w-0">{searchBox}</div>
-          <button
-            type="button"
-            onClick={() => setSheetOpen(true)}
-            aria-label="Browse categories"
-            aria-expanded={sheetOpen}
-            className="shrink-0 flex items-center gap-2 rounded-app-sm border border-line px-3.5 h-[46px] text-app-soft hover:text-highlight hover:border-highlight-line transition-colors"
-          >
-            <span className="flex flex-col gap-[3px]" aria-hidden="true">
-              <span className="block w-4 h-[2px] rounded bg-current" />
-              <span className="block w-4 h-[2px] rounded bg-current" />
-              <span className="block w-4 h-[2px] rounded bg-current" />
-            </span>
-            <span className="text-[11px] font-bold uppercase tracking-wide">Menu</span>
-          </button>
-        </div>
+      {/* Phones and tablets: search + a row of category chips, stuck flush
+          under the header (--mimis-header-h) on the header's own surface, so
+          the two read as one bar. Replaces the "Viewing · X" line and the
+          Menu button that opened a separate list. */}
+      <div
+        ref={mobileBarRef}
+        className="mimis-subheader lg:hidden sticky z-40 border-b border-line backdrop-blur-md"
+        style={{ top: 'var(--mimis-header-h, calc(5rem + var(--promo-bar-h, 0px)))' }}
+      >
+        <div className="px-4 md:px-8 pt-2.5 pb-2">{searchBox}</div>
         {!searchResults && (
-          <p className="mt-2 text-[11px] font-bold uppercase tracking-wide text-app-faint truncate">
-            Viewing · <span className="text-highlight">{activeLabel}</span>
-          </p>
+          <nav
+            ref={chipsRef}
+            aria-label="Menu categories"
+            className="flex gap-2 overflow-x-auto no-scrollbar px-4 md:px-8 pb-2.5 scroll-px-4"
+          >
+            {groups.map((g) => {
+              const isActive = activeKey === g.key;
+              return (
+                <button
+                  key={g.key}
+                  type="button"
+                  data-key={g.key}
+                  onClick={() => handleSelect(g.key)}
+                  aria-current={isActive ? 'true' : undefined}
+                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-semibold whitespace-nowrap border transition-colors ${
+                    isActive ? 'bg-accent text-on-accent' : 'text-app-soft hover:text-app'
+                  }`}
+                  style={{ borderColor: isActive ? 'transparent' : 'var(--mimis-line)' }}
+                >
+                  {g.label}
+                </button>
+              );
+            })}
+          </nav>
         )}
       </div>
-
-      {/* Category sheet — slides up from the bottom, thumb-reachable. */}
-      {sheetOpen && (
-        <div
-          className="lg:hidden fixed inset-0 z-[90] flex items-end bg-black/70 backdrop-blur-sm animate-fade-in"
-          onClick={() => setSheetOpen(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Menu categories"
-            className="w-full max-h-[78vh] flex flex-col rounded-t-app-lg bg-surface-strong border-t border-line animate-sheet-up"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
-              <p className="section-label !mb-0">Jump to a category</p>
-              <button
-                type="button"
-                onClick={() => setSheetOpen(false)}
-                aria-label="Close categories"
-                className="w-9 h-9 rounded-full flex items-center justify-center text-app-soft hover:bg-app-wash transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-            <nav className="overflow-y-auto px-3 py-3">
-              {groups.map((g) => {
-                const isActive = !searchResults && active === g.key;
-                return (
-                  <button
-                    key={g.key}
-                    type="button"
-                    onClick={() => handleSelect(g.key)}
-                    className={`flex w-full items-center justify-between gap-3 text-left px-4 py-3.5 rounded-app-sm font-semibold transition-colors ${
-                      isActive ? 'bg-highlight-wash text-highlight' : 'text-app hover:bg-app-wash'
-                    }`}
-                  >
-                    <span className="truncate">{g.label}</span>
-                    <span className={`text-xs font-bold tabular-nums shrink-0 ${isActive ? 'text-highlight' : 'text-app-faint'}`}>
-                      {g.items.length}
-                    </span>
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
-      )}
 
       <div className="max-w-7xl mx-auto px-5 md:px-8 lg:grid lg:grid-cols-[240px,1fr] lg:gap-10 lg:items-start">
         {/* Desktop: sticky category sidebar — search on top, every section one
             click away, active section highlighted by the shared scroll-spy. */}
-        <aside className="hidden lg:block sticky top-[calc(6rem+var(--promo-bar-h,0px))] max-h-[calc(100vh-7.5rem-var(--promo-bar-h,0px))] overflow-y-auto no-scrollbar py-8 pr-1">
+        <aside
+          className="hidden lg:block sticky overflow-y-auto no-scrollbar py-8 pr-1"
+          style={{ top: 'var(--mimis-header-h, 6rem)', maxHeight: 'calc(100vh - var(--mimis-header-h, 6rem))' }}
+        >
           <div className="mb-5">{searchBox}</div>
           <p className="section-label mb-3">Categories</p>
           <nav aria-label="Menu categories" className="space-y-1">
             {groups.map((g) => {
-              const isActive = !searchResults && active === g.key;
+              const isActive = !searchResults && activeKey === g.key;
               return (
                 <button
                   key={g.key}
@@ -324,4 +304,11 @@ export default function MenuBrowser({ groups }) {
       </div>
     </>
   );
+}
+
+// A deep link names one Clover item; for a dish with sizes that is one of its
+// variants, so the dish's card opens with that size picked.
+function isTarget(item, id) {
+  if (!id) return false;
+  return item.clover_item_id === id || (Array.isArray(item.variants) && item.variants.some((v) => v.clover_item_id === id));
 }

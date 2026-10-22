@@ -21,6 +21,13 @@ async function getLogo() {
 
 const CONTACT_EMAIL = 'info@mimispizzami.com';
 
+// "+15866197126" -> "(586) 619-7126". Anything that is not a 10-digit US
+// number is shown as stored.
+function prettyPhone(raw) {
+  const d = String(raw || '').replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '');
+  return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : raw;
+}
+
 // Legal operating entity. Declared here, on /privacy and on /terms so all three
 // agree -- A2P 10DLC vetting cross-checks the registered brand against what the
 // website says, and a site that only ever says "Mimi's Pizza & Burger" cannot
@@ -52,13 +59,15 @@ export default async function ReferenceFooter() {
       <div className="absolute inset-0 bg-[#1A120C] hidden dark:block pointer-events-none" />
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 md:px-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-12 mb-12 md:mb-16">
 
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center gap-3 mb-8">
               {logoUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt="MiMi's Pizza & Burger" className="h-12 md:h-32 lg:h-32 w-auto max-w-none" />
+                // Sized to its column: it used to be 128px tall with no width
+                // limit and ran over the Madison Heights address on tablets.
+                <img src={logoUrl} alt="MiMi's Pizza & Burger" className="h-20 sm:h-24 md:h-auto md:w-full md:max-w-[200px] w-auto max-w-full object-contain" loading="lazy" />
               )}
             </div>
             <p className="text-sm leading-relaxed mb-8 text-[#F3EFE4]/80 dark:text-[#EAEAEA]/70">
@@ -83,7 +92,7 @@ export default async function ReferenceFooter() {
                       href={`tel:${loc.phone.replace(/[^\d+]/g, '')}`}
                       className="block text-sm text-[#F3EFE4]/80 dark:text-[#EAEAEA]/80 hover:text-[#C99700] dark:hover:text-[#D8A73C] transition-colors"
                     >
-                      {loc.phone}
+                      {prettyPhone(loc.phone)}
                     </a>
                   )}
                   {/* Sits under a specific store's heading, so it selects that

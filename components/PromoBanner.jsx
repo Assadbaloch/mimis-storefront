@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useFloatingSlot } from '@/lib/floatingSlot';
 import { useCallback, useEffect, useState } from 'react';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { useLocation } from '@/lib/location';
@@ -185,27 +186,30 @@ function FloatingPromo({ items, onDismiss }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [shown, close]);
 
-  const visible = shown && !leaving;
+  // Shares the single floating slot with the Rewards card (lib/floatingSlot).
+  const slot = useFloatingSlot('offer', shown && !leaving);
+  const visible = shown && !leaving && slot;
   const pal = FLOAT_PALETTE[b.style] || FLOAT_PALETTE.minimal;
 
   return (
     <aside
+      data-floating
       aria-label="Offer"
       aria-hidden={!visible}
-      className={`fixed z-[90] left-3 right-3 md:right-auto md:left-5 md:w-[22rem]
-        top-[calc(5rem+var(--promo-bar-h,0px)+env(safe-area-inset-top))] md:top-auto md:bottom-5
+      className={`fixed z-[90] left-3 right-[var(--mimis-chat-reserve)] md:right-auto md:left-5 md:w-[22rem]
+        bottom-[calc(var(--mimis-float-bottom)+env(safe-area-inset-bottom))]
         transition-all duration-300 ease-out motion-reduce:transition-none
         ${visible ? 'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 -translate-y-3 md:translate-y-3'}`}
     >
       <div style={pal.border} className={`relative overflow-hidden rounded-app-lg shadow-2xl shadow-black/30 ${pal.box}`}>
         {b.image && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={b.image} alt="" className="h-28 w-full object-cover" loading="lazy" />
+          <img src={b.image} alt="" className="hidden md:block h-28 w-full object-cover" loading="lazy" />
         )}
-        <div className="flex flex-col gap-1.5 p-5 pr-12">
+        <div className="flex flex-col gap-1 md:gap-1.5 p-4 md:p-5 pr-14">
           {b.ends && <span className={`text-[11px] font-bold uppercase tracking-wider ${pal.ends}`}>{b.ends}</span>}
-          <p className="font-serif text-xl font-bold leading-tight">{b.title}</p>
-          {b.body && <p className={`text-sm ${pal.soft}`}>{b.body}</p>}
+          <p className="font-serif text-lg md:text-xl font-bold leading-tight">{b.title}</p>
+          {b.body && <p className={`text-[13px] md:text-sm ${pal.soft}`}>{b.body}</p>}
           {b.cta && (
             <div className="pt-2">
               <Link href={b.cta.href} onClick={() => onDismiss(b.id)} className={`inline-flex items-center rounded-full px-5 py-2 text-sm font-bold hover:opacity-90 ${pal.btn}`}>
@@ -214,7 +218,9 @@ function FloatingPromo({ items, onDismiss }) {
             </div>
           )}
         </div>
-        <CloseButton onClick={close} tone={b.image ? 'image' : TONE[b.style]} className="absolute right-2.5 top-2.5" />
+        <button type="button" onClick={close} aria-label="Close offer" className="mimis-close absolute right-3 top-3">
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+        </button>
       </div>
     </aside>
   );

@@ -44,7 +44,7 @@ export default function ReferenceHero({ videoUrl }) {
   }, []);
 
   return (
-    <section className="relative w-full h-[100dvh] bg-[#F3EFE4] dark:bg-[#0a0604] -mt-[calc(4.4rem+var(--promo-bar-h,0px))] md:-mt-[calc(7rem+var(--promo-bar-h,0px))]">
+    <section className="relative w-full h-[100dvh] bg-[#F3EFE4] dark:bg-[#0a0604] -mt-[calc(4.4rem+var(--promo-bar-h,0px))] lg:-mt-[calc(7rem+var(--promo-bar-h,0px))]">
       <div className="absolute inset-0 w-full h-full overflow-hidden">
 
         <div

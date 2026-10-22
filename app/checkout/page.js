@@ -402,6 +402,25 @@ export default function CheckoutPage() {
         order_number: data.order_number,
         created_at: new Date().toISOString(),
       }));
+      // This device's last few orders, for "Order again" on the menu
+      // (components/OrderAgain.jsx). Kept only in this browser.
+      try {
+        const hist = JSON.parse(window.localStorage.getItem('mimis-order-history') || '[]');
+        hist.unshift({
+          location,
+          at: new Date().toISOString(),
+          order_number: data.order_number,
+          items: items.map((i) => ({
+            clover_item_id: i.clover_item_id,
+            name: i.name,
+            quantity: i.quantity,
+            options: Array.isArray(i.options) ? i.options : (i.modifiers || []).map((m) => m.clover_modifier_id).filter(Boolean),
+            special_instructions: i.special_instructions || '',
+            image_url: i.image_url || null,
+          })),
+        });
+        window.localStorage.setItem('mimis-order-history', JSON.stringify(hist.slice(0, 3)));
+      } catch { /* storage full or blocked: Order again just won't show */ }
       // Only remembered once an order actually went through -- details from an
       // abandoned attempt are not worth carrying forward.
       saveContact(form, orderType);

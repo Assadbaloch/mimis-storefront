@@ -10,17 +10,27 @@ import { needsChoice, fromPrice } from '@/lib/options';
 // URL (e.g. from the rewards-page trending banner) -- opens the product modal
 // itself on arrival, satisfying the "direct the customer to the product" goal
 // rather than just scrolling them to the right category.
-export default function MenuItemCard({ item, large = false, autoOpen = false }) {
+export default function MenuItemCard({ item, large = false, autoOpen = false, initialVariantId = null }) {
   const { items, addItem, updateQuantity } = useCart();
   const [showModal, setShowModal] = useState(false);
   const name = displayName(item.name);
   const description = item.description_override || null;
 
+  // A dish sold in sizes (lib/variants.js) shows its sizes as buttons on the
+  // card. The picked size is one real Clover item: the card's price, Add and
+  // stepper all act on it, and opening the card opens it on that size.
+  const variants = Array.isArray(item.variants) && item.variants.length > 1 ? item.variants : null;
+  // Drinks grouped by container (Soda: Can, bottle, 2 litre) have long labels
+  // and flavour choices, so their card opens the sheet instead of showing chips.
+  const chips = variants && item.variant_kind !== 'type';
+  const [sizeId, setSizeId] = useState(variants ? variants[0].clover_item_id : null);
+  const current = variants ? variants.find((v) => v.clover_item_id === sizeId) || variants[0] : item;
+
   // The plain line this card adds to: no modifiers, no instructions. Anything
   // added through the modal with special instructions is a separate line and
   // is deliberately not counted or altered here.
-  const plainKey = cartKeyFor({ clover_item_id: item.clover_item_id });
-  const quantity = items.find((i) => i._key === plainKey)?.quantity || 0;
+  const plainKey = cartKeyFor({ clover_item_id: current.clover_item_id });
+  const quantity = variants && !chips ? 0 : items.find((i) => i._key === plainKey)?.quantity || 0;
 
   useEffect(() => {
     if (autoOpen) setShowModal(true);
@@ -31,15 +41,15 @@ export default function MenuItemCard({ item, large = false, autoOpen = false }) 
     e.stopPropagation();
     // An item priced entirely by a size choice (wings, fries) can't be added
     // plain -- open the sheet so the customer picks, exactly like the register.
-    if (needsChoice(item)) { setShowModal(true); return; }
+    if (variants ? !chips || needsChoice(current) || !(current.price_cents > 0) : needsChoice(item)) { setShowModal(true); return; }
     addItem({
-      clover_item_id: item.clover_item_id,
-      name,
-      price_cents: item.price_cents,
+      clover_item_id: current.clover_item_id,
+      name: displayName(current.name),
+      price_cents: current.price_cents,
       quantity: 1,
       modifiers: [],
       special_instructions: '',
-      image_url: item.image_url,
+      image_url: current.image_url || item.image_url,
     });
   }
 
@@ -83,25 +93,48 @@ export default function MenuItemCard({ item, large = false, autoOpen = false }) 
               <span className="font-serif italic text-highlight opacity-30 text-3xl">Mimi&rsquo;s</span>
             </div>
           )}
-          {cleanBadge(item.badge_text) && (
-            <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wide text-highlight border border-highlight-line rounded-full px-2.5 py-1 bg-scrim">
-              {cleanBadge(item.badge_text)}
+          {(cleanBadge(item.badge_text) || item.popular) && (
+            <span className="absolute top-2.5 left-2.5 md:top-3 md:left-3 text-[10px] font-bold uppercase tracking-wide text-highlight border border-highlight-line rounded-full px-2.5 py-1 bg-scrim">
+              {cleanBadge(item.badge_text) || 'Most ordered'}
             </span>
           )}
         </div>
-        <div className="p-4 flex flex-col gap-1.5 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="font-serif font-semibold text-app text-[15px] leading-snug">{name}</h3>
-            <span className="text-highlight font-serif font-semibold text-[15px] whitespace-nowrap">{item.price_cents > 0 ? formatPrice(item.price_cents) : `from ${formatPrice(fromPrice(item))}`}</span>
+        <div className="p-3 sm:p-4 flex flex-col gap-1.5 flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-0.5 sm:gap-2">
+            <h3 className="font-serif font-semibold text-app text-[14px] sm:text-[15px] leading-snug">{name}</h3>
+            <span className="text-highlight font-serif font-semibold text-[14px] sm:text-[15px] whitespace-nowrap">{variants && !chips ? `from ${formatPrice(item.price_cents)}` : current.price_cents > 0 ? formatPrice(current.price_cents) : `from ${formatPrice(fromPrice(current))}`}</span>
           </div>
           {description && <p className="text-app-soft text-xs leading-relaxed line-clamp-2">{description}</p>}
+          {chips && (
+            <div role="radiogroup" aria-label={`${name} size`} className="flex flex-wrap gap-1 sm:gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()} onKeyDown={swallowKeys}>
+              {variants.map((v) => {
+                const on = v.clover_item_id === current.clover_item_id;
+                return (
+                  <button
+                    key={v.clover_item_id}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    aria-label={`${v.size_label}, ${formatPrice(v.price_cents)}`}
+                    onClick={() => setSizeId(v.clover_item_id)}
+                    className={`min-w-[1.9rem] sm:min-w-[2.25rem] h-7 sm:h-8 px-1.5 sm:px-2 rounded-full text-[11px] font-bold border transition-colors ${on ? 'bg-accent text-on-accent' : 'text-app-soft hover:text-app'}`}
+                    style={{ borderColor: on ? 'transparent' : 'var(--mimis-line)' }}
+                  >
+                    {shortSize(v.size_label)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {quantity === 0 ? (
             <button
               onClick={handleAdd}
               aria-label={`Add ${name} to cart`}
-              className="btn-primary mt-auto self-start !px-4 !py-2 !text-[11px] active:scale-95 transition-transform"
+              className="btn-primary mt-auto self-start !px-3 sm:!px-4 !py-2 !text-[11px] whitespace-nowrap active:scale-95 transition-transform"
             >
-              Add to Cart
+              {/* "Add to Cart" wrapped onto two lines on 320px phones. */}
+              <span className="sm:hidden">Add</span>
+              <span className="hidden sm:inline">Add to Cart</span>
             </button>
           ) : (
             <div
@@ -129,7 +162,17 @@ export default function MenuItemCard({ item, large = false, autoOpen = false }) 
           )}
         </div>
       </div>
-      {showModal && <ProductModal item={item} onClose={() => setShowModal(false)} />}
+      {showModal && <ProductModal item={item} initialVariantId={initialVariantId || (variants ? current.clover_item_id : null)} onClose={() => setShowModal(false)} />}
     </>
   );
+}
+
+// "Medium 12\"" -> "M", "Large 14\"" -> "L", "X-Large 16\"" -> "XL", "6 pcs" -> "6 pc".
+function shortSize(label) {
+  const l = String(label || '');
+  if (/^x-large/i.test(l)) return 'XL';
+  if (/^large/i.test(l)) return 'L';
+  if (/^medium/i.test(l)) return 'M';
+  if (/pcs$/i.test(l)) return l.replace(/pcs$/i, 'pc');
+  return l;
 }

@@ -4,6 +4,8 @@ import { usePathname } from 'next/navigation';
 import { isPushSupported, getExistingSubscription, subscribeAndLink } from '@/lib/push';
 import { MEMBER_PHONE_KEY, normalizePhone, formatPhoneInput } from '@/lib/loyalty';
 import { useLocation } from '@/lib/location';
+import { useCart } from '@/lib/cart';
+import { useFloatingSlot, useEngaged } from '@/lib/floatingSlot';
 
 const DISMISS_KEY = 'mimis-push-dismissed-general';
 
@@ -58,7 +60,24 @@ export default function JoinNotifyBanner() {
   // Hide on admin/checkout/cart -- a permission-prompt banner has no business
   // interrupting a purchase or the owner's back office.
   const hidden = pathname?.startsWith('/admin') || pathname?.startsWith('/checkout') || pathname?.startsWith('/cart');
-  if (hidden || ['checking', 'unsupported', 'dismissed'].includes(state)) return null;
+  // Organised, not in the way (owner, 2026-10-23): it waits until the visitor
+  // has been here a while and scrolled, takes the single floating slot (never
+  // on top of the offer card), starts as one compact line, and on phones does
+  // not appear while there is food in the cart (the cart bar comes first).
+  const engaged = useEngaged(20000);
+  const { count } = useCart();
+  const [phone, setPhone] = useState(false);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const m = window.matchMedia('(max-width: 767px)');
+    const on = () => setPhone(m.matches);
+    on();
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, []);
+  const wants = !hidden && engaged && !['checking', 'unsupported', 'dismissed'].includes(state) && !(phone && count > 0);
+  const show = useFloatingSlot('rewards', wants);
+  if (!show) return null;
 
   function handleDismiss() {
     window.localStorage.setItem(DISMISS_KEY, '1');
@@ -131,13 +150,18 @@ export default function JoinNotifyBanner() {
   // On mobile it also sits above the launcher's 58px puck rather than beside
   // it, because at phone widths there isn't room for both across.
   const shellClass =
-    'fixed left-3 right-[var(--mimis-chat-reserve)] bottom-[7rem] ' +
-    'md:left-auto md:right-[var(--mimis-chat-reserve)] md:bottom-5 md:max-w-sm z-30 ' +
-    'rounded-app border border-line bg-surface-strong shadow-2xl shadow-black/40 p-5';
+    'fixed left-3 right-[var(--mimis-chat-reserve)] bottom-[calc(var(--mimis-float-bottom)+env(safe-area-inset-bottom))] ' +
+    'md:left-auto md:max-w-sm z-[60] animate-fade-in ' +
+    'rounded-app border border-line bg-surface-strong shadow-2xl shadow-black/40 p-4';
+  const Close = () => (
+    <button type="button" onClick={handleDismiss} aria-label="Close" className="mimis-close">
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+    </button>
+  );
 
   if (state === 'subscribed') {
     return (
-      <div className={shellClass}>
+      <div data-floating className={shellClass}>
         <p className="text-highlight text-sm font-semibold">You&rsquo;re in! We&rsquo;ll notify you about deals, new items, and order updates.</p>
       </div>
     );
@@ -145,12 +169,12 @@ export default function JoinNotifyBanner() {
 
   if (state === 'denied') {
     return (
-      <div className={shellClass}>
+      <div data-floating className={shellClass}>
         <div className="flex items-start justify-between gap-3">
           <p className="text-app-soft text-xs">
             You&rsquo;re enrolled in Rewards, but notifications are blocked for this site in your browser settings.
           </p>
-          <button onClick={handleDismiss} className="text-app-faint hover:text-app-soft text-xs shrink-0">✕</button>
+          <Close />
         </div>
       </div>
     );
@@ -158,10 +182,10 @@ export default function JoinNotifyBanner() {
 
   if (state === 'returning') {
     return (
-      <div className={shellClass}>
+      <div data-floating className={shellClass}>
         <div className="flex items-start justify-between gap-3 mb-3">
           <p className="text-app-soft text-sm">Welcome back. Want deal &amp; order alerts on this device too?</p>
-          <button onClick={handleDismiss} className="text-app-faint hover:text-app-soft text-xs shrink-0">✕</button>
+          <Close />
         </div>
         {errorMsg && <p className="text-danger text-xs mb-2">{errorMsg}</p>}
         <button onClick={() => enableForPhone(savedPhone)} className="btn-primary w-full !py-2 text-sm">
@@ -171,12 +195,26 @@ export default function JoinNotifyBanner() {
     );
   }
 
-  // join | joining
+  // join | joining -- one compact line until the customer opens it.
+  if (!open) {
+    return (
+      <div data-floating className={shellClass}>
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={() => setOpen(true)} className="flex-1 min-w-0 text-left">
+            <span className="block section-label !mb-0.5 truncate whitespace-nowrap">Mimi&rsquo;s Rewards</span>
+            <span className="block text-app text-[13px] sm:text-sm font-semibold truncate">Join free &middot; earn points on every order</span>
+          </button>
+          <button type="button" onClick={() => setOpen(true)} className="btn-primary !px-3.5 !py-2 !text-[11px] shrink-0 whitespace-nowrap">Join</button>
+          <Close />
+        </div>
+      </div>
+    );
+  }
   return (
-    <div className={shellClass}>
+    <div data-floating className={shellClass}>
       <div className="flex items-start justify-between gap-3 mb-1">
         <p className="section-label">Mimi&rsquo;s Rewards</p>
-        <button onClick={handleDismiss} className="text-app-faint hover:text-app-soft text-xs shrink-0">✕</button>
+        <Close />
       </div>
       <p className="text-app text-sm font-semibold mb-1">Join free &amp; get notified</p>
       <p className="text-app-soft text-xs mb-3">Earn points on every order, plus alerts on deals and order status. No password needed.</p>

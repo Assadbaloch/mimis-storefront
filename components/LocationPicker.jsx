@@ -148,6 +148,15 @@ export function LocationGate() {
   // the confirm inside never fires here.
   const switchTo = useLocationSwitch();
 
+  // While the choice is open, the chat bubble and floating cards step aside
+  // (globals.css: body.mimis-gate-open). On phones the chat greeting used to
+  // cover the second store button.
+  useEffect(() => {
+    if (!needsChoice) return undefined;
+    document.body.classList.add('mimis-gate-open');
+    return () => document.body.classList.remove('mimis-gate-open');
+  }, [needsChoice]);
+
   if (!needsChoice) return null;
 
   return (

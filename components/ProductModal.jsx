@@ -6,6 +6,7 @@ import { formatPrice, displayName, displayCategory } from '@/lib/format';
 import Gallery from '@/components/Gallery';
 import ProductDetailActions from '@/components/ProductDetailActions';
 import { fromPrice } from '@/lib/options';
+import SizePicker from '@/components/SizePicker';
 
 // The item sheet.
 //   Mobile: a bottom sheet up to the full screen height. Photo on top, then the
@@ -29,14 +30,21 @@ function useIsDesktop() {
   return desktop;
 }
 
-export default function ProductModal({ item, onClose }) {
-  const [media, setMedia] = useState(item.media || null);
+export default function ProductModal({ item, onClose, initialVariantId = null }) {
+  // A dish sold in several sizes (lib/variants.js) carries `variants`: each is
+  // a real Clover item. `current` is the one being configured and added.
+  const variants = Array.isArray(item.variants) && item.variants.length > 1 ? item.variants : null;
+  const [variantId, setVariantId] = useState(() =>
+    variants ? (variants.find((v) => v.clover_item_id === initialVariantId) || variants[0]).clover_item_id : null
+  );
+  const current = variants ? variants.find((v) => v.clover_item_id === variantId) || variants[0] : item;
+  const [media, setMedia] = useState(current.media || null);
   const desktop = useIsDesktop();
   const [solid, setSolid] = useState(false);
   const name = displayName(item.name);
-  const description = item.description_override || null;
+  const description = current.description_override || item.description_override || null;
   const category = item.category ? displayCategory(item.category) : null;
-  const priceLabel = item.price_cents > 0 ? formatPrice(item.price_cents) : `from ${formatPrice(fromPrice(item))}`;
+  const priceLabel = current.price_cents > 0 ? formatPrice(current.price_cents) : `from ${formatPrice(fromPrice(current))}`;
 
   useEffect(() => {
     const body = document.body;
@@ -61,12 +69,12 @@ export default function ProductModal({ item, onClose }) {
   // a set of photos uploaded once appears at both restaurants rather than
   // having to be re-uploaded against each location's own menu_items row.
   useEffect(() => {
-    if (item.media || !item.product_id) return;
+    if (current.media || !current.product_id) { setMedia(current.media || null); return; }
     let cancelled = false;
     getSupabasePublicClient()
       .from('menu_item_media')
       .select('media_type, url, sort_order')
-      .eq('product_id', item.product_id)
+      .eq('product_id', current.product_id)
       .order('sort_order', { ascending: true })
       .then(({ data }) => {
         if (!cancelled && data) setMedia(data);
@@ -74,13 +82,13 @@ export default function ProductModal({ item, onClose }) {
     return () => {
       cancelled = true;
     };
-  }, [item.product_id, item.media]);
+  }, [current.product_id, current.media]);
 
   const gallery = (props) => (
     <Gallery
       media={media}
-      fallbackImage={item.image_url}
-      fallbackVideo={item.video_url}
+      fallbackImage={current.image_url || item.image_url}
+      fallbackVideo={current.video_url || item.video_url}
       name={name}
       badgeText={item.badge_text}
       {...props}
@@ -144,7 +152,7 @@ export default function ProductModal({ item, onClose }) {
               <p className="text-app-faint text-sm leading-relaxed mt-3 italic">Hand-prepared fresh to order.</p>
             )}
             <Link
-              href={`/menu/${item.clover_item_id}`}
+              href={`/menu/${current.clover_item_id}`}
               onClick={(e) => e.stopPropagation()}
               className="inline-flex items-center gap-1.5 text-app-soft hover:text-highlight text-[11px] font-bold uppercase tracking-wide mt-3 transition-colors"
             >
@@ -152,7 +160,27 @@ export default function ProductModal({ item, onClose }) {
             </Link>
           </header>
 
-          <ProductDetailActions item={item} name={name} variant="modal" onAdded={onClose} />
+          {variants && (
+            <div className="px-5 md:px-7 pt-5">
+              <SizePicker
+                variants={variants}
+                value={current.clover_item_id}
+                onChange={setVariantId}
+                title={item.variant_kind === 'type' ? 'Choose your drink' : 'Choose your size'}
+              />
+            </div>
+          )}
+
+          {/* Keyed on the Clover item, so changing size starts that size's
+              options fresh (each size has its own option groups in Clover).
+              The cart line carries that size's own Clover name and id. */}
+          <ProductDetailActions
+            key={current.clover_item_id}
+            item={current}
+            name={variants ? displayName(current.name) : name}
+            variant="modal"
+            onAdded={onClose}
+          />
         </div>
       </div>
     </div>

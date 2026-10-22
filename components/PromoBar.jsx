@@ -92,9 +92,11 @@ export default function PromoBar() {
         type="button"
         onClick={close}
         aria-label="Hide offers"
-        className={`absolute right-0 top-0 z-10 grid h-full w-10 place-items-center text-lg leading-none shadow-[-12px_0_12px_-4px_rgba(0,0,0,0.12)] ${theme}`}
+        className={`absolute right-0 top-0 z-10 grid h-full w-11 place-items-center leading-none shadow-[-12px_0_12px_-4px_rgba(0,0,0,0.12)] ${theme}`}
       >
-        <span aria-hidden="true" className="grid h-6 w-6 place-items-center rounded-full bg-black/15">×</span>
+        <span aria-hidden="true" className="grid h-7 w-7 place-items-center rounded-full bg-black/25 ring-1 ring-black/20">
+          <svg width="10" height="10" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+        </span>
       </button>
     </div>
   );

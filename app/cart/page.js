@@ -6,6 +6,7 @@ import { useCart } from '@/lib/cart';
 import { formatPrice } from '@/lib/format';
 import MemberRewardsPanel from '@/components/MemberRewardsPanel';
 import LineOptions from '@/components/LineOptions';
+import CartAddOns from '@/components/CartAddOns';
 
 export default function CartPage() {
   const { items, totalCents, updateQuantity, removeItem } = useCart();
@@ -58,6 +59,8 @@ export default function CartPage() {
         ))}
       </div>
 
+      <CartAddOns />
+
       <div className="flex items-center justify-between mt-8 pt-4">
         <span className="text-app-soft text-lg">Subtotal</span>
         <span className={`font-serif font-semibold text-2xl ${discountCents > 0 ? 'text-app-soft line-through' : 'text-highlight'}`}>
@@ -86,8 +89,10 @@ export default function CartPage() {
           full item list, which on a long order meant scrolling past everything
           to find it. Sits above the mobile bottom tab bar (which is itself
           md:hidden, fixed bottom-0), flush to the viewport bottom on desktop. */}
-      <div className="fixed inset-x-0 bottom-16 md:bottom-0 z-30 bg-surface-strong backdrop-blur-md border-t border-line">
-        <div className="max-w-2xl mx-auto px-5 py-3 flex items-center justify-between gap-4">
+      <div className="mimis-cart-checkout fixed inset-x-0 bottom-16 md:bottom-0 z-30 bg-surface-strong backdrop-blur-md border-t border-line">
+        {/* Right padding on phones leaves room for the chat bubble, which sits
+            in the bottom-right corner and used to cover this button. */}
+        <div className="max-w-2xl mx-auto pl-5 pr-[var(--mimis-chat-reserve)] md:px-5 py-3 flex items-center justify-between gap-3">
           <div>
             <p className="text-app-faint text-[11px] uppercase tracking-wide font-bold">
               {discountCents > 0 ? 'Total due' : 'Subtotal'}

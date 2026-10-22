@@ -1,6 +1,6 @@
 'use client';
 import PromoBar from '@/components/PromoBar';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useReferenceTheme } from './ReferenceTheme';
@@ -33,6 +33,22 @@ export default function ReferenceHeader({ logoUrl }) {
   const { theme, toggleTheme } = useReferenceTheme();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const headerRef = useRef(null);
+
+  // Publishes the header's real height (logo, offers bar, scroll state) as
+  // --mimis-header-h, so bars that stick under it (menu search + categories)
+  // sit exactly flush at every screen size instead of guessing 5rem.
+  // Not updated while the phone menu panel is open (it makes the header tall).
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el || isMobileMenuOpen) return undefined;
+    const root = document.documentElement;
+    const set = () => root.style.setProperty('--mimis-header-h', `${Math.round(el.getBoundingClientRect().height)}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isMobileMenuOpen]);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 20);
@@ -52,7 +68,7 @@ export default function ReferenceHeader({ logoUrl }) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex flex-col">
+    <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50 flex flex-col">
       <div
         className={`transition-all duration-300 bg-[#F3EFE4]/95 dark:bg-[#1a0c08]/85 backdrop-blur-md py-2 border-b border-[rgba(29,32,33,0.1)] dark:border-white/5 ${
           isScrolled ? 'shadow-md dark:shadow-sm' : ''
@@ -67,8 +83,8 @@ export default function ReferenceHeader({ logoUrl }) {
                 alt="MiMi's Pizza & Burger"
                 className={`w-auto max-w-none transition-all duration-300 ${
                   isScrolled
-                    ? 'h-[2.9rem] md:h-[5.3rem] lg:h-[5.3rem]'
-                    : 'h-[3.4rem] md:h-[6.0rem] lg:h-[6.0rem]'
+                    ? 'h-[2.9rem] lg:h-[5.3rem]'
+                    : 'h-[3.4rem] lg:h-[6.0rem]'
                 }`}
               />
             ) : (
@@ -76,7 +92,7 @@ export default function ReferenceHeader({ logoUrl }) {
             )}
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6 lg:gap-8">
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
             {NAV.map((link) => (
               <Link
                 key={link.name}
@@ -92,7 +108,7 @@ export default function ReferenceHeader({ logoUrl }) {
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3">
             {/* Not in the reference design. Added because the two restaurants
                 have separate Clover menus -- without this a customer on the
                 wrong store has no way to change it from the header. */}
@@ -116,7 +132,7 @@ export default function ReferenceHeader({ logoUrl }) {
             </Link>
           </div>
 
-          <div className="md:hidden flex items-center gap-2 relative z-50">
+          <div className="lg:hidden flex items-center gap-2 relative z-50">
             <ReferenceLocationPicker />
             <button
               type="button"
@@ -143,7 +159,7 @@ export default function ReferenceHeader({ logoUrl }) {
       <PromoBar />
 
       <div
-        className={`fixed inset-0 bg-[#F3EFE4] dark:bg-[#0a0604] z-40 transition-transform duration-300 ease-in-out md:hidden flex flex-col pt-32 px-6 ${
+        className={`fixed inset-0 bg-[#F3EFE4] dark:bg-[#0a0604] z-40 transition-transform duration-300 ease-in-out lg:hidden flex flex-col pt-32 px-6 ${
           isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

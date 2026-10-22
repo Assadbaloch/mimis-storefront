@@ -193,7 +193,7 @@ export default async function RootLayout({ children }) {
                already existed for imported themes. */
             <ReferenceTheme>
               <ReferenceHeader logoUrl={logoUrl} />
-              <main className="flex-1 pt-[calc(4.4rem+var(--promo-bar-h,0px))] md:pt-[calc(7rem+var(--promo-bar-h,0px))]" data-mimis-content>{children}</main>
+              <main className="flex-1 pt-[calc(4.4rem+var(--promo-bar-h,0px))] lg:pt-[calc(7rem+var(--promo-bar-h,0px))]" data-mimis-content>{children}</main>
               <ReferenceFooter />
             </ReferenceTheme>
           ) : (

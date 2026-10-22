@@ -1,5 +1,6 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useEngaged } from '@/lib/floatingSlot';
 
 // LeadConnector (GoHighLevel) chat widget.
 //
@@ -39,7 +40,17 @@ const LOADER_SRC = 'https://widgets.leadconnectorhq.com/loader.js';
 const RESOURCES_URL = 'https://widgets.leadconnectorhq.com/chat-widget/loader.js';
 
 export default function ChatWidget() {
+  // Phones (2026-10-23): the widget's "Hi there! Have a question?" greeting
+  // covered the menu the moment a page opened. On a phone the widget now loads
+  // only once the visitor has been here a while and scrolled; on larger
+  // screens it loads straight away as before.
+  const engaged = useEngaged(20000);
+  const [narrow, setNarrow] = useState(null);
+  useEffect(() => { setNarrow(window.matchMedia('(max-width: 767px)').matches); }, []);
+  const ready = narrow === false || (narrow === true && engaged);
+
   useEffect(() => {
+    if (!ready) return;
     // Guarded on the widget id rather than a ref: React 18 StrictMode invokes
     // effects twice in development, and a client-side route change could
     // remount this. Two loaders means two launchers stacked on each other.
@@ -56,7 +67,7 @@ export default function ChatWidget() {
     // Deliberately not removed on unmount. The widget appends its own element
     // and listeners outside React's tree; tearing the script out would leave
     // those orphaned, and this component lives for the whole session anyway.
-  }, []);
+  }, [ready]);
 
   return null;
 }
