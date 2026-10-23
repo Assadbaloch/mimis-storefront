@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getActiveDesign } from '@/lib/design';
 import OrderAtLocationLink from '@/components/designs/reference/OrderAtLocationLink';
 import OrderModeTabs from '@/components/designs/reference/OrderModeTabs';
+import { getStoreLocations } from '@/lib/storeLocations';
 
 // Contact page, ported from the reference design.
 //
@@ -10,12 +11,18 @@ import OrderModeTabs from '@/components/designs/reference/OrderModeTabs';
 // the "Start Order" buttons pointed at two legacy websites and now reach /menu,
 // and the "Call" buttons are real tel: links. The GHL enquiry form is kept
 // exactly as the reference had it.
+//
+// 2026-10-23: hours and the open/closed line come from mimis.store_hours in
+// Michigan time (lib/storeHours.js) -- the same hours the dashboard edits and
+// the phone agent quotes. They were hardcoded, and both cards said "Open" all
+// night.
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: "Contact | Mimi's Pizza & Burger", alternates: { canonical: '/contact' } };
 
 export default async function ContactPage() {
   if ((await getActiveDesign()) !== 'reference') notFound();
+  const stores = Object.fromEntries((await getStoreLocations()).map((l) => [l.key, l]));
 
   return (
     <div className="bg-[#F3EFE4] dark:bg-[#0a0604] pb-24">
@@ -48,21 +55,14 @@ export default async function ContactPage() {
                       </div>
                       <h2 className="text-4xl md:text-5xl font-serif font-bold text-[#1D2021] dark:text-[#f5ebd7] mb-2">Madison Heights</h2>
                       <p className="text-[#5F625F] dark:text-[#f5ebd7]/70 text-sm mb-6">28931 John R Rd, Madison Heights, MI 48071</p>
-                      <div className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-[#0b4221] dark:text-[#10b981]">
-                        <div className="w-2 h-2 rounded-full bg-[#0b4221] dark:bg-[#10b981]"></div>
-                        Open • Pickup Ready in 20 Min
-                      </div>
+                      <StoreStatus store={stores['Madison Heights']} />
                     </div>
                     
                     <div className="p-10">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
                         <div>
                           <div className="text-[9px] font-bold tracking-widest text-[#C99700] dark:text-[#e6b95c] uppercase mb-2">Hours</div>
-                          <div className="text-[#1D2021] dark:text-[#f5ebd7] font-bold text-sm leading-relaxed">
-                            Sun-Thu: 11:30 AM - 10:30 PM<br />
-                            Fri: 3:00 PM - 11:00 PM<br />
-                            Sat: 11:30 AM - 11:00 PM
-                          </div>
+                          <StoreHours store={stores['Madison Heights']} />
                         </div>
                         <div className="space-y-6">
                           <div>
@@ -92,21 +92,14 @@ export default async function ContactPage() {
                       </div>
                       <h2 className="text-4xl md:text-5xl font-serif font-bold text-[#1D2021] dark:text-[#f5ebd7] mb-2">Warren</h2>
                       <p className="text-[#5F625F] dark:text-[#f5ebd7]/70 text-sm mb-6">8113 E 9 Mile Rd, Warren, MI 48089</p>
-                      <div className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-[#0b4221] dark:text-[#10b981]">
-                        <div className="w-2 h-2 rounded-full bg-[#0b4221] dark:bg-[#10b981]"></div>
-                        Open • Pickup Ready in 20 Min
-                      </div>
+                      <StoreStatus store={stores['Warren']} />
                     </div>
                     
                     <div className="p-10">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
                         <div>
                           <div className="text-[9px] font-bold tracking-widest text-[#C99700] dark:text-[#e6b95c] uppercase mb-2">Hours</div>
-                          <div className="text-[#1D2021] dark:text-[#f5ebd7] font-bold text-sm leading-relaxed">
-                            Sun-Thu: 12:00 PM - 10:00 PM<br />
-                            Fri: 3:00 PM - 10:30 PM<br />
-                            Sat: 12:00 PM - 10:30 PM
-                          </div>
+                          <StoreHours store={stores['Warren']} />
                         </div>
                         <div className="space-y-6">
                           <div>
@@ -233,6 +226,30 @@ export default async function ContactPage() {
                   </div>
                 </div>
               </section>
+    </div>
+  );
+}
+
+// Hours as saved in the dashboard (store-local Michigan time), equal days grouped.
+function StoreHours({ store }) {
+  const lines = store?.hours || [];
+  return (
+    <div className="text-[#1D2021] dark:text-[#f5ebd7] font-bold text-sm leading-relaxed">
+      {lines.length
+        ? lines.map((l) => <div key={l.days}>{l.days}: {l.text}</div>)
+        : <div>Call the store for today&rsquo;s hours</div>}
+    </div>
+  );
+}
+
+// "Open now · until 10:30 PM" / "Closed · opens today 3:00 PM", Michigan time.
+function StoreStatus({ store }) {
+  if (!store?.openLabel) return null;
+  const open = store.isOpen;
+  return (
+    <div className={`flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase ${open ? 'text-[#0b4221] dark:text-[#10b981]' : 'text-[#C8102E] dark:text-[#f87171]'}`}>
+      <div className={`w-2 h-2 rounded-full ${open ? 'bg-[#0b4221] dark:bg-[#10b981]' : 'bg-[#C8102E] dark:bg-[#f87171]'}`}></div>
+      {store.openLabel}{open ? ' • Pickup Ready in 20 Min' : ''}
     </div>
   );
 }

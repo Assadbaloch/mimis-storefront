@@ -241,7 +241,7 @@ export default async function ReferenceHome() {
                   <div className="grid grid-cols-2 gap-8 mb-12">
                     <div>
                       <span className="block text-[10px] tracking-widest text-[#C99700] dark:text-[#e6b95c] font-bold uppercase mb-2">STATUS</span>
-                      <p className="text-sm font-bold text-[#1D2021] dark:text-[#f5ebd7]">{loc.status || 'Open'}</p>
+                      <p className="text-sm font-bold text-[#1D2021] dark:text-[#f5ebd7]">{loc.live && loc.openLabel ? loc.openLabel : (loc.status || '')}</p>
                     </div>
                     <div>
                       <span className="block text-[10px] tracking-widest text-[#C99700] dark:text-[#e6b95c] font-bold uppercase mb-2">PHONE</span>
