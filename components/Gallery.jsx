@@ -1,6 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import Image from 'next/image';
+import SharpImage from '@/components/SharpImage';
 import { cleanBadge } from '@/lib/format';
 
 // Shared swipeable media gallery -- used by both the quick-add ProductModal
@@ -83,11 +84,10 @@ export default function Gallery({ media, fallbackImage, fallbackVideo, name, bad
             className="absolute inset-0 w-full h-full object-cover pointer-events-none animate-fade-in"
           />
         ) : (
-          <Image
+          <SharpImage
             key={current.url}
             src={current.url}
             alt={name || ''}
-            fill
             className="object-cover pointer-events-none animate-fade-in"
             sizes={sizes}
             priority={safeIndex === 0}
@@ -178,7 +178,7 @@ export default function Gallery({ media, fallbackImage, fallbackVideo, name, bad
             {current.media_type === 'video' ? (
               <video src={current.url} autoPlay muted loop playsInline controls className="absolute inset-0 w-full h-full object-contain" />
             ) : (
-              <Image src={current.url} alt={name || ''} fill className="object-contain" sizes="92vw" />
+              <SharpImage src={current.url} alt={name || ''} fit="contain" className="object-contain" sizes="92vw" />
             )}
             {slides.length > 1 && (
               <>

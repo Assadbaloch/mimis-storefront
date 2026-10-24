@@ -2,6 +2,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { formatPrice } from '@/lib/format';
 import { useCart } from '@/lib/cart';
+import { useLocation } from '@/lib/location';
+import { useStoreStatus } from '@/lib/useStoreStatus';
+import { closedForNow } from '@/lib/storeHours';
 import ItemOptions from '@/components/ItemOptions';
 import {
   useOptionsState, useItemModifiers, unitPrice, chosenOptions, selectionProblem, hasOptions, missingSectionKey,
@@ -21,6 +24,9 @@ import {
 const LINE = 'var(--mimis-line)';
 
 export default function ProductDetailActions({ item, name, variant = 'modal', onAdded }) {
+  // Pre-orders: the button reads "Pre-order" while closed (owner switched on).
+  const { location: storeLocation } = useLocation();
+  const addWord = closedForNow(useStoreStatus(storeLocation)) ? 'Pre-order' : 'Add to cart';
   const { addItem } = useCart();
   const optionsState = useOptionsState();
   const mods = useItemModifiers(item);
@@ -155,7 +161,7 @@ export default function ProductDetailActions({ item, name, variant = 'modal', on
             disabled={blocked}
             className={`btn-primary flex-1 h-12 !py-0 !px-5 !text-[12.5px] !justify-between ${added ? 'animate-pulse-once' : ''} ${problem && !blocked ? '!opacity-90' : ''}`}
           >
-            <span className="truncate">{added ? 'Added ✓' : loading ? 'Add to cart' : problem || 'Add to cart'}</span>
+            <span className="truncate">{added ? 'Added ✓' : loading ? addWord : problem || addWord}</span>
             {!added && unit > 0 && problem !== 'Not available online' && (
               <span className="tabular-nums tracking-normal text-[14px]">{formatPrice(unit * quantity)}</span>
             )}

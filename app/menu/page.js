@@ -7,6 +7,7 @@ import MenuBrowser from '@/components/MenuBrowser';
 import MenuRewardBanner from '@/components/MenuRewardBanner';
 import PromoBanner from '@/components/PromoBanner';
 import OrderAgain from '@/components/OrderAgain';
+import StoreClosedNotice from '@/components/StoreClosedNotice';
 
 // Was `revalidate = 60` (one cached page for everyone). The menu now differs
 // per restaurant, so a single shared cache entry would serve one store's menu
@@ -108,6 +109,7 @@ export default async function MenuPage() {
       </section>
       <MenuRewardBanner />
       <PromoBanner placement="menu" />
+      <StoreClosedNotice />
       <OrderAgain />
       {groups.length > 0 ? (
         <Suspense fallback={null}>

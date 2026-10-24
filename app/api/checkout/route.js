@@ -84,6 +84,8 @@ export async function POST(request) {
         redemption_code: body.redemption_code || '',
         promo_code: typeof body.promo_code === 'string' ? body.promo_code.trim().slice(0, 40) : '',
         delivery_address: body.order_type === 'delivery' ? body.delivery_address : undefined,
+        // Pre-orders (2026-10-24): the chosen time, checked again by the server.
+        scheduled_for: typeof body.scheduled_for === 'string' && body.scheduled_for ? body.scheduled_for : undefined,
         items: body.items,
       }),
     });
@@ -92,7 +94,13 @@ export async function POST(request) {
 
     if (!upstream.ok || data?.success === false) {
       return NextResponse.json(
-        { success: false, error: data?.error || 'Could not start checkout. Please try again.' },
+        {
+          success: false,
+          error: data?.error || 'Could not start checkout. Please try again.',
+          // Pre-orders: lets checkout reload the times after a refusal.
+          reason: data?.reason,
+          next_times: Array.isArray(data?.next_times) ? data.next_times : undefined,
+        },
         { status: upstream.status || 502 }
       );
     }

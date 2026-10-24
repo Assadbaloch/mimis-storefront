@@ -13,6 +13,7 @@ import Image from 'next/image';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { formatPrice, displayName, cleanBadge, BADGE_MAX } from '@/lib/format';
 import { photoTooSmall } from '@/lib/imageCheck';
+import SmallPhotoBadge from '@/components/SmallPhotoBadge';
 
 // Picks the cover image/video that the storefront grid reads directly off
 // menu_items (image_url/video_url) -- first image and first video in gallery
@@ -208,7 +209,7 @@ export default function AdminItemEditor({ item }) {
           {fields.video_url ? (
             <video src={fields.video_url} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
           ) : fields.image_url ? (
-            <Image src={fields.image_url} alt={item.name} fill className="object-cover" sizes="96px" />
+            <><Image src={fields.image_url} alt={item.name} fill className="object-cover" sizes="96px" /><SmallPhotoBadge url={fields.image_url} /></>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-cream/25 text-[10px] text-center px-1">No photo</div>
           )}

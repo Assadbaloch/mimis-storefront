@@ -8,9 +8,11 @@ import { formatPrice } from '@/lib/format';
 import { formatPhoneInput } from '@/lib/loyalty';
 import { useCart } from '@/lib/cart';
 import NotificationOptIn from '@/components/NotificationOptIn';
+import { whenLong } from '@/lib/storeHours';
 
 const STATUS_LABEL = {
   pending_payment: 'Awaiting Payment',
+  scheduled: 'Booked',
   new: 'Received',
   in_progress: 'Being Prepared',
   ready: 'Ready for Pickup',
@@ -58,6 +60,8 @@ function isActiveOrder(o) {
 export default function OrderStatusView({ heading, requireActive = false }) {
   const [order, setOrder] = useState(null);
   const [orderId, setOrderId] = useState(null);
+  // Pre-order time (mimis.lookup_order_schedule), null for an order-now order.
+  const [scheduledFor, setScheduledFor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [lookupNumber, setLookupNumber] = useState('');
@@ -150,6 +154,9 @@ export default function OrderStatusView({ heading, requireActive = false }) {
       } else {
         setOrder(row);
         setNotFound(false);
+        supabase.rpc('lookup_order_schedule', { p_order_id: oid })
+          .then(({ data: at }) => { if (!cancelledRef.current) setScheduledFor(at || null); })
+          .catch(() => {});
       }
       setLoading(false);
     }
@@ -209,6 +216,8 @@ export default function OrderStatusView({ heading, requireActive = false }) {
         setOrder(row);
         setOrderId(null);
         setNotFound(false);
+        getSupabasePublicClient().rpc('lookup_order_schedule', { p_order_number: number, p_phone: digits })
+          .then(({ data: at }) => setScheduledFor(at || null)).catch(() => {});
         // Same in-place swap as checkout: the lookup form is replaced by the
         // order view without a route change, so nothing else resets scroll.
         if (typeof window !== 'undefined') window.scrollTo(0, 0);
@@ -288,6 +297,19 @@ export default function OrderStatusView({ heading, requireActive = false }) {
       <p className="text-app-soft mb-8">
         {order.location} &middot; {isDelivery ? 'Delivery' : 'Pickup'}
       </p>
+
+      {scheduledFor && order.status !== 'cancelled' && order.status !== 'completed' && (
+        <div className="rounded-app border border-highlight-line bg-highlight-wash p-5 mb-8">
+          <p className="text-app font-semibold">
+            {isDelivery
+              ? `Your order is booked for delivery on ${whenLong(scheduledFor).replace(' at ', ' around ')}.`
+              : `Your order is booked for pickup on ${whenLong(scheduledFor)}.`}
+          </p>
+          {order.status === 'scheduled' && (
+            <p className="text-app-soft text-sm mt-1">We&rsquo;ll start making it shortly before then.</p>
+          )}
+        </div>
+      )}
 
       {/* Kitchen progress bar */}
       {order.status === 'cancelled' ? (

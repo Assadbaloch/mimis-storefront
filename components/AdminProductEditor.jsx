@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { formatPrice, displayName, cleanBadge, BADGE_MAX } from '@/lib/format';
 import { photoTooSmall } from '@/lib/imageCheck';
+import SmallPhotoBadge from '@/components/SmallPhotoBadge';
 
 // Editor for ONE canonical product (mimis.menu_products), replacing the old
 // per-menu_items_row AdminItemEditor.
@@ -268,7 +269,7 @@ export default function AdminProductEditor({ product, items = [], allProducts = 
           {fields.video_url ? (
             <video src={fields.video_url} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
           ) : fields.image_url ? (
-            <Image src={fields.image_url} alt={product.name} fill className="object-cover" sizes="96px" />
+            <><Image src={fields.image_url} alt={product.name} fill className="object-cover" sizes="96px" /><SmallPhotoBadge url={fields.image_url} /></>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-cream/25 text-[10px] text-center px-1">No photo</div>
           )}

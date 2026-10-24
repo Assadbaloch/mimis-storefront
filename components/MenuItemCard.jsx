@@ -1,10 +1,13 @@
 'use client';
-import Image from 'next/image';
+import SharpImage from '@/components/SharpImage';
 import { formatPrice, displayName, cleanBadge } from '@/lib/format';
 import { useCart, cartKeyFor } from '@/lib/cart';
 import { useEffect, useState } from 'react';
 import ProductModal from '@/components/ProductModal';
 import { needsChoice, fromPrice } from '@/lib/options';
+import { useLocation } from '@/lib/location';
+import { useStoreStatus } from '@/lib/useStoreStatus';
+import { closedForNow } from '@/lib/storeHours';
 
 // autoOpen: true when this card is the deep-link target of a `/menu?item=<clover_item_id>`
 // URL (e.g. from the rewards-page trending banner) -- opens the product modal
@@ -12,6 +15,10 @@ import { needsChoice, fromPrice } from '@/lib/options';
 // rather than just scrolling them to the right category.
 export default function MenuItemCard({ item, large = false, autoOpen = false, initialVariantId = null }) {
   const { items, addItem, updateQuantity } = useCart();
+  // Pre-orders: "Pre-order" instead of "Add to Cart" while closed (only when
+  // the owner switched website pre-orders on).
+  const { location: storeLocation } = useLocation();
+  const preorderOnly = closedForNow(useStoreStatus(storeLocation));
   const [showModal, setShowModal] = useState(false);
   const name = displayName(item.name);
   const description = item.description_override || null;
@@ -87,7 +94,7 @@ export default function MenuItemCard({ item, large = false, autoOpen = false, in
               className="menu-media absolute inset-0 w-full h-full object-cover"
             />
           ) : item.image_url ? (
-            <Image src={item.image_url} alt={name} fill className="menu-media object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+            <SharpImage src={item.image_url} alt={name} className="menu-media object-cover" sizes="(max-width: 768px) 67vw, 34vw" />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="font-serif italic text-highlight opacity-30 text-3xl">Mimi&rsquo;s</span>
@@ -129,12 +136,12 @@ export default function MenuItemCard({ item, large = false, autoOpen = false, in
           {quantity === 0 ? (
             <button
               onClick={handleAdd}
-              aria-label={`Add ${name} to cart`}
+              aria-label={preorderOnly ? `Pre-order ${name}` : `Add ${name} to cart`}
               className="btn-primary mt-auto self-start !px-3 sm:!px-4 !py-2 !text-[11px] whitespace-nowrap active:scale-95 transition-transform"
             >
               {/* "Add to Cart" wrapped onto two lines on 320px phones. */}
-              <span className="sm:hidden">Add</span>
-              <span className="hidden sm:inline">Add to Cart</span>
+              <span className="sm:hidden">{preorderOnly ? 'Pre-order' : 'Add'}</span>
+              <span className="hidden sm:inline">{preorderOnly ? 'Pre-order' : 'Add to Cart'}</span>
             </button>
           ) : (
             <div

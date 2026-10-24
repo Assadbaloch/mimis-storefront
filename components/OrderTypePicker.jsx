@@ -129,7 +129,19 @@ function HomeArt({ logo, onLogoError }) {
   );
 }
 
-export default function OrderTypePicker({ value, onChange }) {
+// 2026-10-24 pre-orders: the pickup line follows the live store status when
+// website pre-orders are on (closed -> "Pre-order for later", busy -> the
+// longer time). With pre-orders off (status null / not enabled) it is unchanged.
+function subFor(m, chosen, status) {
+  if (m === 'pickup' && chosen && status?.preorders_enabled) {
+    if (status.paused) return "Not taking orders right now";
+    if (!status.open_now) return 'Pre-order for later';
+    if (status.ready_in_min) return `Ready in about ${status.ready_in_min} min`;
+  }
+  return SUB[m][chosen ? 1 : 0];
+}
+
+export default function OrderTypePicker({ value, onChange, status = null }) {
   const [logo, setLogo] = useState(null);
 
   // Reuse the logo the site header already shows (already downloaded).
@@ -152,7 +164,7 @@ export default function OrderTypePicker({ value, onChange }) {
       <span className="mx-art"><Art logo={logo} onLogoError={onLogoError} /></span>
       <span className="mx-meta">
         <span className="mx-t">{title}</span>
-        <span className="mx-s">{SUB[m][value === m ? 1 : 0]}</span>
+        <span className="mx-s">{subFor(m, value === m, status)}</span>
       </span>
       <span className="mx-tick"><Tick /></span>
     </button>

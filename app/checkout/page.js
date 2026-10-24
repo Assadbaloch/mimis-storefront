@@ -10,6 +10,9 @@ import { readContact, saveContact, clearContact, fetchMemberContact, fillBlanks 
 import MemberRewardsPanel from '@/components/MemberRewardsPanel';
 import PromoBanner from '@/components/PromoBanner';
 import OrderTypePicker from '@/components/OrderTypePicker';
+import WhenPicker from '@/components/WhenPicker';
+import { useStoreStatus } from '@/lib/useStoreStatus';
+import { whenShort, whenLong } from '@/lib/storeHours';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 
 // Session-scoped (not localStorage): this mirrors a live, ~15-minute Clover
@@ -59,6 +62,15 @@ export default function CheckoutPage() {
   // '' until the customer picks Pickup or Delivery -- nothing is pre-selected
   // (owner decision 2026-09-25: a pre-selected pickup was ordered by mistake).
   const [orderType, setOrderType] = useState('');
+  // Pre-orders (2026-10-24): "Order now" or "Pre-order for later". Only shown
+  // when the owner has switched website pre-orders on (WhenPicker renders
+  // nothing otherwise), so with them off checkout is unchanged.
+  const storeStatus = useStoreStatus(location, orderType === 'delivery' ? 'delivery' : 'pickup');
+  const [when, setWhen] = useState({ mode: 'now', at: null });
+  const [timesKey, setTimesKey] = useState(0);
+  const preorderOn = !!storeStatus?.preorders_enabled;
+  const isPreorder = preorderOn && when.mode === 'later' && !!when.at;
+  const cannotOrderNow = preorderOn && (storeStatus.paused || (!storeStatus.open_now && !isPreorder));
   const [form, setForm] = useState({
     first_name: '', last_name: '', phone_number: '', email: '', notes: '',
     address_line1: '', address_line2: '', city: '', state: '', postal_code: '',
@@ -250,6 +262,16 @@ export default function CheckoutPage() {
       <div className="max-w-md mx-auto px-5 py-16">
         <h1 className="font-serif font-bold text-2xl text-app mb-1">Order #{order_number}</h1>
         <p className="text-app-soft mb-6 text-sm">Review your total, then continue to Clover&rsquo;s secure checkout to pay.</p>
+        {checkoutResult.scheduled_for && (
+          <div className="rounded-app border border-highlight-line bg-highlight-wash p-4 mb-6">
+            <p className="text-app font-semibold">Pre-order</p>
+            <p className="text-app-soft text-sm mt-0.5">
+              {checkoutResult.order_type === 'delivery'
+                ? `Delivery on ${whenLong(checkoutResult.scheduled_for).replace(' at ', ' around ')}`
+                : `Pickup on ${whenLong(checkoutResult.scheduled_for)}`}
+            </p>
+          </div>
+        )}
 
         <div className="rounded-app border border-line bg-surface p-5 mb-6">
           <div className="flex justify-between text-sm py-1">
@@ -342,6 +364,15 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (cannotOrderNow) {
+      setError(storeStatus.paused ? 'We’re not taking orders for a short while. Please try again soon.' : 'Please choose a time for your pre-order.');
+      return;
+    }
+    if (preorderOn && when.mode === 'later' && !when.at) {
+      setError('Please choose a time for your pre-order.');
+      return;
+    }
+
     if (orderType === 'delivery') {
       if (!form.address_line1.trim() || !form.city.trim() || !form.state.trim() || !form.postal_code.trim()) {
         setError('Please fill in your full delivery address.');
@@ -367,6 +398,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           ...form,
           order_type: orderType,
+          scheduled_for: isPreorder ? when.at : undefined,
           // Was hardcoded to 'Madison Heights' until 2026-08-10, which meant
           // every online order landed at that store no matter what the
           // customer wanted -- Warren was unreachable online. Now carries the
@@ -393,6 +425,9 @@ export default function CheckoutPage() {
 
       if (!res.ok || !data.success) {
         setError(data.error || 'Something went wrong starting checkout.');
+        // The time filled up or passed, or the store closed meanwhile: reload
+        // the times so the picker moves to what is really available.
+        if (data.reason === 'time_unavailable' || data.reason === 'closed_now' || data.reason === 'paused') setTimesKey((k) => k + 1);
         setSubmitting(false);
         return;
       }
@@ -472,6 +507,8 @@ export default function CheckoutPage() {
         total_due_cents: data.total_due_cents ?? (subtotal + deliveryFee + tax - discount),
         // Captured so a later edit to the basket can invalidate this review.
         cart_sig: cartSignature(items),
+        scheduled_for: data.scheduled_for || null,
+        order_type: orderType,
       };
       setCheckoutResult(result);
       storeReview(result);
@@ -498,7 +535,12 @@ export default function CheckoutPage() {
             : `Ordering from ${currentStore?.display_name || location}.`}
       </p>
 
-      <OrderTypePicker value={orderType} onChange={setOrderType} />
+      <OrderTypePicker value={orderType} onChange={setOrderType} status={storeStatus} />
+
+      {orderType && (
+        <WhenPicker location={location} orderType={orderType} status={storeStatus}
+          value={when} onChange={setWhen} refreshKey={timesKey} />
+      )}
 
       <div className="rounded-app border border-line bg-surface p-5 mb-6">
         {items.map((i) => (
@@ -614,15 +656,22 @@ export default function CheckoutPage() {
         {error && <p className="text-danger text-sm">{error}</p>}
         {redirectNotice && <p className="text-highlight text-sm">{redirectNotice}</p>}
 
-        <button type="submit" disabled={submitting || !orderType} className="btn-primary w-full justify-center !flex disabled:opacity-50">
+        <button type="submit" disabled={submitting || !orderType || cannotOrderNow || (preorderOn && when.mode === 'later' && !when.at)} className="btn-primary w-full justify-center !flex disabled:opacity-50">
           {submitting
             ? 'Starting checkout…'
             : !orderType
               ? 'Choose Pickup or Delivery above'
-              : orderType === 'delivery'
-                ? `Continue — ${formatPrice(payCents)} + delivery`
-                : `Pay ${formatPrice(payCents)} with Clover`}
+              : cannotOrderNow
+                ? (storeStatus.paused ? 'Not taking orders right now' : 'Choose a pickup time above')
+                : orderType === 'delivery'
+                  ? `Continue — ${formatPrice(payCents)} + delivery${isPreorder ? ` · ${whenShort(when.at)}` : ''}`
+                  : `Pay ${formatPrice(payCents)}${isPreorder ? ` · Pickup ${whenShort(when.at)}` : ' with Clover'}`}
         </button>
+        {isPreorder && (
+          <p className="text-app-soft text-sm text-center">
+            {orderType === 'delivery' ? `Your order will be delivered on ${whenLong(when.at).replace(' at ', ' around ')}.` : `Your order will be ready for pickup on ${whenLong(when.at)}.`}
+          </p>
+        )}
         <p className="text-app-faint text-xs text-center">You&rsquo;ll be redirected to Clover&rsquo;s secure checkout to complete payment.</p>
       </form>
     </div>

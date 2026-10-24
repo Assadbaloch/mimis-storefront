@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import SharpImage from '@/components/SharpImage';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { getActiveLocation } from '@/lib/locationServer';
 import { displayName, displayCategory } from '@/lib/format';
@@ -297,7 +298,7 @@ export default async function HomePage() {
                   {item.video_url ? (
                     <video src={item.video_url} autoPlay muted loop playsInline className="menu-media absolute inset-0 w-full h-full object-cover" />
                   ) : (
-                    <Image src={item.image_url} alt={displayCategory(item.category)} fill className="menu-media object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+                    <SharpImage src={item.image_url} alt={displayCategory(item.category)} className="menu-media object-cover" sizes="(max-width: 768px) 67vw, 34vw" />
                   )}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-scrim to-transparent p-3">
                     <p className="text-white text-xs font-semibold">{displayCategory(item.category)}</p>
@@ -373,7 +374,7 @@ export default async function HomePage() {
                   {g.video_url ? (
                     <video src={g.video_url} autoPlay muted loop playsInline className="menu-media absolute inset-0 w-full h-full object-cover" />
                   ) : (
-                    <Image src={g.image_url} alt={displayName(g.name)} fill className="menu-media object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+                    <SharpImage src={g.image_url} alt={displayName(g.name)} className="menu-media object-cover" sizes="(max-width: 768px) 67vw, 34vw" />
                   )}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-scrim to-transparent p-3">
                     <p className="text-white text-xs font-semibold truncate">{displayName(g.name)}</p>
