@@ -4,6 +4,8 @@ import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { lookupMember } from '@/lib/customer';
 import { useLocation } from '@/lib/location';
 import TrendingBanner from '@/components/TrendingBanner';
+import EmailOptIn from '@/components/EmailOptIn';
+import { EMAIL_CONSENT_VERSION, looksLikeEmail } from '@/lib/emailConsent';
 import {
   REDEMPTION_CODE_KEY,
   MEMBER_PHONE_KEY,
@@ -35,6 +37,7 @@ export default function RewardsLookup() {
   const [config, setConfig] = useState(null);
   const [enrollName, setEnrollName] = useState('');
   const [enrollEmail, setEnrollEmail] = useState('');
+  const [enrollEmailOptIn, setEnrollEmailOptIn] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [welcomeBonus, setWelcomeBonus] = useState(null);
   const [activeRedemptions, setActiveRedemptions] = useState([]);
@@ -176,6 +179,8 @@ export default function RewardsLookup() {
         body: JSON.stringify({
           full_name: enrollName,
           email: enrollEmail,
+          email_marketing_opt_in: enrollEmailOptIn && looksLikeEmail(enrollEmail),
+          consent_version: enrollEmailOptIn && looksLikeEmail(enrollEmail) ? EMAIL_CONSENT_VERSION : undefined,
           phone_number: phoneInput,
           // Without this the API falls back to "Madison Heights" for EVERY
           // signup, which is why all 8 members were stamped Madison Heights
@@ -275,6 +280,7 @@ export default function RewardsLookup() {
             onChange={(e) => setEnrollEmail(e.target.value)}
             className="input"
           />
+          {looksLikeEmail(enrollEmail) && <EmailOptIn checked={enrollEmailOptIn} onChange={setEnrollEmailOptIn} className="text-left" />}
           {errorMsg && <p className="text-danger text-sm">{errorMsg}</p>}
           <button type="submit" disabled={view === 'enrolling'} className="btn-primary w-full">
             {view === 'enrolling' ? 'Joining…' : 'Join Mimi’s Rewards'}

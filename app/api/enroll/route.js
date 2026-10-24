@@ -58,6 +58,11 @@ export async function POST(request) {
         email: body.email || '',
         phone,
         preferred_location: body.location || 'Madison Heights',
+        // Marketing email consent (2026-10-25): see app/api/checkout/route.js.
+        email_marketing_opt_in: body.email_marketing_opt_in === true,
+        consent_version: body.email_marketing_opt_in === true && typeof body.consent_version === 'string' ? body.consent_version.slice(0, 40) : undefined,
+        client_ip: body.email_marketing_opt_in === true ? (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() || undefined : undefined,
+        client_user_agent: body.email_marketing_opt_in === true ? (request.headers.get('user-agent') || '').slice(0, 300) : undefined,
       }),
     });
 

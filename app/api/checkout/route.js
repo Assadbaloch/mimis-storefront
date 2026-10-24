@@ -83,6 +83,13 @@ export async function POST(request) {
         notes: body.notes || '',
         redemption_code: body.redemption_code || '',
         promo_code: typeof body.promo_code === 'string' ? body.promo_code.trim().slice(0, 40) : '',
+        // Marketing email consent (2026-10-25): only a real true counts; the
+        // version names the exact wording shown (lib/emailConsent.js). IP and
+        // browser are kept with the consent as proof.
+        email_marketing_opt_in: body.email_marketing_opt_in === true,
+        consent_version: body.email_marketing_opt_in === true && typeof body.consent_version === 'string' ? body.consent_version.slice(0, 40) : undefined,
+        client_ip: body.email_marketing_opt_in === true ? (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() || undefined : undefined,
+        client_user_agent: body.email_marketing_opt_in === true ? (request.headers.get('user-agent') || '').slice(0, 300) : undefined,
         delivery_address: body.order_type === 'delivery' ? body.delivery_address : undefined,
         // Pre-orders (2026-10-24): the chosen time, checked again by the server.
         scheduled_for: typeof body.scheduled_for === 'string' && body.scheduled_for ? body.scheduled_for : undefined,

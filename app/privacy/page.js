@@ -30,7 +30,7 @@ export default async function PrivacyPage() {
                   <h1 className="text-4xl md:text-6xl font-serif font-bold text-[#1D2021] dark:text-[#f5ebd7] leading-tight tracking-tight mb-4">
                     Privacy Policy
                   </h1>
-                  <p className="text-[#5F625F] dark:text-[#f5ebd7]/60 text-sm mb-12">Effective Date: 5/27/2026</p>
+                  <p className="text-[#5F625F] dark:text-[#f5ebd7]/60 text-sm mb-12">Effective Date: 5/27/2026 · Updated 10/25/2026</p>
         
                   <div className="mimi-legal">
                     {/* The operating entity is named in the opening sentence,
@@ -112,22 +112,32 @@ export default async function PrivacyPage() {
                     <p>For assistance, reply: <strong>HELP</strong></p>
                     <p>Consent to SMS marketing is not required to purchase food or services.</p>
         
-                    <h2 className="text-2xl mt-10 mb-4 font-bold">6. Cookies & Analytics</h2>
+                    <h2 className="text-2xl mt-10 mb-4 font-bold">6. Email</h2>
+                    {/* Added 2026-10-25 with customer email. Order emails are
+                        transactional; offers only with the separate, unticked
+                        opt-in at checkout or rewards sign-up. */}
+                    <p>
+                      If you give us your email address when you order, we send your receipt and updates about that order. We send offers, rewards updates and menu news by email only if you tick the box asking for them. Ticking it is never required to order.
+                    </p>
+                    <p>Every offer email has an <strong>Unsubscribe</strong> link; one click stops offer emails to that address. Receipts and order updates still arrive for orders you place.</p>
+                    <p>We record when and where you opted in or out, so we can respect your choice. We never sell or share your email address with third parties for their marketing. Emails are sent through our email provider on our behalf.</p>
+
+                    <h2 className="text-2xl mt-10 mb-4 font-bold">7. Cookies & Analytics</h2>
                     <p>
                       Our website may use cookies and analytics tools to understand website traffic and improve user experience. You may disable cookies through your browser settings.
                     </p>
         
-                    <h2 className="text-2xl mt-10 mb-4 font-bold">7. Data Security</h2>
+                    <h2 className="text-2xl mt-10 mb-4 font-bold">8. Data Security</h2>
                     <p>
                       We take reasonable precautions to protect customer information; however, no online transmission is completely secure.
                     </p>
         
-                    <h2 className="text-2xl mt-10 mb-4 font-bold">8. Children’s Privacy</h2>
+                    <h2 className="text-2xl mt-10 mb-4 font-bold">9. Children’s Privacy</h2>
                     <p>
                       Our services are not directed toward children under 13 years old, and we do not knowingly collect information from children.
                     </p>
         
-                    <h2 className="text-2xl mt-10 mb-4 font-bold">9. Contact Us</h2>
+                    <h2 className="text-2xl mt-10 mb-4 font-bold">10. Contact Us</h2>
                     {/* A reachable email, not only a contact-page link. Carrier
                         vetting for SMS expects a direct contact route on the
                         policy itself, and a link to another page is not one. */}
