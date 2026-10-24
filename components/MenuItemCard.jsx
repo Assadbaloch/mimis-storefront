@@ -7,7 +7,7 @@ import ProductModal from '@/components/ProductModal';
 import { needsChoice, fromPrice } from '@/lib/options';
 import { useLocation } from '@/lib/location';
 import { useStoreStatus } from '@/lib/useStoreStatus';
-import { closedForNow } from '@/lib/storeHours';
+import { orderingState } from '@/lib/storeHours';
 
 // autoOpen: true when this card is the deep-link target of a `/menu?item=<clover_item_id>`
 // URL (e.g. from the rewards-page trending banner) -- opens the product modal
@@ -18,7 +18,9 @@ export default function MenuItemCard({ item, large = false, autoOpen = false, in
   // Pre-orders: "Pre-order" instead of "Add to Cart" while closed (only when
   // the owner switched website pre-orders on).
   const { location: storeLocation } = useLocation();
-  const preorderOnly = closedForNow(useStoreStatus(storeLocation));
+  const ordering = orderingState(useStoreStatus(storeLocation));
+  const preorderOnly = ordering === 'preorder';
+  const closedNow = ordering === 'closed';
   const [showModal, setShowModal] = useState(false);
   const name = displayName(item.name);
   const description = item.description_override || null;
@@ -135,13 +137,14 @@ export default function MenuItemCard({ item, large = false, autoOpen = false, in
           )}
           {quantity === 0 ? (
             <button
-              onClick={handleAdd}
-              aria-label={preorderOnly ? `Pre-order ${name}` : `Add ${name} to cart`}
-              className="btn-primary mt-auto self-start !px-3 sm:!px-4 !py-2 !text-[11px] whitespace-nowrap active:scale-95 transition-transform"
+              onClick={closedNow ? undefined : handleAdd}
+              disabled={closedNow}
+              aria-label={closedNow ? `Closed now, ${name} can be ordered when we open` : preorderOnly ? `Pre-order ${name}` : `Add ${name} to cart`}
+              className="btn-primary mt-auto self-start !px-3 sm:!px-4 !py-2 !text-[11px] whitespace-nowrap active:scale-95 transition-transform disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {/* "Add to Cart" wrapped onto two lines on 320px phones. */}
-              <span className="sm:hidden">{preorderOnly ? 'Pre-order' : 'Add'}</span>
-              <span className="hidden sm:inline">{preorderOnly ? 'Pre-order' : 'Add to Cart'}</span>
+              <span className="sm:hidden">{closedNow ? 'Closed' : preorderOnly ? 'Pre-order' : 'Add'}</span>
+              <span className="hidden sm:inline">{closedNow ? 'Closed now' : preorderOnly ? 'Pre-order' : 'Add to Cart'}</span>
             </button>
           ) : (
             <div

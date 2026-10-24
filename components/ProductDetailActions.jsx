@@ -4,7 +4,7 @@ import { formatPrice } from '@/lib/format';
 import { useCart } from '@/lib/cart';
 import { useLocation } from '@/lib/location';
 import { useStoreStatus } from '@/lib/useStoreStatus';
-import { closedForNow } from '@/lib/storeHours';
+import { orderingState } from '@/lib/storeHours';
 import ItemOptions from '@/components/ItemOptions';
 import {
   useOptionsState, useItemModifiers, unitPrice, chosenOptions, selectionProblem, hasOptions, missingSectionKey,
@@ -26,7 +26,9 @@ const LINE = 'var(--mimis-line)';
 export default function ProductDetailActions({ item, name, variant = 'modal', onAdded }) {
   // Pre-orders: the button reads "Pre-order" while closed (owner switched on).
   const { location: storeLocation } = useLocation();
-  const addWord = closedForNow(useStoreStatus(storeLocation)) ? 'Pre-order' : 'Add to cart';
+  const ordering = orderingState(useStoreStatus(storeLocation));
+  const closedNow = ordering === 'closed';
+  const addWord = closedNow ? 'Closed now' : ordering === 'preorder' ? 'Pre-order' : 'Add to cart';
   const { addItem } = useCart();
   const optionsState = useOptionsState();
   const mods = useItemModifiers(item);
@@ -58,10 +60,10 @@ export default function ProductDetailActions({ item, name, variant = 'modal', on
     : showOptions
       ? selectionProblem(full, selected)
       : item.price_cents > 0 ? null : 'Not available online';
-  const blocked = loading || problem === 'Not available online';
+  const blocked = closedNow || (loading || problem === 'Not available online');
 
   function handleAdd() {
-    if (added) return;
+    if (added || closedNow) return;
     if (problem) {
       const key = showOptions ? missingSectionKey(full, selected) : null;
       if (key) setAttention({ key, n: Date.now() });
@@ -161,8 +163,8 @@ export default function ProductDetailActions({ item, name, variant = 'modal', on
             disabled={blocked}
             className={`btn-primary flex-1 h-12 !py-0 !px-5 !text-[12.5px] !justify-between ${added ? 'animate-pulse-once' : ''} ${problem && !blocked ? '!opacity-90' : ''}`}
           >
-            <span className="truncate">{added ? 'Added ✓' : loading ? addWord : problem || addWord}</span>
-            {!added && unit > 0 && problem !== 'Not available online' && (
+            <span className="truncate">{added ? 'Added ✓' : closedNow ? addWord : loading ? addWord : problem || addWord}</span>
+            {!added && !closedNow && unit > 0 && problem !== 'Not available online' && (
               <span className="tabular-nums tracking-normal text-[14px]">{formatPrice(unit * quantity)}</span>
             )}
           </button>

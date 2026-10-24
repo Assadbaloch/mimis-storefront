@@ -133,6 +133,7 @@ function HomeArt({ logo, onLogoError }) {
 // website pre-orders are on (closed -> "Pre-order for later", busy -> the
 // longer time). With pre-orders off (status null / not enabled) it is unchanged.
 function subFor(m, chosen, status) {
+  if (m === 'pickup' && chosen && status && !status.preorders_enabled && status.has_hours && !status.open_now) return 'Closed now';
   if (m === 'pickup' && chosen && status?.preorders_enabled) {
     if (status.paused) return "Not taking orders right now";
     if (!status.open_now) return 'Pre-order for later';

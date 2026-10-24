@@ -12,7 +12,7 @@ import PromoBanner from '@/components/PromoBanner';
 import OrderTypePicker from '@/components/OrderTypePicker';
 import WhenPicker from '@/components/WhenPicker';
 import { useStoreStatus } from '@/lib/useStoreStatus';
-import { whenShort, whenLong } from '@/lib/storeHours';
+import { whenShort, whenLong, opensSentence, orderingState } from '@/lib/storeHours';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 
 // Session-scoped (not localStorage): this mirrors a live, ~15-minute Clover
@@ -71,6 +71,8 @@ export default function CheckoutPage() {
   const preorderOn = !!storeStatus?.preorders_enabled;
   const isPreorder = preorderOn && when.mode === 'later' && !!when.at;
   const cannotOrderNow = preorderOn && (storeStatus.paused || (!storeStatus.open_now && !isPreorder));
+  // Pre-orders off and the store closed: no ordering (the server refuses it too).
+  const closedNoPreorder = orderingState(storeStatus) === 'closed';
   const [form, setForm] = useState({
     first_name: '', last_name: '', phone_number: '', email: '', notes: '',
     address_line1: '', address_line2: '', city: '', state: '', postal_code: '',
@@ -364,6 +366,10 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (closedNoPreorder) {
+      setError(`We’re closed right now. ${opensSentence(storeStatus)}`.trim());
+      return;
+    }
     if (cannotOrderNow) {
       setError(storeStatus.paused ? 'We’re not taking orders for a short while. Please try again soon.' : 'Please choose a time for your pre-order.');
       return;
@@ -542,6 +548,13 @@ export default function CheckoutPage() {
           value={when} onChange={setWhen} refreshKey={timesKey} />
       )}
 
+      {closedNoPreorder && (
+        <div className="rounded-app border border-highlight-line bg-highlight-wash p-4 mb-6" role="status">
+          <p className="text-app font-semibold">We&rsquo;re closed right now.</p>
+          <p className="text-app-soft text-sm mt-0.5">{opensSentence(storeStatus)} Online ordering opens when we do.</p>
+        </div>
+      )}
+
       <div className="rounded-app border border-line bg-surface p-5 mb-6">
         {items.map((i) => (
           <div key={i._key} className="flex justify-between gap-3 text-sm py-1.5">
@@ -656,10 +669,12 @@ export default function CheckoutPage() {
         {error && <p className="text-danger text-sm">{error}</p>}
         {redirectNotice && <p className="text-highlight text-sm">{redirectNotice}</p>}
 
-        <button type="submit" disabled={submitting || !orderType || cannotOrderNow || (preorderOn && when.mode === 'later' && !when.at)} className="btn-primary w-full justify-center !flex disabled:opacity-50">
+        <button type="submit" disabled={submitting || !orderType || closedNoPreorder || cannotOrderNow || (preorderOn && when.mode === 'later' && !when.at)} className="btn-primary w-full justify-center !flex disabled:opacity-50">
           {submitting
             ? 'Starting checkout…'
-            : !orderType
+            : closedNoPreorder
+              ? 'Closed now'
+              : !orderType
               ? 'Choose Pickup or Delivery above'
               : cannotOrderNow
                 ? (storeStatus.paused ? 'Not taking orders right now' : 'Choose a pickup time above')
