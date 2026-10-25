@@ -1,12 +1,8 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { getActiveDesign } from '@/lib/design';
 
 // Terms of Service, ported from the reference design.
 //
-// Only reachable while the reference design is live: the original design has no
-// link to it and no equivalent page, so serving it there would strand visitors
-// on a page with chrome that doesn't match the rest of the site.
+// Served under every design since 2026-10-25 (A2P campaign links point here).
 
 export const dynamic = 'force-dynamic';
 
@@ -15,9 +11,10 @@ export const metadata = {
   alternates: { canonical: '/terms' },
 };
 
-export default async function TermsPage() {
-  if ((await getActiveDesign()) !== 'reference') notFound();
-
+export default function TermsPage() {
+  // Always served (2026-10-25). The A2P 10DLC campaigns link here; a 404
+  // after a design switch would put the SMS registration at risk, so this
+  // page no longer depends on which design is active.
   return (
     <div className="bg-[#F3EFE4] dark:bg-[#0a0604]">
       <div className="pb-24">
@@ -30,15 +27,15 @@ export default async function TermsPage() {
                   <h1 className="text-4xl md:text-6xl font-serif font-bold text-[#1D2021] dark:text-[#f5ebd7] leading-tight tracking-tight mb-4">
                     Terms of Service
                   </h1>
-                  <p className="text-[#5F625F] dark:text-[#f5ebd7]/60 text-sm mb-12">Effective Date: 5/27/2026</p>
-        
+                  <p className="text-[#5F625F] dark:text-[#f5ebd7]/60 text-sm mb-12">Effective Date: 5/27/2026 · Updated 10/25/2026</p>
+                  
                   <div className="mimi-legal">
                     <p>
-                      Welcome to MiMi’s Pizza & Burger, operated by <strong>Khidma Brothers LLC d/b/a MiMi’s Pizza &amp; Burger</strong>. By using our website, placing orders, or participating in MiMi’s Online Rewards, you agree to the following Terms of Service.
+                      Welcome to MiMi’s Pizza &amp; Burger, operated by <strong>Khidma Brothers LLC d/b/a MiMi’s Pizza &amp; Burger</strong>. By using our website, placing orders, or participating in MiMi’s Online Rewards, you agree to the following Terms of Service.
                     </p>
         
                     <h2 className="text-2xl mt-10 mb-4 font-bold">1. Online Ordering</h2>
-                    <p>MiMi’s Pizza & Burger provides online ordering for customer convenience.</p>
+                    <p>MiMi’s Pizza &amp; Burger provides online ordering for customer convenience.</p>
                     <ul className="list-disc pl-6 space-y-2 mb-6 text-[#3D4041] dark:text-[#f5ebd7]/80">
                       <li>Menu items, pricing, promotions, and availability may change at any time without notice.</li>
                       <li>We reserve the right to refuse or cancel orders at our discretion.</li>
@@ -46,12 +43,8 @@ export default async function TermsPage() {
         
                     <h2 className="text-2xl mt-10 mb-4 font-bold">2. No Refund Policy</h2>
                     <p><strong>ALL SALES ARE FINAL.</strong></p>
-                    <p>
-                      Due to the perishable nature of food products, MiMi’s Pizza & Burger does not offer refunds once an order has been prepared or fulfilled.
-                    </p>
-                    <p>
-                      If there is an issue with your order, please contact the restaurant directly. We may attempt to resolve concerns at our discretion.
-                    </p>
+                    <p>Due to the perishable nature of food products, MiMi’s Pizza &amp; Burger does not offer refunds once an order has been prepared or fulfilled.</p>
+                    <p>If there is an issue with your order, please contact the restaurant directly. We may attempt to resolve concerns at our discretion.</p>
         
                     <h2 className="text-2xl mt-10 mb-4 font-bold">3. MiMi’s Online Rewards Program</h2>
                     <h3 className="text-xl mt-6 mb-2 font-bold">Earning Points</h3>
@@ -59,7 +52,6 @@ export default async function TermsPage() {
                       <li>Customers may earn loyalty points through qualifying purchases.</li>
                       <li>Points may vary based on promotions and purchases.</li>
                     </ul>
-        
                     <h3 className="text-xl mt-6 mb-2 font-bold">Reward Redemption</h3>
                     <p>Rewards may be redeemed online based on available point balances.</p>
                     <p>Rules:</p>
@@ -69,29 +61,27 @@ export default async function TermsPage() {
                       <li>Points have no cash value</li>
                       <li>Rewards may not be transferred between customers</li>
                     </ul>
-                    <p>MiMi’s Pizza & Burger reserves the right to modify or discontinue rewards at any time.</p>
-        
+                    <p>MiMi’s Pizza &amp; Burger reserves the right to modify or discontinue rewards at any time.</p>
                     <h3 className="text-xl mt-6 mb-2 font-bold">Abuse of Rewards</h3>
+                    <p>Fraudulent activity, manipulation, duplicate accounts, or misuse of rewards may result in suspension or removal from the loyalty program.</p>
+
+                    <h2 className="text-2xl mt-10 mb-4 font-bold">4. SMS Communications &amp; Consent</h2>
+                    {/* Rewritten 2026-10-25 for A2P 10DLC (CHATBOT_SPEC.md). */}
                     <p>
-                      Fraudulent activity, manipulation, duplicate accounts, or misuse of rewards may result in suspension or removal from the loyalty program.
-                    </p>
-        
-                    <h2 className="text-2xl mt-10 mb-4 font-bold">4. SMS Communications & Consent</h2>
-                    <p>
-                      By providing your phone number, you consent to receive text communications from <strong>Khidma Brothers LLC d/b/a MiMi’s Pizza &amp; Burger</strong>, including:
+                      <strong>Khidma Brothers LLC d/b/a MiMi’s Pizza &amp; Burger</strong> offers optional SMS text messages for order confirmations and updates, rewards updates, and promotions.
                     </p>
                     <ul className="list-disc pl-6 space-y-2 mb-6 text-[#3D4041] dark:text-[#f5ebd7]/80">
-                      <li>Order notifications</li>
-                      <li>Promotions and discounts</li>
-                      <li>Rewards updates</li>
-                      <li>Birthday rewards</li>
-                      <li>Customer service messages</li>
+                      <li><strong>How you opt in:</strong> by checking the SMS consent boxes in our website chat, on our contact form, at online checkout, or when joining MiMi&rsquo;s Rewards. If you order by phone, you may agree verbally to receive order-related texts only.</li>
+                      <li><strong>Promotional texts</strong> need their own separate consent (the &ldquo;Text me deals and rewards&rdquo; box). Consent is never a condition of purchase.</li>
+                      <li><strong>Message frequency:</strong> order texts vary with your orders; promotional texts are up to 4 messages per month. Messages may be sent using automated means.</li>
+                      <li>Message and data rates may apply.</li>
+                      <li><strong>Opt out:</strong> reply <strong>STOP</strong> to any message at any time. <strong>Help:</strong> reply <strong>HELP</strong> or email <a href="mailto:info@mimispizzami.com" className="underline">info@mimispizzami.com</a>.</li>
+                      <li>Carriers are not liable for delayed or undelivered messages.</li>
                     </ul>
-                    <p>Message and data rates may apply.</p>
-                    <p>You may opt out anytime by replying: <strong>STOP</strong></p>
-                    <p>For assistance: <strong>HELP</strong></p>
-                    <p>Consent to SMS communication is not a condition of purchase.</p>
-        
+                    <p>
+                      How we handle your number and consent is described in our <Link href="/privacy" className="underline">Privacy Policy</Link>.
+                    </p>
+
                     <h2 className="text-2xl mt-10 mb-4 font-bold">5. Limitation of Liability</h2>
                     <p>
                       We reserve the right to update these Terms at any time. Continued use of our services constitutes acceptance of updated terms.

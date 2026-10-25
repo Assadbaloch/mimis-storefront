@@ -20,7 +20,9 @@ import { renderEmbeds } from '@/lib/embeds';
 import CartBridge from '@/components/CartBridge';
 import ScrollToTop from '@/components/ScrollToTop';
 import CartBar from '@/components/CartBar';
-import ChatWidget from '@/components/ChatWidget';
+// Mimi's own chat (2026-10-25, CHATBOT_SPEC.md) replaced the GHL widget.
+// Rollback: import ChatWidget from '@/components/ChatWidget' and render it below.
+import MimisChat from '@/components/MimisChat';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -211,9 +213,9 @@ export default async function RootLayout({ children }) {
           <JoinNotifyBanner />
           <InstallAppBanner />
           {/* Customer-facing only. The admin screens are the owner's back
-              office -- a sales chat bubble floating over the menu editor is
+              office -- a chat bubble floating over the menu editor is
               noise, and it would cover the same bottom-right controls there. */}
-          {!isAdmin && <ChatWidget />}
+          {!isAdmin && <MimisChat liftForTabBar={!shell && !isReference} />}
           {/* Rendered for BOTH shells: a themed site has no SiteHeader, so this
               first-visit prompt is the only place the customer is asked which
               restaurant they're ordering from. */}

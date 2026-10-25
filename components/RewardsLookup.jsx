@@ -6,6 +6,8 @@ import { useLocation } from '@/lib/location';
 import TrendingBanner from '@/components/TrendingBanner';
 import EmailOptIn from '@/components/EmailOptIn';
 import { EMAIL_CONSENT_VERSION, looksLikeEmail } from '@/lib/emailConsent';
+import SmsOptIn from '@/components/SmsOptIn';
+import { smsConsentFields } from '@/lib/smsConsent';
 import {
   REDEMPTION_CODE_KEY,
   MEMBER_PHONE_KEY,
@@ -38,6 +40,8 @@ export default function RewardsLookup() {
   const [enrollName, setEnrollName] = useState('');
   const [enrollEmail, setEnrollEmail] = useState('');
   const [enrollEmailOptIn, setEnrollEmailOptIn] = useState(false);
+  const [smsTxn, setSmsTxn] = useState(false);
+  const [smsMkt, setSmsMkt] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [welcomeBonus, setWelcomeBonus] = useState(null);
   const [activeRedemptions, setActiveRedemptions] = useState([]);
@@ -181,6 +185,7 @@ export default function RewardsLookup() {
           email: enrollEmail,
           email_marketing_opt_in: enrollEmailOptIn && looksLikeEmail(enrollEmail),
           consent_version: enrollEmailOptIn && looksLikeEmail(enrollEmail) ? EMAIL_CONSENT_VERSION : undefined,
+          ...smsConsentFields(smsTxn, smsMkt),
           phone_number: phoneInput,
           // Without this the API falls back to "Madison Heights" for EVERY
           // signup, which is why all 8 members were stamped Madison Heights
@@ -281,6 +286,7 @@ export default function RewardsLookup() {
             className="input"
           />
           {looksLikeEmail(enrollEmail) && <EmailOptIn checked={enrollEmailOptIn} onChange={setEnrollEmailOptIn} className="text-left" />}
+          <SmsOptIn txn={smsTxn} mkt={smsMkt} onTxn={setSmsTxn} onMkt={setSmsMkt} idPrefix="rewards-sms" className="text-left" />
           {errorMsg && <p className="text-danger text-sm">{errorMsg}</p>}
           <button type="submit" disabled={view === 'enrolling'} className="btn-primary w-full">
             {view === 'enrolling' ? 'Joining…' : 'Join Mimi’s Rewards'}

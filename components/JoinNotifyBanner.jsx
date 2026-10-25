@@ -6,6 +6,8 @@ import { MEMBER_PHONE_KEY, normalizePhone, formatPhoneInput } from '@/lib/loyalt
 import { useLocation } from '@/lib/location';
 import { useCart } from '@/lib/cart';
 import { useFloatingSlot, useEngaged } from '@/lib/floatingSlot';
+import SmsOptIn from '@/components/SmsOptIn';
+import { smsConsentFields } from '@/lib/smsConsent';
 
 const DISMISS_KEY = 'mimis-push-dismissed-general';
 
@@ -30,6 +32,8 @@ export default function JoinNotifyBanner() {
   const [state, setState] = useState('checking'); // checking | join | returning | joining | subscribed | denied | unsupported | dismissed | error
   const [phoneInput, setPhoneInput] = useState('');
   const [nameInput, setNameInput] = useState('');
+  const [smsTxn, setSmsTxn] = useState(false);
+  const [smsMkt, setSmsMkt] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [savedPhone, setSavedPhone] = useState('');
 
@@ -124,7 +128,7 @@ export default function JoinNotifyBanner() {
         headers: { 'Content-Type': 'application/json' },
         // See the note in MemberRewardsPanel: omitting location silently
         // enrols everyone at Madison Heights.
-        body: JSON.stringify({ full_name: nameInput, phone_number: phone, location }),
+        body: JSON.stringify({ full_name: nameInput, phone_number: phone, location, ...smsConsentFields(smsTxn, smsMkt) }),
       });
       const data = await res.json();
       if (!data.success) {
@@ -218,7 +222,7 @@ export default function JoinNotifyBanner() {
       </div>
       <p className="text-app text-sm font-semibold mb-1">Join free &amp; get notified</p>
       <p className="text-app-soft text-xs mb-3">Earn points on every order, plus alerts on deals and order status. No password needed.</p>
-      <form onSubmit={handleJoin} className="flex flex-col gap-2">
+      <form onSubmit={handleJoin} className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
         <input
           type="tel"
           inputMode="numeric"
@@ -236,6 +240,7 @@ export default function JoinNotifyBanner() {
           className="input !py-2 text-sm"
           required
         />
+        <SmsOptIn txn={smsTxn} mkt={smsMkt} onTxn={setSmsTxn} onMkt={setSmsMkt} idPrefix="join-sms" />
         {errorMsg && <p className="text-danger text-xs">{errorMsg}</p>}
         <button type="submit" disabled={state === 'joining'} className="btn-primary w-full !py-2 text-sm disabled:opacity-60">
           {state === 'joining' ? 'Joining…' : 'Join & Notify Me'}

@@ -35,6 +35,22 @@ function normalizePhone(raw) {
   return null;
 }
 
+function smsFields(body) {
+  const txn = body?.sms_transactional_opt_in === true;
+  const mkt = body?.sms_marketing_opt_in === true;
+  return {
+    sms_transactional_opt_in: txn,
+    sms_marketing_opt_in: mkt,
+    sms_txn_version: txn && typeof body.sms_txn_version === 'string' ? body.sms_txn_version.slice(0, 40) : undefined,
+    sms_mkt_version: mkt && typeof body.sms_mkt_version === 'string' ? body.sms_mkt_version.slice(0, 40) : undefined,
+  };
+}
+
+// IP and browser are kept with a consent as proof, and only then.
+function anyOptIn(body) {
+  return body?.email_marketing_opt_in === true || body?.sms_transactional_opt_in === true || body?.sms_marketing_opt_in === true;
+}
+
 export async function POST(request) {
   let body;
   try {
@@ -88,8 +104,11 @@ export async function POST(request) {
         // browser are kept with the consent as proof.
         email_marketing_opt_in: body.email_marketing_opt_in === true,
         consent_version: body.email_marketing_opt_in === true && typeof body.consent_version === 'string' ? body.consent_version.slice(0, 40) : undefined,
-        client_ip: body.email_marketing_opt_in === true ? (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() || undefined : undefined,
-        client_user_agent: body.email_marketing_opt_in === true ? (request.headers.get('user-agent') || '').slice(0, 300) : undefined,
+        // SMS consent (A2P, 2026-10-25): two separate boxes, a real true only;
+        // the versions name the exact wording shown (lib/smsConsent.js).
+        ...smsFields(body),
+        client_ip: anyOptIn(body) ? (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() || undefined : undefined,
+        client_user_agent: anyOptIn(body) ? (request.headers.get('user-agent') || '').slice(0, 300) : undefined,
         delivery_address: body.order_type === 'delivery' ? body.delivery_address : undefined,
         // Pre-orders (2026-10-24): the chosen time, checked again by the server.
         scheduled_for: typeof body.scheduled_for === 'string' && body.scheduled_for ? body.scheduled_for : undefined,

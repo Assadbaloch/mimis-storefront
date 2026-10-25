@@ -16,6 +16,8 @@ import { whenShort, whenLong, opensSentence, orderingState } from '@/lib/storeHo
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import EmailOptIn from '@/components/EmailOptIn';
 import { EMAIL_CONSENT_VERSION, looksLikeEmail } from '@/lib/emailConsent';
+import SmsOptIn from '@/components/SmsOptIn';
+import { smsConsentFields } from '@/lib/smsConsent';
 
 // Session-scoped (not localStorage): this mirrors a live, ~15-minute Clover
 // checkout session, not something that should survive past the browser tab
@@ -87,6 +89,9 @@ export default function CheckoutPage() {
   const [promoCode, setPromoCode] = useState('');
   // Marketing email opt-in: unchecked by default, never required (lib/emailConsent.js).
   const [emailOptIn, setEmailOptIn] = useState(false);
+  // SMS consent (A2P): two separate boxes, unchecked by default, optional.
+  const [smsTxn, setSmsTxn] = useState(false);
+  const [smsMkt, setSmsMkt] = useState(false);
   const [promoCodesActive, setPromoCodesActive] = useState(false);
   // Live preview of the promotion this phone number qualifies for, shown on
   // this first step. Read-only (mimis.preview_order_discount); the amount
@@ -418,6 +423,7 @@ export default function CheckoutPage() {
           promo_code: promoCode.trim() || undefined,
           email_marketing_opt_in: emailOptIn && looksLikeEmail(form.email),
           consent_version: emailOptIn && looksLikeEmail(form.email) ? EMAIL_CONSENT_VERSION : undefined,
+          ...smsConsentFields(smsTxn, smsMkt),
           delivery_address,
           // The server prices every order from the menu (price_online_items):
           // what it needs is the Clover item id and the chosen option ids.
@@ -637,6 +643,7 @@ export default function CheckoutPage() {
           <input placeholder="Last name" value={form.last_name} onChange={update('last_name')} className="input" />
         </div>
         <input required type="tel" placeholder="Phone number*" value={form.phone_number} onChange={update('phone_number')} className="input w-full" />
+        <SmsOptIn txn={smsTxn} mkt={smsMkt} onTxn={setSmsTxn} onMkt={setSmsMkt} idPrefix="checkout-sms" className="-mt-1" />
         <input type="email" placeholder="Email (optional, for your receipt)" value={form.email} onChange={update('email')} className="input w-full" />
         {looksLikeEmail(form.email) && <EmailOptIn checked={emailOptIn} onChange={setEmailOptIn} className="-mt-1" />}
 

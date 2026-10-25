@@ -4,13 +4,14 @@ import { getActiveDesign } from '@/lib/design';
 import OrderAtLocationLink from '@/components/designs/reference/OrderAtLocationLink';
 import OrderModeTabs from '@/components/designs/reference/OrderModeTabs';
 import { getStoreLocations } from '@/lib/storeLocations';
+import ContactForm from '@/components/ContactForm';
 
 // Contact page, ported from the reference design.
 //
 // Two changes from the reference, both because this is the live storefront:
 // the "Start Order" buttons pointed at two legacy websites and now reach /menu,
-// and the "Call" buttons are real tel: links. The GHL enquiry form is kept
-// exactly as the reference had it.
+// and the "Call" buttons are real tel: links. The GHL enquiry form was
+// replaced on 2026-10-25 by components/ContactForm.jsx (CHATBOT_SPEC.md).
 //
 // 2026-10-23: hours and the open/closed line come from mimis.store_hours in
 // Michigan time (lib/storeHours.js) -- the same hours the dashboard edits and
@@ -202,25 +203,9 @@ export default async function ContactPage() {
                       </div>
                       
                       <div className="lg:col-span-3 w-full px-0 min-w-0">
-                        <iframe
-                          src="https://api.leadconnectorhq.com/widget/form/fWvRC8cYY47errwDYbjI"
-                          style={{ width: "100%", border: "none", borderRadius: "4px", overflow: "hidden" }}
-                          className="min-h-[1050px] md:min-h-[987px] w-full"
-                          scrolling="no"
-                          id="inline-fWvRC8cYY47errwDYbjI"
-                          data-layout="{'id':'INLINE'}"
-                          data-trigger-type="alwaysShow"
-                          data-trigger-value=""
-                          data-activation-type="alwaysActivated"
-                          data-activation-value=""
-                          data-deactivation-type="neverDeactivate"
-                          data-deactivation-value=""
-                          data-form-name="Website Inquiry"
-                          data-height="987"
-                          data-layout-iframe-id="inline-fWvRC8cYY47errwDYbjI"
-                          data-form-id="fWvRC8cYY47errwDYbjI"
-                          title="Website Inquiry"
-                        />
+                        {/* GHL "Website Inquiry" iframe replaced 2026-10-25 by our own form
+                            (messages land in the owner dashboard Chats tab). */}
+                        <ContactForm />
                       </div>
                     </div>
                   </div>

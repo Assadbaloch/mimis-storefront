@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { getSupabasePublicClient } from '@/lib/supabaseClient';
 import { lookupMember } from '@/lib/customer';
+import SmsOptIn from '@/components/SmsOptIn';
+import { smsConsentFields } from '@/lib/smsConsent';
 import { useLocation } from '@/lib/location';
 import {
   REDEMPTION_CODE_KEY,
@@ -37,6 +39,8 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
   const [selectedCode, setSelectedCode] = useState(null);
   const [joinName, setJoinName] = useState('');
   const [joinEmail, setJoinEmail] = useState('');
+  const [smsTxn, setSmsTxn] = useState(false);
+  const [smsMkt, setSmsMkt] = useState(false);
   const [joining, setJoining] = useState(false);
   const [redeemingId, setRedeemingId] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -182,7 +186,7 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
         // location matters: without it /api/enroll stamps every new member
         // "Madison Heights", so Warren signups vanished from that location's
         // member list.
-        body: JSON.stringify({ full_name: joinName, email: joinEmail, phone_number: phoneInput, location }),
+        body: JSON.stringify({ full_name: joinName, email: joinEmail, phone_number: phoneInput, location, ...smsConsentFields(smsTxn, smsMkt) }),
       });
       const data = await res.json();
       if (!data.success) {
@@ -261,6 +265,7 @@ export default function MemberRewardsPanel({ onCodeChange = () => {}, onPhoneIde
             onChange={(e) => setJoinEmail(e.target.value)}
             className="input w-full"
           />
+          <SmsOptIn txn={smsTxn} mkt={smsMkt} onTxn={setSmsTxn} onMkt={setSmsMkt} idPrefix="panel-sms" />
           <div className="flex items-center gap-3">
             <button type="submit" disabled={joining} className="btn-primary text-sm disabled:opacity-50">
               {joining ? 'Joining…' : 'Join & Check Points'}

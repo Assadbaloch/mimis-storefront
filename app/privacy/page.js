@@ -1,12 +1,8 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { getActiveDesign } from '@/lib/design';
 
 // Privacy Policy, ported from the reference design.
 //
-// Only reachable while the reference design is live: the original design has no
-// link to it and no equivalent page, so serving it there would strand visitors
-// on a page with chrome that doesn't match the rest of the site.
+// Served under every design since 2026-10-25 (A2P campaign links point here).
 
 export const dynamic = 'force-dynamic';
 
@@ -15,9 +11,10 @@ export const metadata = {
   alternates: { canonical: '/privacy' },
 };
 
-export default async function PrivacyPage() {
-  if ((await getActiveDesign()) !== 'reference') notFound();
-
+export default function PrivacyPage() {
+  // Always served (2026-10-25). The A2P 10DLC campaigns link here; a 404
+  // after a design switch would put the SMS registration at risk, so this
+  // page no longer depends on which design is active.
   return (
     <div className="bg-[#F3EFE4] dark:bg-[#0a0604]">
       <div className="pb-24">
@@ -31,21 +28,14 @@ export default async function PrivacyPage() {
                     Privacy Policy
                   </h1>
                   <p className="text-[#5F625F] dark:text-[#f5ebd7]/60 text-sm mb-12">Effective Date: 5/27/2026 · Updated 10/25/2026</p>
-        
+                  
                   <div className="mimi-legal">
-                    {/* The operating entity is named in the opening sentence,
-                        deliberately, rather than buried in a contact section at
-                        the bottom. A2P 10DLC vetting cross-checks the brand on
-                        the campaign (Khidma Brothers LLC) against the website
-                        that campaign points at, and a policy that only ever
-                        says "MiMi's Pizza & Burger" cannot substantiate it --
-                        which is a rejection, not a query. */}
                     <p>
-                      Welcome to MiMi’s Pizza & Burger, operated by <strong>Khidma Brothers LLC d/b/a MiMi’s Pizza &amp; Burger</strong> (“MiMi’s,” “we,” “our,” or “us”). We value your privacy and are committed to protecting your information while providing a seamless online ordering and rewards experience.
+                      Welcome to MiMi’s Pizza &amp; Burger, operated by <strong>Khidma Brothers LLC d/b/a MiMi’s Pizza &amp; Burger</strong> (“MiMi’s,” “we,” “our,” or “us”). We value your privacy and are committed to protecting your information while providing a seamless online ordering and rewards experience.
                     </p>
         
                     <h2 className="text-2xl mt-10 mb-4 font-bold">1. Information We Collect</h2>
-                    <p>We may collect the following information when you interact with MiMi’s Pizza & Burger:</p>
+                    <p>We may collect the following information when you interact with MiMi’s Pizza &amp; Burger:</p>
                     <ul className="list-disc pl-6 space-y-2 mb-6 text-[#3D4041] dark:text-[#f5ebd7]/80">
                       <li>Name</li>
                       <li>Phone number</li>
@@ -58,7 +48,7 @@ export default async function PrivacyPage() {
                     <ul className="list-disc pl-6 space-y-2 mb-6 text-[#3D4041] dark:text-[#f5ebd7]/80">
                       <li>Place an order online</li>
                       <li>Join MiMi’s Online Rewards</li>
-                      <li>Contact us by phone, text, or email</li>
+                      <li>Contact us by phone, text, email or our website chat</li>
                       <li>Subscribe to promotions or SMS updates</li>
                     </ul>
         
@@ -73,9 +63,9 @@ export default async function PrivacyPage() {
                       <li>Respond to questions or support requests</li>
                     </ul>
         
-                    <h2 className="text-2xl mt-10 mb-4 font-bold">3. Online Ordering & Third-Party Platforms</h2>
+                    <h2 className="text-2xl mt-10 mb-4 font-bold">3. Online Ordering &amp; Third-Party Platforms</h2>
                     <p>
-                      MiMi’s Pizza & Burger may work with third-party providers for ordering and payment processing, including but not limited to:
+                      MiMi’s Pizza &amp; Burger may work with third-party providers for ordering and payment processing, including but not limited to:
                     </p>
                     <ul className="list-disc pl-6 space-y-2 mb-6 text-[#3D4041] dark:text-[#f5ebd7]/80">
                       <li>Slice</li>
@@ -93,25 +83,28 @@ export default async function PrivacyPage() {
                     </ul>
                     <p>This information helps us personalize offers and improve your rewards experience.</p>
         
-                    <h2 className="text-2xl mt-10 mb-4 font-bold">5. SMS Communications</h2>
-                    {/* This is the paragraph a carrier reviewer reads to decide
-                        whether the registered brand matches the site, so the
-                        entity is named here too rather than only in the intro. */}
+                    <h2 className="text-2xl mt-10 mb-4 font-bold">5. SMS Communications &amp; Consent</h2>
+                    {/* Rewritten 2026-10-25 for A2P 10DLC (CHATBOT_SPEC.md). This is
+                        the paragraph a carrier reviewer reads to decide whether the
+                        registered brand matches the site, so the entity is named
+                        here, consent is opt-in only, and the no-sharing statement
+                        carriers require is below. */}
                     <p>
-                      By providing your phone number, you agree to receive SMS messages from <strong>Khidma Brothers LLC d/b/a MiMi’s Pizza &amp; Burger</strong>, including:
+                      <strong>Khidma Brothers LLC d/b/a MiMi’s Pizza &amp; Burger</strong> offers optional text messages. We text you only if you choose to receive them:
                     </p>
                     <ul className="list-disc pl-6 space-y-2 mb-6 text-[#3D4041] dark:text-[#f5ebd7]/80">
-                      <li>Order notifications</li>
-                      <li>Loyalty/reward updates</li>
-                      <li>Promotional offers</li>
-                      <li>Birthday rewards</li>
-                      <li>Special restaurant announcements</li>
+                      <li><strong>Order texts</strong> (order confirmations, order status, pickup and delivery updates, and replies to your questions) &mdash; only if you check the &ldquo;Text me about my orders&rdquo; box, or agree out loud when you order by phone. Message frequency varies with your orders.</li>
+                      <li><strong>Deals and rewards texts</strong> (offers, rewards and announcements) &mdash; only if you check the separate &ldquo;Text me deals and rewards&rdquo; box. Up to 4 messages per month.</li>
                     </ul>
-                    <p>Message & data rates may apply.</p>
-                    <p>You may opt out at any time by replying: <strong>STOP</strong> to any text message.</p>
-                    <p>For assistance, reply: <strong>HELP</strong></p>
-                    <p>Consent to SMS marketing is not required to purchase food or services.</p>
-        
+                    <p>
+                      You can check these boxes in our website chat, on our contact form, at online checkout, or when you join MiMi&rsquo;s Rewards. Both boxes start unchecked, and neither is required: consent is not a condition of purchase. Messages may be sent using automated means. Message and data rates may apply.
+                    </p>
+                    <p>Reply <strong>STOP</strong> to any text to opt out at any time. Reply <strong>HELP</strong> for help, or email <a href="mailto:info@mimispizzami.com" className="underline">info@mimispizzami.com</a>. Carriers are not liable for delayed or undelivered messages.</p>
+                    <p>We record the date, time, page and wording of every opt-in and opt-out so we can honor your choice.</p>
+                    <p>
+                      <strong>We do not share or sell mobile phone numbers or SMS opt-in data with third parties or affiliates for marketing or promotional purposes.</strong> Text messaging originator opt-in data and consent will not be shared with any third parties, except the providers that deliver our messages on our behalf.
+                    </p>
+
                     <h2 className="text-2xl mt-10 mb-4 font-bold">6. Email</h2>
                     {/* Added 2026-10-25 with customer email. Order emails are
                         transactional; offers only with the separate, unticked

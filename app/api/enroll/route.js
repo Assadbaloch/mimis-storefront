@@ -12,6 +12,21 @@ import { NextResponse } from 'next/server';
 const FUNCTIONS_BASE_URL =
   process.env.MIMIS_FUNCTIONS_BASE_URL || 'https://igchqqyassrfpsliyjec.supabase.co/functions/v1';
 
+function smsFields(body) {
+  const txn = body?.sms_transactional_opt_in === true;
+  const mkt = body?.sms_marketing_opt_in === true;
+  return {
+    sms_transactional_opt_in: txn,
+    sms_marketing_opt_in: mkt,
+    sms_txn_version: txn && typeof body.sms_txn_version === 'string' ? body.sms_txn_version.slice(0, 40) : undefined,
+    sms_mkt_version: mkt && typeof body.sms_mkt_version === 'string' ? body.sms_mkt_version.slice(0, 40) : undefined,
+  };
+}
+
+function anyOptIn(body) {
+  return body?.email_marketing_opt_in === true || body?.sms_transactional_opt_in === true || body?.sms_marketing_opt_in === true;
+}
+
 export async function POST(request) {
   let body;
   try {
@@ -61,8 +76,10 @@ export async function POST(request) {
         // Marketing email consent (2026-10-25): see app/api/checkout/route.js.
         email_marketing_opt_in: body.email_marketing_opt_in === true,
         consent_version: body.email_marketing_opt_in === true && typeof body.consent_version === 'string' ? body.consent_version.slice(0, 40) : undefined,
-        client_ip: body.email_marketing_opt_in === true ? (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() || undefined : undefined,
-        client_user_agent: body.email_marketing_opt_in === true ? (request.headers.get('user-agent') || '').slice(0, 300) : undefined,
+        // SMS consent (A2P, 2026-10-25): see app/api/checkout/route.js.
+        ...smsFields(body),
+        client_ip: anyOptIn(body) ? (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() || undefined : undefined,
+        client_user_agent: anyOptIn(body) ? (request.headers.get('user-agent') || '').slice(0, 300) : undefined,
       }),
     });
 
