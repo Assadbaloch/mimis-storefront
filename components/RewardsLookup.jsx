@@ -49,6 +49,25 @@ export default function RewardsLookup() {
   const [redeemError, setRedeemError] = useState('');
   const [justRedeemed, setJustRedeemed] = useState(null);
   const [copiedCode, setCopiedCode] = useState('');
+  // Landing (2026-10-25, owner): new visitors see "Join free" first, members
+  // switch to "I'm a member". Program numbers come from loyalty_config and
+  // loyalty_rewards (public read), never hardcoded.
+  const [mode, setMode] = useState('join'); // join | member
+  const [program, setProgram] = useState(null); // { bonus, perDollar, firstReward }
+
+  useEffect(() => {
+    const supabase = getSupabasePublicClient();
+    Promise.all([
+      supabase.from('loyalty_config').select('signup_bonus_points, base_points_per_dollar').limit(1).maybeSingle(),
+      supabase.from('loyalty_rewards').select('name, points_required').eq('active', true).order('points_required', { ascending: true }).limit(1),
+    ]).then(([c, r]) => {
+      setProgram({
+        bonus: c.data?.signup_bonus_points ?? null,
+        perDollar: c.data?.base_points_per_dollar ?? null,
+        firstReward: Array.isArray(r.data) && r.data[0] ? r.data[0] : null,
+      });
+    }).catch(() => setProgram(null));
+  }, []);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(MEMBER_PHONE_KEY);
@@ -217,6 +236,16 @@ export default function RewardsLookup() {
     }
   }
 
+  // Join straight from the landing: same /api/enroll call as the
+  // "not enrolled yet" form. An already-enrolled number simply opens that
+  // member's points (the API answers already_enrolled).
+  function handleJoinFromLanding(e) {
+    e.preventDefault();
+    if (normalizePhone(phoneInput).length !== 10) { setErrorMsg('Enter a valid 10-digit phone number.'); return; }
+    if (!enrollName.trim()) { setErrorMsg('Enter your full name.'); return; }
+    handleEnroll(e);
+  }
+
   function handleSignOut() {
     window.localStorage.removeItem(MEMBER_PHONE_KEY);
     setCustomer(null);
@@ -230,9 +259,66 @@ export default function RewardsLookup() {
   }
 
   if (view === 'phone_entry' || view === 'loading') {
+    const bonusLine = program?.bonus ? `Join free and get ${program.bonus} bonus points right away.` : 'Join free and start earning points right away.';
+    const howLine = [
+      program?.perDollar ? `Earn ${Number(program.perDollar)} point${Number(program.perDollar) === 1 ? '' : 's'} for every $1` : null,
+      program?.firstReward ? `rewards start at ${program.firstReward.points_required} points (${program.firstReward.name})` : null,
+    ].filter(Boolean).join(' · ');
     return (
       <div className="max-w-md mx-auto px-5 py-20 text-center">
         <p className="section-label mb-2">Mimi&rsquo;s Rewards</p>
+        <div className="mb-8 grid grid-cols-2 gap-1 rounded-full border border-line p-1" role="tablist" aria-label="Rewards">
+          <button type="button" role="tab" aria-selected={mode === 'join'} onClick={() => { setMode('join'); setErrorMsg(''); }}
+            className={`rounded-full py-2 text-sm font-semibold ${mode === 'join' ? 'bg-accent text-on-accent' : 'text-app-soft'}`}>
+            Join free
+          </button>
+          <button type="button" role="tab" aria-selected={mode === 'member'} onClick={() => { setMode('member'); setErrorMsg(''); }}
+            className={`rounded-full py-2 text-sm font-semibold ${mode === 'member' ? 'bg-accent text-on-accent' : 'text-app-soft'}`}>
+            I&rsquo;m a member
+          </button>
+        </div>
+        {mode === 'join' ? (
+          <>
+            <h1 className="font-serif font-bold text-3xl text-app mb-3">Join Mimi&rsquo;s Rewards</h1>
+            <p className="text-app-soft mb-2">{bonusLine}</p>
+            {howLine && <p className="text-app-faint text-sm mb-8">{howLine}.</p>}
+            {!howLine && <div className="mb-6" />}
+            <form onSubmit={handleJoinFromLanding} className="flex flex-col gap-3">
+              <input
+                type="tel"
+                inputMode="numeric"
+                placeholder="Phone number"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(formatPhoneInput(e.target.value))}
+                className="input text-center text-lg"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Full name"
+                value={enrollName}
+                onChange={(e) => setEnrollName(e.target.value)}
+                className="input"
+                required
+              />
+              <input
+                type="email"
+                placeholder="Email (optional)"
+                value={enrollEmail}
+                onChange={(e) => setEnrollEmail(e.target.value)}
+                className="input"
+              />
+              {looksLikeEmail(enrollEmail) && <EmailOptIn checked={enrollEmailOptIn} onChange={setEnrollEmailOptIn} className="text-left" />}
+              <SmsOptIn txn={smsTxn} mkt={smsMkt} onTxn={setSmsTxn} onMkt={setSmsMkt} idPrefix="rewards-join-sms" className="text-left" />
+              {errorMsg && <p className="text-danger text-sm">{errorMsg}</p>}
+              <button type="submit" className="btn-primary w-full">Join Mimi&rsquo;s Rewards</button>
+              <button type="button" onClick={() => { setMode('member'); setErrorMsg(''); }} className="text-app-faint hover:text-app-soft text-xs">
+                Already a member? Check your points
+              </button>
+            </form>
+          </>
+        ) : (
+        <>
         <h1 className="font-serif font-bold text-3xl text-app mb-3">Check Your Points</h1>
         <p className="text-app-soft mb-8">Enter your phone number to see your balance and rewards. No password needed.</p>
         <form
@@ -252,7 +338,12 @@ export default function RewardsLookup() {
           <button type="submit" disabled={view === 'loading'} className="btn-primary w-full">
             {view === 'loading' ? 'Looking up…' : 'View My Rewards'}
           </button>
+          <button type="button" onClick={() => { setMode('join'); setErrorMsg(''); }} className="text-app-faint hover:text-app-soft text-xs">
+            Not a member yet? Join free
+          </button>
         </form>
+        </>
+        )}
       </div>
     );
   }
@@ -262,7 +353,7 @@ export default function RewardsLookup() {
       <div className="max-w-md mx-auto px-5 py-20">
         <p className="section-label mb-2 text-center">Mimi&rsquo;s Rewards</p>
         <h1 className="font-serif font-bold text-3xl text-app mb-3 text-center">You&rsquo;re Not Enrolled Yet</h1>
-        <p className="text-app-soft mb-8 text-center">Join free and get 50 bonus points right away.</p>
+        <p className="text-app-soft mb-8 text-center">{program?.bonus ? `Join free and get ${program.bonus} bonus points right away.` : 'Join free and start earning points right away.'}</p>
         <form onSubmit={handleEnroll} className="flex flex-col gap-3">
           <input
             type="tel"
