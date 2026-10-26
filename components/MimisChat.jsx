@@ -462,7 +462,11 @@ export default function MimisChat({ liftForTabBar = false }) {
   } else if (screen === 'issue_pick') {
     body = (
       <>
-        <Bubble>Sorry something went wrong. Which order is it?</Bubble>
+        <Bubble>
+          {activeOrder || recentNumbers.length
+            ? 'Which order do you need help with?'
+            : 'Which order do you need help with? Enter the order number from your receipt or confirmation.'}
+        </Bubble>
         <div className="space-y-2">
           {activeOrder && (
             <Choice onClick={() => { setCtx({ ...ctx, order_number: activeOrder.order_number }); go('issue_type', `Issue order ${activeOrder.order_number}`); }}>
@@ -472,7 +476,7 @@ export default function MimisChat({ liftForTabBar = false }) {
           {recentNumbers.filter((n) => n !== activeOrder?.order_number).map((n) => (
             <Choice key={n} onClick={() => { setCtx({ ...ctx, order_number: n }); go('issue_type', `Issue order ${n}`); }}>Order {n}</Choice>
           ))}
-          <Field placeholder="Or type the order number" value={ctx.order_number || ''} onChange={(e) => setCtx({ ...ctx, order_number: e.target.value })} />
+          <Field placeholder={activeOrder || recentNumbers.length ? 'Or type the order number' : 'Order number, e.g. MM-12345'} value={ctx.order_number || ''} onChange={(e) => setCtx({ ...ctx, order_number: e.target.value })} />
           <button type="button" className="btn-primary w-full !py-2 text-sm" onClick={() => go('issue_type', 'Issue order typed')}>Continue</button>
           <button type="button" className="text-app-faint hover:text-app-soft text-xs w-full" onClick={() => { setCtx({ ...ctx, order_number: '' }); go('issue_type', 'Issue no order number'); }}>I don&rsquo;t have the order number</button>
         </div>
