@@ -8,6 +8,7 @@ import { orderingState } from '@/lib/storeHours';
 import ItemOptions from '@/components/ItemOptions';
 import {
   useOptionsState, useItemModifiers, unitPrice, chosenOptions, selectionProblem, hasOptions, missingSectionKey,
+  defaultSelection,
 } from '@/lib/options';
 
 // Options + special instructions + quantity + add-to-cart. Shared by the item
@@ -46,6 +47,19 @@ export default function ProductDetailActions({ item, name, variant = 'modal', on
   const [added, setAdded] = useState(false);
   const [attention, setAttention] = useState(null);
 
+  // 2026-11-07: a required group with one option (e.g. the cheese on Build Your
+  // Own) is pre-selected once the options are known. Items without Clover
+  // rules have no defaults, so nothing changes for them.
+  useEffect(() => {
+    if (!showOptions) return;
+    const d = defaultSelection(full);
+    if (!d.length) return;
+    setSelected((prev) => {
+      const add = d.filter((id) => !prev.includes(id));
+      return add.length ? [...prev, ...add] : prev;
+    });
+  }, [showOptions, full]);
+
   // Item page: the add bar is pinned to the bottom of a phone screen, where the
   // chat bubble sits (globals.css hides it under this class on phones only).
   useEffect(() => {
@@ -83,7 +97,7 @@ export default function ProductDetailActions({ item, name, variant = 'modal', on
     setAdded(true);
     setTimeout(() => {
       setAdded(false);
-      setSelected([]);
+      setSelected(showOptions ? defaultSelection(full) : []);
       setQuantity(1);
       setSpecialInstructions('');
       setNotesOpen(false);

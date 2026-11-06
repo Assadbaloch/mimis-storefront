@@ -63,6 +63,16 @@ async function getMenu(location) {
     const option_groups = optionsEnabled
       ? (Array.isArray(modifiers) ? modifiers : []).filter((g) => (g?.modifiers || []).length > 0).length
       : 0;
+    // 2026-11-07: an item with a group Clover marks required (min_required >= 1,
+    // e.g. Build Your Own base sauce) must open the sheet; without options on
+    // the website it can't be ordered correctly, so it is not listed.
+    const ruleRequired = (Array.isArray(modifiers) ? modifiers : []).some(
+      (g) => typeof g?.min_required === 'number' && g.min_required >= 1 && (g.modifiers || []).length > 0
+    );
+    if (item.price_cents > 0 && ruleRequired) {
+      if (optionsEnabled) data.push({ ...item, option_groups, needs_choice: true });
+      continue;
+    }
     if (item.price_cents > 0) { data.push({ ...item, option_groups }); continue; }
     if (!optionsEnabled || !sizeGroups.length) continue;
     const prices = sizeGroups.flatMap((g) => g.modifiers.map((o) => Number(o.price_cents) || 0)).filter((p) => p > 0);
