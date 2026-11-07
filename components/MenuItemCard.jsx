@@ -85,7 +85,7 @@ export default function MenuItemCard({ item, large = false, autoOpen = false, in
           autoOpen ? 'border-highlight-line ring-2 ring-highlight-line animate-pulse-once' : 'border-line hover:border-highlight-line'
         }`}
       >
-        <div className={`relative overflow-hidden ${large ? 'aspect-[4/3]' : 'aspect-square'} bg-gradient-to-br from-app-wash to-black/40`}>
+        <div className={`relative overflow-hidden ${large ? 'aspect-[4/3]' : 'aspect-square'} photo-stage`}>
           {item.video_url ? (
             <video
               src={item.video_url}

@@ -108,7 +108,7 @@ export default function ProductModal({ item, onClose, initialVariantId = null })
         onClick={(e) => e.stopPropagation()}
       >
         {desktop && (
-          <div className="w-[48%] shrink-0 bg-black">
+          <div className="w-[48%] shrink-0 photo-stage">
             {gallery({ className: 'h-full flex flex-col', aspect: 'flex-1 min-h-0', sizes: '480px' })}
           </div>
         )}

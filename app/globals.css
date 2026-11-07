@@ -512,6 +512,12 @@ h1, h2, h3, p, li, a, span {
 .menu-card:active {
   transform: translateY(-1px) scale(0.99);
 }
+/* Product photo stage: transparent cutouts sit on a subtle, theme-aware vignette. */
+:root { --stage-in: #fdf8ee; --stage-out: #ebdfcc; }
+.dark, [data-design='reference'].dark { --stage-in: #3b2419; --stage-out: #1a0f0b; }
+.photo-stage { background: radial-gradient(ellipse at 50% 42%, var(--stage-in) 0%, var(--stage-out) 82%); }
+img.menu-media[src*='photopack'] { filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.22)); }
+.dark img.menu-media[src*='photopack'] { filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.5)); }
 .menu-media {
   transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
 }
