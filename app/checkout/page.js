@@ -206,20 +206,26 @@ export default function CheckoutPage() {
   // pre-submit total from looking wrong while a reward is selected.
   // Promotion vs points reward: unless the promotion allows stacking, the
   // bigger of the two applies -- the same rule the server uses.
+  // 2026-11-12 (owner): offers AND points rewards skip deals. The server
+  // preview returns the food subtotal without deals (promotion_base_cents);
+  // the reward is capped at it, exactly as apply_order_discounts does.
+  const eligibleCents = promoPreview?.basket_ok ? Math.max(Number(promoPreview.promotion_base_cents) || 0, 0) : null;
+  const rewardCents = eligibleCents === null ? discountCents : Math.min(discountCents, eligibleCents);
   const promoCents = promoPreview?.amount_cents || 0;
   const promoStacks = !!promoPreview?.stacks_with_rewards;
   const discountLinesPreview = [];
-  if (promoCents > 0 && (promoStacks || promoCents > discountCents)) {
+  if (promoCents > 0 && (promoStacks || promoCents > rewardCents)) {
     discountLinesPreview.push({ label: promoPreview.label || 'Promotion', amount_cents: promoCents });
   }
-  if (discountCents > 0 && (promoStacks || discountCents >= promoCents)) {
-    discountLinesPreview.push({ label: 'Reward discount', amount_cents: discountCents });
+  if (rewardCents > 0 && (promoStacks || rewardCents >= promoCents)) {
+    discountLinesPreview.push({ label: 'Reward discount', amount_cents: rewardCents });
   }
   const shownDiscountCents = Math.min(
     discountLinesPreview.reduce((sum, l) => sum + l.amount_cents, 0),
     Math.max(totalCents - 1, 0),
+    eligibleCents === null ? Infinity : eligibleCents,
   );
-  const rewardBeaten = discountCents > 0 && promoCents > discountCents && !promoStacks;
+  const rewardBeaten = rewardCents > 0 && promoCents > rewardCents && !promoStacks;
   const dueCents = Math.max(totalCents - shownDiscountCents, 0);
   const taxRateBps = promoPreview?.tax_rate_bps ?? null;
   const previewTaxCents = taxRateBps === null ? null : Math.round((dueCents * taxRateBps) / 10000);
@@ -237,7 +243,7 @@ export default function CheckoutPage() {
     special_instructions: i.special_instructions || '',
   }));
   const previewItemsKey = JSON.stringify(previewItems);
-  const dealsLeftOut = (promoPreview?.excluded_cents || 0) > 0 && promoPreview?.promotions_enabled === true;
+  const dealsLeftOut = (promoPreview?.excluded_cents || 0) > 0 && (promoPreview?.promotions_enabled === true || discountCents > 0);
   useEffect(() => {
     if (phoneDigits.length < 10 || totalCents <= 0) { setPromoPreview(null); return undefined; }
     let cancelled = false;
@@ -629,7 +635,7 @@ export default function CheckoutPage() {
           </p>
         )}
         {dealsLeftOut && (
-          <p className="mt-2 text-xs text-app-soft">Deals are already discounted, so online offers don&rsquo;t apply to them.</p>
+          <p className="mt-2 text-xs text-app-soft">Deals are already discounted, so online offers and rewards don&rsquo;t apply to them.</p>
         )}
         {phoneDigits.length < 10 && (
           <p className="mt-2 text-xs text-app-faint">Enter your phone number below to see any offer you qualify for.</p>
@@ -691,9 +697,11 @@ export default function CheckoutPage() {
         {rewardCode && (
           <p className="text-app-faint text-xs">
             Reward <span className="text-highlight">{rewardCode}</span>{' '}
-            {discountCents > 0
-              ? `applies a ${formatPrice(discountCents)} discount if this phone number matches your rewards account.`
-              : 'will apply if this phone number matches your rewards account.'}
+            {rewardCents > 0
+              ? `applies a ${formatPrice(rewardCents)} discount if this phone number matches your rewards account.`
+              : discountCents > 0 && eligibleCents === 0
+                ? "can't be used on deals, so it stays in your account for next time."
+                : 'will apply if this phone number matches your rewards account.'}
           </p>
         )}
 
