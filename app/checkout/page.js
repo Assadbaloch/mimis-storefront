@@ -94,8 +94,10 @@ export default function CheckoutPage() {
   const [smsMkt, setSmsMkt] = useState(false);
   const [promoCodesActive, setPromoCodesActive] = useState(false);
   // Live preview of the promotion this phone number qualifies for, shown on
-  // this first step. Read-only (mimis.preview_order_discount); the amount
-  // actually charged is decided again by the server when the order is placed.
+  // this first step. Read-only (mimis.preview_order_discount_v2, 2026-11-12:
+  // the server prices the basket and leaves deals out -- deals are already
+  // discounted, so the online offers never apply to them); the amount actually
+  // charged is decided again by the server when the order is placed.
   const [promoPreview, setPromoPreview] = useState(null);
   // Show the promo-code field only while a live code-based promotion exists
   // for this store. The RPC returns true/false only -- never the codes.
@@ -224,23 +226,35 @@ export default function CheckoutPage() {
   const payCents = previewTaxCents === null ? dueCents : dueCents + previewTaxCents;
 
   const phoneDigits = form.phone_number.replace(/\D/g, '');
+  // The basket in the same shape checkout sends (the server prices it).
+  const previewItems = items.map((i) => ({
+    clover_item_id: i.clover_item_id,
+    options: Array.isArray(i.options) ? i.options : (i.modifiers || []).map((m) => m.clover_modifier_id).filter(Boolean),
+    name: i.name,
+    price_cents: i.price_cents,
+    quantity: i.quantity,
+    modifiers: i.modifiers || [],
+    special_instructions: i.special_instructions || '',
+  }));
+  const previewItemsKey = JSON.stringify(previewItems);
+  const dealsLeftOut = (promoPreview?.excluded_cents || 0) > 0 && promoPreview?.promotions_enabled === true;
   useEffect(() => {
     if (phoneDigits.length < 10 || totalCents <= 0) { setPromoPreview(null); return undefined; }
     let cancelled = false;
     const t = setTimeout(() => {
       getSupabasePublicClient()
-        .rpc('preview_order_discount', {
+        .rpc('preview_order_discount_v2', {
           p_phone: phoneDigits, p_location: location, p_order_type: orderType || 'pickup',
-          p_food_subtotal_cents: totalCents, p_promo_code: promoCode.trim() || null,
+          p_items: previewItems, p_promo_code: promoCode.trim() || null,
         })
         .then(({ data, error }) => {
           if (cancelled) return;
-          if (error) { console.error('preview_order_discount', error.message); setPromoPreview(null); return; }
+          if (error) { console.error('preview_order_discount_v2', error.message); setPromoPreview(null); return; }
           setPromoPreview(data && typeof data === 'object' ? data : null);
         });
     }, 350);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [phoneDigits, location, orderType, totalCents, promoCode]);
+  }, [phoneDigits, location, orderType, totalCents, promoCode, previewItemsKey]);
 
   // MemberRewardsPanel owns localStorage persistence for the active code --
   // this just mirrors its current value so handleSubmit can send it, and so
@@ -613,6 +627,9 @@ export default function CheckoutPage() {
               ? 'Your offer is bigger than your reward, so the offer applies and your reward is saved for next time.'
               : 'Applied automatically when you place the order.'}
           </p>
+        )}
+        {dealsLeftOut && (
+          <p className="mt-2 text-xs text-app-soft">Deals are already discounted, so online offers don&rsquo;t apply to them.</p>
         )}
         {phoneDigits.length < 10 && (
           <p className="mt-2 text-xs text-app-faint">Enter your phone number below to see any offer you qualify for.</p>
